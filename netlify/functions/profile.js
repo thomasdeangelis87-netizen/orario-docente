@@ -2,7 +2,7 @@ import { getStore } from '@netlify/blobs';
 import { json, currentUser, emailKey } from './_lib.js';
 
 function store(){
-  return getStore('orario-docente-cloud',{consistency:'strong'});
+  return getStore({name:'orario-docente-cloud',consistency:'strong'});
 }
 
 function validState(x){
