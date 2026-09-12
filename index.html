@@ -148,9 +148,16 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
         </div>
         <div id="schoolConnectionInfo" class="admin-note" style="margin-top:10px"></div>
         <div id="schoolPersonalImport" class="hidden" style="margin-top:14px;padding:14px;border:1px solid #b9d2f5;border-radius:14px;background:#f5f9ff">
-          <strong>👩‍🏫 Abbiamo trovato il tuo orario</strong>
+          <strong>👩‍🏫 Il mio orario dalla scuola</strong>
           <div id="schoolPersonalImportText" class="admin-note" style="margin:6px 0 10px"></div>
-          <button class="btn primary" id="importMySchoolScheduleBtn">⬇️ Importa il mio orario dalla scuola</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+            <div style="flex:1;min-width:220px">
+              <label>Il mio nome nell'orario ufficiale</label>
+              <select id="schoolOfficialTeacherSelect"></select>
+            </div>
+            <button class="btn primary" id="importMySchoolScheduleBtn">⬇️ Importa il mio orario dalla scuola</button>
+          </div>
+          <div class="admin-note" style="margin-top:8px">Il nome del profilo può restare normale, ad esempio <strong>Roberto Amabile</strong>. Qui puoi associarlo alla dicitura usata nel file della scuola, ad esempio <strong>AMABILE R.</strong>.</div>
         </div>
         <div id="schoolUpdateNotice" class="hidden" style="margin-top:12px;padding:12px 14px;border-radius:12px;background:#fff7df;border:1px solid #f0d58a">
           🔔 <strong>L'orario della scuola è stato aggiornato.</strong>
@@ -273,7 +280,7 @@ function schoolMaxPeriods(){schoolData.maxPeriods=clampPeriods(schoolData.maxPer
 function personalMaxPeriods(){state.meta.maxPeriods=clampPeriods(state.meta.maxPeriods,6);return state.meta.maxPeriods}
 let pendingImport=null;
 const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
-const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{}};
+const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher',schoolTeacherName:''},slots:{}};
 let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false;
 let schoolData={source:'',loadedAt:'',teachers:[],entries:[],classCells:[],periodTimes:clone(SCHOOL_DEFAULT_TIMES),breaks:{0:[],1:[],2:[],3:[],4:[],5:[]},maxPeriods:6},activeMyClass='',schoolMode='class';
 function clone(x){return JSON.parse(JSON.stringify(x))}
@@ -470,20 +477,57 @@ function sameClass(a,b){const A=canonicalActivity(a),B=canonicalActivity(b);retu
 function refreshSchoolFilters(){const t=schoolTeacherFilter.value,c=schoolClassFilter.value;schoolTeacherFilter.innerHTML='<option value="">Tutti i docenti</option>'+schoolData.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(x=>`<option>${esc(x.name)}</option>`).join('');schoolClassFilter.innerHTML='<option value="">Tutte le classi</option>'+schoolClasses().map(x=>`<option>${esc(x)}</option>`).join('');if([...schoolTeacherFilter.options].some(o=>o.value===t))schoolTeacherFilter.value=t;if([...schoolClassFilter.options].some(o=>o.value===c))schoolClassFilter.value=c}
 function renderClassSchedule(el,className){if(!el)return;let h='<div class="cs csh">ORA</div>';DAYS.forEach(d=>h+=`<div class="cs csh">${esc(d.name)}</div>`);for(let p=1;p<=schoolMaxPeriods();p++){h+=`<div class="cs csp">${p}ª ora</div>`;for(let d=0;d<6;d++){const cell=(schoolData.classCells||[]).find(x=>sameClass(x.className,className)&&x.day===d&&x.period===p);if(cell)h+=`<div class="cs csc"><strong>${esc(cell.subject||'—')}</strong><small>${esc(cell.teacher||'—')}</small><small>(${esc(schoolTime(d,p-1))})</small></div>`;else h+='<div class="cs csc"><span class="empty">—</span></div>'}const anyPause=DAYS.some((_,d)=>breaksAfterPeriod(d,p).length);if(anyPause){h+='<div class="cs csp pause-label">PAUSA</div>';for(let d=0;d<6;d++){const bs=breaksAfterPeriod(d,p);h+=bs.length?`<div class="cs csc pause-cell"><small>${bs.map(b=>`Pausa ${esc(b.start)}–${esc(b.end)}`).join('<br>')}</small></div>`:'<div class="cs csc pause-cell"><small>—</small></div>'}}}el.innerHTML=h}
 
+function schoolTeacherNames(){
+  return (schoolData.teachers||[])
+    .map(t=>typeof t==='string'?t:(t&&t.name)||'')
+    .map(cleanCell)
+    .filter(Boolean);
+}
 function schoolTeacherMatch(){
-  const teachers=(schoolData.teachers||[]).filter(Boolean);
+  const teachers=schoolTeacherNames();
+  if(!teachers.length)return '';
+
+  // A manual/previous association wins and survives future logins.
+  const saved=cleanCell(state.meta.schoolTeacherName||'');
+  if(saved){
+    const exactSaved=teachers.find(t=>normText(t)===normText(saved));
+    if(exactSaved)return exactSaved;
+  }
+
   const first=normText(state.meta.firstName||'');
   const last=normText(state.meta.lastName||'');
-  const full=normText(fullName());
-  const variants=[full, last&&first?`${last} ${first}`:'', last&&first?`${last} ${first.charAt(0)}.`:'', last&&first?`${first} ${last}`:''].filter(Boolean);
-  let hit=teachers.find(t=>variants.includes(normText(t)));
+  const teacherField=normText(state.meta.teacher||'');
+  const full=normText([state.meta.firstName||'',state.meta.lastName||''].filter(Boolean).join(' '));
+
+  const variants=new Set([
+    full,
+    teacherField,
+    last&&first?`${last} ${first}`:'',
+    last&&first?`${last} ${first.charAt(0)}.`:'',
+    last&&first?`${last} ${first.charAt(0)}`:'',
+    first&&last?`${first} ${last}`:''
+  ].filter(Boolean));
+
+  let hit=teachers.find(t=>variants.has(normText(t)));
   if(hit)return hit;
+
+  // Handles labels such as "AMABILE R." for profile "Roberto Amabile".
   if(last){
-    const surnameHits=teachers.filter(t=>{
+    const initial=first ? first.charAt(0) : '';
+    const candidates=teachers.filter(t=>{
+      const n=normText(t);
+      const surnameOk = n===last || n.startsWith(last+' ') || n.endsWith(' '+last) || n.includes(last+' ');
+      if(!surnameOk)return false;
+      if(!initial)return true;
+      return n===`${last} ${initial}.` || n===`${last} ${initial}` || n.includes(` ${initial}.`) || n.includes(` ${initial} `);
+    });
+    if(candidates.length===1)return candidates[0];
+
+    const surnameOnly=teachers.filter(t=>{
       const n=normText(t);
       return n===last || n.startsWith(last+' ') || n.endsWith(' '+last) || n.includes(last+' ');
     });
-    if(surnameHits.length===1)return surnameHits[0];
+    if(surnameOnly.length===1)return surnameOnly[0];
   }
   return '';
 }
@@ -493,34 +537,67 @@ function schoolTeacherEntries(name){
 }
 function renderSchoolPersonalImport(){
   const box=document.getElementById('schoolPersonalImport');
-  if(!box)return;
-  const teacher=(schoolCloudReady&&state.meta.schoolCode)?schoolTeacherMatch():'';
-  box.classList.toggle('hidden',!teacher);
-  if(teacher){
-    const entries=schoolTeacherEntries(teacher);
-    document.getElementById('schoolPersonalImportText').textContent=`${teacher}: trovati ${entries.length} impegni nell'orario ufficiale.`;
+  const select=document.getElementById('schoolOfficialTeacherSelect');
+  const text=document.getElementById('schoolPersonalImportText');
+  if(!box||!select||!text)return;
+
+  const teachers=schoolTeacherNames().slice().sort((a,b)=>a.localeCompare(b,'it'));
+  const available=!!(schoolCloudReady&&state.meta.schoolCode&&teachers.length);
+  box.classList.toggle('hidden',!available);
+  if(!available)return;
+
+  const auto=schoolTeacherMatch();
+  const selected=cleanCell(state.meta.schoolTeacherName||auto||'');
+
+  select.innerHTML='<option value="">Seleziona il tuo nome…</option>'+
+    teachers.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+
+  if(selected && teachers.some(t=>normText(t)===normText(selected))){
+    const real=teachers.find(t=>normText(t)===normText(selected));
+    select.value=real;
+    const entries=schoolTeacherEntries(real);
+    text.innerHTML=`Docente associato: <strong>${esc(real)}</strong> · ${entries.length} impegni trovati.`;
+  }else{
+    select.value='';
+    text.textContent='Seleziona una sola volta come compare il tuo nome nell’orario ufficiale della scuola.';
   }
 }
-function importMySchoolSchedule(){
-  const teacher=schoolTeacherMatch();
-  if(!teacher){alert('Non riesco a trovare il tuo nome nell’orario ufficiale. Controlla Nome e Cognome nel Profilo.');return}
+async function importMySchoolSchedule(){
+  const select=document.getElementById('schoolOfficialTeacherSelect');
+  const teacher=cleanCell((select&&select.value)||schoolTeacherMatch());
+  if(!teacher){
+    alert('Seleziona il tuo nome dall’elenco dei docenti della scuola.');
+    return;
+  }
   const entries=schoolTeacherEntries(teacher);
-  if(!entries.length){alert('Il docente è presente, ma non risultano impegni associati.');return}
+  if(!entries.length){
+    alert('Il docente è presente nell’elenco, ma non risultano impegni associati.');
+    return;
+  }
   if(Object.keys(state.slots||{}).length && !confirm(`Trovati ${entries.length} impegni per ${teacher}. Vuoi sostituire il tuo orario personale attuale?`))return;
+
+  state.meta.schoolTeacherName=teacher;
   const slots={}; let maxP=6;
   entries.forEach(e=>{
     const d=Number(e.day), p=Number(e.period)-1;
     if(d>=0&&d<6&&p>=0&&p<MAX_PERIODS){
-      slots[`${d}-${p}`]=[e.activity||e.subject||'D',schoolTime(d,p)];
+      const key=`${d}-${p}`;
+      const activity=cleanCell(e.activity||e.subject||'D');
+      if(slots[key] && slots[key][0]!==activity){
+        slots[key][0]=slots[key][0]+' / '+activity;
+      }else{
+        slots[key]=[activity,schoolTime(d,p)];
+      }
       maxP=Math.max(maxP,p+1);
     }
   });
   state.slots=slots;
   state.meta.maxPeriods=Math.min(MAX_PERIODS,maxP);
   render();
-  cloudSave();
+  const ok=await persistProfileNow();
   renderSchool();
-  toast('Orario personale importato dalla scuola');
+  if(ok)toast(`Orario di ${teacher} importato e salvato`);
+  else alert('Orario importato sul dispositivo, ma il salvataggio online non è riuscito.');
 }
 function renderSchoolUpdateNotice(){
   const box=document.getElementById('schoolUpdateNotice');
@@ -551,6 +628,11 @@ saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMa
 connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;await loadSchoolCloud();render();cloudSave();toast('Account collegato alla scuola')}catch(e){alert(e.message)}finally{renderSchool()}};
 schoolUploadBtn.onclick=()=>{if(!['admin','coordinator'].includes(state.meta.schoolRole||'')){alert('Solo il referente orario o l’amministratore scuola può caricare l’orario generale.');return}schoolFile.click()};schoolFile.onchange=async e=>{const f=e.target.files[0];if(!f)return;schoolUploadBtn.disabled=true;schoolUploadBtn.textContent='Analisi e sincronizzazione…';try{const keepTimes=clone(schoolPeriodTimes()),keepBreaks=clone(ensureSchoolBreaks()),keepMax=schoolMaxPeriods();schoolData=await importWholeSchool(f);schoolData.periodTimes=keepTimes;schoolData.breaks=keepBreaks;schoolData.maxPeriods=Math.max(keepMax,clampPeriods(schoolData.maxPeriods,6));(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();await saveSchoolCloud();renderSchool();renderMyClasses();toast(`Orario scuola condiviso: ${schoolData.teachers.length} docenti`)}catch(err){alert(err.message||'Errore durante l’importazione')}finally{schoolUploadBtn.disabled=false;schoolUploadBtn.textContent='📊 Carica orario completo';schoolFile.value=''}};
 document.getElementById('importMySchoolScheduleBtn').onclick=importMySchoolSchedule;
+document.getElementById('schoolOfficialTeacherSelect').onchange=async e=>{
+  state.meta.schoolTeacherName=cleanCell(e.target.value||'');
+  await persistProfileNow();
+  renderSchoolPersonalImport();
+};
 document.getElementById('ackSchoolUpdateBtn').onclick=()=>{if(state.meta.schoolCode&&schoolData.cloudUpdatedAt){localStorage.setItem('orarioDocenteSchoolSeen:'+state.meta.schoolCode,schoolData.cloudUpdatedAt);renderSchoolUpdateNotice();}};
 schoolModeClass.onclick=()=>{schoolMode='class';renderSchool()};schoolModeTeacher.onclick=()=>{schoolMode='teacher';renderSchool()};
 [schoolSearch,schoolTeacherFilter,schoolClassFilter,schoolDayFilter].forEach(el=>el.addEventListener(el.tagName==='INPUT'?'input':'change',renderSchool));
