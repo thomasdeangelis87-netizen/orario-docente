@@ -181,7 +181,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.1</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
@@ -428,10 +428,11 @@ async function handleUser(user){
  render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
  await loadSchoolCloud();
 
+ const providerName=cleanCell(meta.full_name||meta.name||'');
  const profileDone = meta.profileCompleted===true ||
    !!cleanCell(state.meta.firstName) ||
    !!cleanCell(state.meta.lastName) ||
-   !!cleanCell(meta.full_name);
+   !!providerName;
 
  // Migration from older versions: if the account already has profile data,
  // never show onboarding again; just record the one-time completion flag.
