@@ -57,6 +57,24 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   </div>
 </section>
 
+<div class="modal" id="registerProfileModal">
+  <div class="modalbox">
+    <h3>👤 Crea il tuo profilo docente</h3>
+    <p class="muted">Inserisci questi dati adesso: verranno collegati al nuovo account dopo la registrazione.</p>
+    <div class="formgrid">
+      <div class="field"><label>Nome *</label><input id="regFirstName" autocomplete="given-name" placeholder="Nome"></div>
+      <div class="field"><label>Cognome *</label><input id="regLastName" autocomplete="family-name" placeholder="Cognome"></div>
+      <div class="field"><label>Materia insegnata</label><input id="regTeaching" placeholder="Materia di insegnamento"></div>
+      <div class="field"><label>Classe di concorso</label><input id="regSubject" placeholder="es. B020"></div>
+    </div>
+    <div id="regProfileError" class="admin-note" style="color:#a61b1b;margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="btn" data-close="registerProfileModal">Annulla</button>
+      <button class="btn primary" id="continueSignupBtn">Continua registrazione</button>
+    </div>
+  </div>
+</div>
+
 <div id="appView" class="app hidden">
   <section class="accountbar">
     <div><strong id="accountName">Utente</strong><small id="accountEmail"></small></div>
@@ -152,7 +170,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
             </div>
             <button class="btn primary" id="importMySchoolScheduleBtn">⬇️ Importa il mio orario dalla scuola</button>
           </div>
-          <div class="admin-note" style="margin-top:8px">Il nome del profilo può restare normale, ad esempio <strong>Roberto Amabile</strong>. Qui puoi associarlo alla dicitura usata nel file della scuola, ad esempio <strong>AMABILE R.</strong>.</div>
+          <div class="admin-note" style="margin-top:8px">Seleziona come compare il tuo nome nell’orario ufficiale della scuola. Verranno importate anche le ore in <strong>compresenza</strong> in cui il tuo nome compare insieme a un altro docente.</div>
         </div>
         <div id="schoolUpdateNotice" class="hidden" style="margin-top:12px;padding:12px 14px;border-radius:12px;background:#fff7df;border:1px solid #f0d58a">
           🔔 <strong>L'orario della scuola è stato aggiornato.</strong>
@@ -181,7 +199,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.2</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.4</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
@@ -201,8 +219,8 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 <div class="modal" id="metaModal"><div class="modalbox">
   <h3>Profilo docente</h3>
   <div class="formgrid">
-    <div class="field"><label>Nome</label><input id="firstNameInput" placeholder="Thomas"></div>
-    <div class="field"><label>Cognome</label><input id="lastNameInput" placeholder="De Angelis"></div>
+    <div class="field"><label>Nome</label><input id="firstNameInput" placeholder="Nome"></div>
+    <div class="field"><label>Cognome</label><input id="lastNameInput" placeholder="Cognome"></div>
     <div class="field"><label>Materia di insegnamento</label><input id="teachingInput" placeholder="es. Laboratorio di servizi enogastronomici – settore cucina"></div>
     <div class="field"><label>Classe di concorso (facoltativa)</label><input id="subjectInput" placeholder="es. B020"></div>
     <div class="field"><label>Istituto</label><input id="schoolInput" placeholder="Nome dell'istituto"></div>
@@ -242,7 +260,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 <div class="modal" id="slotModal"><div class="modalbox">
   <h3>Modifica ora</h3>
   <div class="formgrid">
-    <div class="field"><label>Classe / attività</label><input id="slotSubject" placeholder="es. 5° BE, D"></div>
+    <div class="field"><label>Classe / attività</label><input id="slotSubject" placeholder="es. 3° A, D"></div>
     <div class="field"><label>Orario</label><input id="slotTime" placeholder="08:25 – 09:26"></div>
   </div>
   <div class="modal-actions"><button class="btn danger" id="clearSlotBtn">Svuota</button><button class="btn" data-close="slotModal">Annulla</button><button class="btn primary" id="saveSlotBtn">Salva</button></div>
@@ -434,6 +452,61 @@ async function persistProfileNow(){
     return false;
   }
 }
+
+const PENDING_REGISTRATION_KEY='orarioDocentePendingRegistrationV1';
+
+function savePendingRegistrationProfile(){
+  const first=cleanCell(document.getElementById('regFirstName')?.value||'');
+  const last=cleanCell(document.getElementById('regLastName')?.value||'');
+  const teaching=cleanCell(document.getElementById('regTeaching')?.value||'');
+  const subject=cleanCell(document.getElementById('regSubject')?.value||'');
+  const err=document.getElementById('regProfileError');
+
+  if(!first||!last){
+    if(err)err.textContent='Inserisci Nome e Cognome.';
+    return false;
+  }
+  try{
+    localStorage.setItem(PENDING_REGISTRATION_KEY,JSON.stringify({
+      firstName:first,lastName:last,teaching,subject,createdAt:Date.now()
+    }));
+    if(err)err.textContent='';
+    return true;
+  }catch(e){
+    if(err)err.textContent='Non riesco a preparare i dati di registrazione su questo dispositivo.';
+    return false;
+  }
+}
+
+function readPendingRegistrationProfile(){
+  try{
+    const raw=localStorage.getItem(PENDING_REGISTRATION_KEY);
+    if(!raw)return null;
+    const x=JSON.parse(raw);
+    if(!x||!x.firstName||!x.lastName)return null;
+    // Expire after 24 hours so stale data can never leak into a future account.
+    if(x.createdAt && Date.now()-Number(x.createdAt)>24*60*60*1000){
+      localStorage.removeItem(PENDING_REGISTRATION_KEY);
+      return null;
+    }
+    return x;
+  }catch(e){return null}
+}
+
+function clearPendingRegistrationProfile(){
+  try{localStorage.removeItem(PENDING_REGISTRATION_KEY)}catch(e){}
+}
+
+function applyPendingRegistrationProfile(x){
+  if(!x)return false;
+  state.meta.firstName=cleanCell(x.firstName||'');
+  state.meta.lastName=cleanCell(x.lastName||'');
+  state.meta.teaching=cleanCell(x.teaching||'');
+  state.meta.subject=cleanCell(x.subject||'');
+  syncTeacherMeta();
+  return !!(state.meta.firstName&&state.meta.lastName);
+}
+
 function openOnboarding(){
   onFirstName.value=state.meta.firstName||'';
   onLastName.value=state.meta.lastName||'';
@@ -471,6 +544,7 @@ async function handleUser(user){
    cloud.meta.teaching='Laboratorio di servizi enogastronomici – settore cucina';
  }
 
+ let appliedPendingRegistration=false;
  if(isThomas&&!hasCloudState){
    state=clone(THOMAS_STATE);
    hasCloudState=true;
@@ -478,6 +552,10 @@ async function handleUser(user){
    state=clone(cloud);
  }else{
    state=clone(EMPTY_STATE);
+   const pending=readPendingRegistrationProfile();
+   if(pending){
+     appliedPendingRegistration=applyPendingRegistrationProfile(pending);
+   }
  }
  migrationBox.classList.add('hidden');
 
@@ -491,12 +569,15 @@ async function handleUser(user){
  const profileDone =
    (persistent&&persistent.profileCompleted===true) ||
    meta.profileCompleted===true ||
-   !!cleanCell(state.meta.firstName) ||
-   !!cleanCell(state.meta.lastName);
+   !!(cleanCell(state.meta.firstName)&&cleanCell(state.meta.lastName));
 
- // One-time migration: if old Identity data exists, copy it to the new persistent profile.
+ // One-time migration / first registration profile save.
  if(!persistent && (hasCloudState || profileDone)){
-   await savePersistentProfile(profileDone);
+   const saved=await savePersistentProfile(profileDone);
+   if(saved && appliedPendingRegistration){
+     clearPendingRegistrationProfile();
+     hasCloudState=true;
+   }
  }
 
  if(!profileDone){
@@ -641,9 +722,27 @@ function schoolTeacherMatch(){
   }
   return '';
 }
+function teacherLabelContains(label,officialName){
+  const target=normText(officialName);
+  const whole=normText(label);
+  if(!target||!whole)return false;
+  if(whole===target)return true;
+
+  // Timetable cells can contain co-teaching labels such as:
+  // "MAIORINO F. + BRIENZA", "MAIORINO F./BRIENZA", "MAIORINO F. & BRIENZA".
+  const parts=String(label||'')
+    .split(/\s*(?:\+|\/|&|;|\n)\s*/)
+    .map(normText)
+    .filter(Boolean);
+
+  if(parts.includes(target))return true;
+
+  // Safe fallback: target must be delimited, never just an arbitrary surname substring.
+  const escaped=target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return new RegExp(`(^|\\s|\\+|\\/|&|;)${escaped}(?=$|\\s|\\+|\\/|&|;)`,'i').test(whole);
+}
 function schoolTeacherEntries(name){
-  const n=normText(name);
-  return (schoolData.entries||[]).filter(e=>normText(e.teacher)===n);
+  return (schoolData.entries||[]).filter(e=>teacherLabelContains(e.teacher,name));
 }
 function renderSchoolPersonalImport(){
   const box=document.getElementById('schoolPersonalImport');
@@ -760,7 +859,20 @@ async function importImage(file){if(!window.Tesseract)throw new Error('Modulo fo
 function importSummary(st){const lines=[];for(let d=0;d<6;d++){const vals=[];for(let p=0;p<6;p++){const v=st.slots[`${d}-${p}`];if(v&&v[0])vals.push(`${p+1}ª ${v[0]}`)}lines.push(`${DAYS[d].name}: ${vals.length?vals.join(' · '):'libero'}`)}return lines.join('\n')}
 async function processSmartImport(file){pendingImport=null;applyImportBtn.classList.add('hidden');importPreview.classList.add('hidden');importStatus.classList.add('show');importStatus.textContent='Analisi in corso…';try{const n=file.name.toLowerCase();let res;if(n.endsWith('.xlsx')||n.endsWith('.xls'))res=await importExcel(file);else if(n.endsWith('.pdf'))res=await importPdf(file);else res=await importImage(file);pendingImport=res.state;importStatus.textContent='✅ '+res.detail;importPreview.textContent=importSummary(res.state);importPreview.classList.remove('hidden');applyImportBtn.classList.remove('hidden')}catch(e){console.error(e);importStatus.textContent='⚠️ '+(e.message||'Non sono riuscito a importare questo file.') }finally{smartImportFile.value=''}}
 
-signupBtn.onclick=()=>window.netlifyIdentity?netlifyIdentity.open('signup'):alert('Registrazione non disponibile: abilita Netlify Identity sul sito.');
+signupBtn.onclick=()=>{
+  regFirstName.value='';
+  regLastName.value='';
+  regTeaching.value='';
+  regSubject.value='';
+  regProfileError.textContent='';
+  openModal('registerProfileModal');
+};
+continueSignupBtn.onclick=()=>{
+  if(!savePendingRegistrationProfile())return;
+  closeModal('registerProfileModal');
+  if(window.netlifyIdentity)netlifyIdentity.open('signup');
+  else alert('Registrazione non disponibile: abilita Netlify Identity sul sito.');
+};
 loginBtn.onclick=()=>window.netlifyIdentity?netlifyIdentity.open('login'):alert('Accesso non disponibile: abilita Netlify Identity sul sito.');
 googleBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Se Google è attivato in Identity, scegli “Google” nella finestra di accesso.')}else alert('Accesso Google non disponibile')};
 forgotBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Nella finestra di accesso premi “Forgot password?”.')}else alert('Recupero password non disponibile')};
