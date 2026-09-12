@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b2a5b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="Orario Docente" />
+<title>Orario Docente</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{--bg:#f5f8fc;--card:#fff;--ink:#10233f;--muted:#607089;--navy:#0b2a5b;--blue:#dceeff;--green:#dcf5df;--yellow:#fff0b8;--pink:#ffd9df;--line:#d7e0eb;--shadow:0 10px 30px rgba(31,56,88,.10);--ok:#137333}
+*{box-sizing:border-box}html,body{min-height:100%}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#eef5ff 0,#f7f9fc 30%,#fff 100%);color:var(--ink)}
+button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1180px;margin:auto;padding:18px}.auth-shell{min-height:100vh;display:grid;place-items:center;padding:22px}.auth-card{width:min(480px,100%);background:#fff;border:1px solid #dae5f0;border-radius:28px;box-shadow:0 25px 70px rgba(31,56,88,.16);padding:28px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.brandmark{width:50px;height:50px;border-radius:16px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:26px}.auth-card h1{margin:0;font-size:36px}.auth-card p{color:var(--muted);line-height:1.55}.auth-actions{display:grid;gap:10px;margin-top:22px}.auth-divider{display:flex;align-items:center;gap:10px;color:#8996a8;font-size:12px;margin:4px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#dce5ef;flex:1}.btn.google{background:#fff;color:#24344c;border:1px solid #cfd9e5}.btn.linkish{box-shadow:none;border:0;background:transparent;color:#315b89;padding:8px}.import-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.import-choice{border:1px solid #d7e2ee;border-radius:16px;padding:16px;text-align:center;background:#f8fbff;cursor:pointer}.import-choice strong{display:block;margin-top:6px}.import-status{margin-top:14px;padding:12px;border-radius:12px;background:#f4f8fd;color:#52647b;display:none}.import-status.show{display:block}.previewbox{margin-top:12px;border:1px solid #dbe5f0;border-radius:12px;padding:12px;max-height:230px;overflow:auto;background:#fff;font-size:13px;white-space:pre-wrap}.auth-note{font-size:13px;background:#f4f8fd;border:1px solid #dce6f1;border-radius:14px;padding:12px;margin-top:16px;color:#52647b}.hero{display:flex;gap:18px;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#dceeff,#eef6ff);border:1px solid #cfe0f4;padding:22px;border-radius:24px;box-shadow:var(--shadow)}
+.hero h1{margin:0;font-size:clamp(26px,4vw,44px);line-height:1}.hero p{margin:8px 0 0;color:var(--muted)}.badge{background:#fff;border:1px solid #bdd0e7;border-radius:16px;padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap}.accountbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin:14px 0;padding:12px 14px;background:#fff;border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}.accountbar small{display:block;color:var(--muted);margin-top:2px}.cloud{font-size:12px;font-weight:800;color:var(--ok)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;font-weight:750;cursor:pointer;background:#fff;color:var(--navy);box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #dbe5f0}.btn.primary{background:var(--navy);color:#fff}.btn.soft{background:#eaf3ff}.btn.danger{color:#9a1c1c}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.card{background:var(--card);border:1px solid #e1e8f0;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}.scroll{overflow:auto}.grid{display:grid;grid-template-columns:110px repeat(6,minmax(145px,1fr));min-width:980px}.cell{min-height:108px;padding:12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;position:relative}.head{min-height:70px;background:var(--navy);color:#fff;font-weight:800}.head:first-child{background:#e8f0f9;color:var(--ink)}.period{background:#f8fbff;font-weight:800;font-size:19px}.slot{cursor:pointer}.slot .subject{font-size:25px;font-weight:850}.slot .time{font-size:15px;margin-top:6px;color:#233b5b}.empty{color:#9aa8b7;font-size:26px}.c-5be{background:var(--green)}.c-2b{background:var(--blue)}.c-5bs{background:var(--pink)}.c-d{background:var(--yellow)}
+.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.legend .mini{padding:14px;border-radius:16px;border:1px solid #e1e8f0;background:#fff}.mini strong{display:block;font-size:18px}.mini span{color:var(--muted);font-size:13px}.teacherbox{margin:16px 0 8px;padding:14px 16px;background:#fff;border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}.teacherbox label{display:block;font-weight:800;margin-bottom:8px}.teacherbox select{width:100%;padding:12px;border:1px solid #cbd7e4;border-radius:12px;background:#fff;color:#10233f}.privacy-note{margin-top:8px;color:var(--muted);font-size:13px}.directory{padding:24px;text-align:center}.directory h3{margin-top:0}.directory p{color:var(--muted)}
+.panel{display:none;margin-top:16px;padding:18px;background:#fff;border:1px solid #e1e8f0;border-radius:20px;box-shadow:var(--shadow)}.panel.show{display:block}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-weight:700;font-size:13px;margin:0 0 6px}.field input,.field select{width:100%;padding:11px 12px;border:1px solid #cbd7e4;border-radius:10px}.footer{padding:24px 4px;color:var(--muted);font-size:13px;text-align:center}.schedule-label{display:inline-block;margin:0 0 8px;cursor:pointer;user-select:none}.schedule-container{display:none}.schedule-check:checked + .schedule-label + .schedule-container{display:block}.schedule-label .hide-text{display:none}.schedule-check:checked + .schedule-label .show-text{display:none}.schedule-check:checked + .schedule-label .hide-text{display:inline}.schedule-check:checked + .schedule-label::after{content:"  ▲"}.schedule-check:not(:checked) + .schedule-label::after{content:"  ▼"}.migration{margin:14px 0;padding:14px 16px;border-radius:16px;background:#fff8df;border:1px solid #f0d98a}.migration strong{display:block;margin-bottom:5px}.migration p{margin:0 0 10px;color:#705c13;font-size:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#10233f;color:#fff;padding:12px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.modal{position:fixed;inset:0;background:rgba(8,21,38,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modal.show{display:flex}.modalbox{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.25)}.modalbox h3{margin-top:0}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+
+.appnav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.navbtn{appearance:none;border:1px solid #d6e1ed;background:#fff;color:#24415f;border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.navbtn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.viewpage{display:none}.viewpage.active{display:block}.school-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.school-head h2{margin:0}.school-head p{margin:5px 0 0;color:var(--muted)}.school-controls{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px;margin:14px 0}.school-controls input,.school-controls select{width:100%;padding:11px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.stat{background:#f8fbff;border:1px solid #dce6f1;border-radius:14px;padding:12px}.stat strong{display:block;font-size:24px}.school-table{width:100%;border-collapse:collapse;min-width:760px}.school-table th,.school-table td{padding:10px 12px;border-bottom:1px solid #e2e9f1;text-align:left;vertical-align:top}.school-table th{background:#f3f7fb;color:#294565;position:sticky;top:0}.school-table tr:hover td{background:#fbfdff}.school-empty{padding:32px;text-align:center;color:var(--muted)}.chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf4fc;font-size:12px;font-weight:750}.myclasses{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.classchip{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.classchip.active{background:#dceeff;border-color:#9fc2e8}.admin-note{font-size:12px;color:#6f7e91;margin-top:8px}.school-file-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.school-file-row input{display:none}
+
+.class-schedule{display:grid;grid-template-columns:105px repeat(6,minmax(145px,1fr));min-width:980px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.class-schedule .cs{min-height:104px;padding:10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;background:#fff}.class-schedule .csh{min-height:64px;background:var(--navy);color:#fff;font-weight:850}.class-schedule .csp{background:#f5f9fd;font-weight:850}.class-schedule .csc{background:#fbfdff;flex-direction:column}.class-schedule .csc strong{font-size:16px;line-height:1.15}.class-schedule .csc small{display:block;margin-top:7px;color:#64758b;font-size:12px;line-height:1.2}.viewtoggle{display:flex;gap:8px;margin:12px 0}.viewtoggle button{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.viewtoggle button.active{background:#dceeff;border-color:#9fc2e8}
+
+.install-hint{margin-top:10px;padding:12px 14px;border:1px solid #cfe0f4;background:#f6fbff;border-radius:14px;color:#45617f;font-size:13px}
+@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:21px}.slot .time{font-size:13px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
+@media print{body{background:#fff}.app{max-width:none;padding:0}.toolbar,.footer,.schedule-label,.accountbar,.teacherbox,.migration{display:none!important}.schedule-container{display:block!important}.hero,.card{box-shadow:none}.grid{min-width:0;grid-template-columns:75px repeat(6,1fr)}.cell{min-height:92px;padding:6px}.head{font-size:12px}.period{font-size:14px}.slot .subject{font-size:16px}.slot .time{font-size:11px}.legend{grid-template-columns:repeat(4,1fr)}}
+
+.school-hours-grid{display:grid;gap:14px;margin-top:12px}.school-day-hours{border:1px solid #dbe5f0;border-radius:14px;padding:12px;background:#f9fbfe}.school-day-hours h4{margin:0 0 10px}.hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:7px 0}.hour-row input{width:100%;padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.hours-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.hours-actions select{padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-block{margin-top:12px;padding-top:10px;border-top:1px dashed #cbd7e4}.pause-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pause-list{display:grid;gap:8px}.pause-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}.pause-row input[type="time"]{width:100%;padding:8px 9px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-row .remove-pause{padding:8px 10px}.pause-note{font-size:12px;color:#6f7e91;margin-top:8px}.pause-cell{background:#fff7df!important;color:#705c13;font-weight:800;min-height:54px!important}.pause-cell small{margin:0!important;color:#705c13!important}.pause-label{background:#fff4c9!important;color:#705c13!important;font-size:13px!important;min-height:54px!important}
+
+.school-connect{margin:14px 0;padding:16px;border:1px solid #cfe0f4;border-radius:18px;background:linear-gradient(135deg,#f7fbff,#eef6ff)}.school-connect-grid{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:10px;align-items:end}.school-connect input,.school-connect select{width:100%;padding:10px 11px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-code{font-size:20px;font-weight:900;letter-spacing:.08em;color:#0b2a5b}.role-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#dceeff;font-size:12px;font-weight:800}@media(max-width:720px){.school-connect-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<section id="authView" class="auth-shell hidden">
+  <div class="auth-card">
+    <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
+    <h1>Accedi al tuo orario</h1>
+    <p>Registrati gratuitamente, crea il tuo profilo docente e salva l'orario online. Ogni utente vede e modifica soltanto i propri dati.</p>
+    <div class="auth-actions">
+      <button class="btn primary" id="signupBtn">Crea un account</button>
+      <button class="btn" id="loginBtn">Ho già un account</button>
+      <div class="auth-divider">oppure</div>
+      <button class="btn google" id="googleBtn">G&nbsp; Continua con Google</button>
+      <a class="btn soft" href="/scuole.html" style="text-decoration:none;text-align:center">🏫 Sei una scuola? Accreditati</a>
+      <button class="btn linkish" id="forgotBtn">Password dimenticata?</button>
+    </div>
+    <div class="auth-note">🔒 I dati dell'orario non vengono inseriti nei link condivisi. L'accesso avviene tramite account personale.</div>
+  </div>
+</section>
+
+<div id="appView" class="app hidden">
+  <section class="accountbar">
+    <div><strong id="accountName">Utente</strong><small id="accountEmail"></small></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="cloudStatus" class="cloud">● Salvato online</span><button class="btn soft" id="installAppBtn">📲 Installa app</button><button class="btn" id="logoutBtn">Esci</button></div>
+  </section>
+
+  <section class="hero">
+    <div>
+      <div id="welcomeTitle" style="font-size:28px;font-weight:900;color:#163b65;margin-bottom:8px">Ciao 👋</div><div style="font-weight:800;color:#315b89;letter-spacing:.06em;font-size:13px">ORARIO SETTIMANALE DOCENTE</div>
+      <h1 id="teacherTitle">IL MIO ORARIO</h1>
+      <p><span id="teachingTitle">Materia: —</span><br><span id="subjectTitle">Classe di concorso: —</span> · <span id="schoolTitle">—</span></p>
+    </div>
+    <div class="badge">In vigore dal<br><span id="validFromTitle">—</span></div>
+  </section>
+
+  <div id="migrationBox" class="migration hidden">
+    <strong>Abbiamo trovato un orario già salvato su questo dispositivo.</strong>
+    <p>Puoi importarlo nel tuo account e ritrovarlo anche da altri dispositivi.</p>
+    <button class="btn primary" id="migrateBtn">Importa nel mio account</button>
+    <button class="btn" id="ignoreMigrationBtn">Non importare</button>
+  </div>
+
+  <div class="teacherbox">
+    <label for="teacherSelect">Docente</label>
+    <select id="teacherSelect"><option value="all">Tutti i docenti</option></select>
+    <div class="privacy-note">Per privacy, ogni account può modificare solo il proprio orario. La directory pubblica dei docenti potrà essere aggiunta in seguito come funzione opzionale.</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn primary" id="editMetaBtn">✏️ Profilo docente</button>
+    <button class="btn" id="shareBtn">🔗 Condividi app</button>
+    <button class="btn" id="printBtn">🖨️ Stampa / PDF</button>
+    <button class="btn" id="exportBtn">⬇️ Esporta</button>
+    <button class="btn" id="importBtn">✨ Importa orario</button>
+    <a class="btn soft" href="/scuole.html" style="text-decoration:none">🏫 Portale scuole</a>
+    <a class="btn soft" href="/area-scuola.html" style="text-decoration:none">🔐 Area scuola</a>
+    <button class="btn danger" id="resetBtn">↺ Nuovo orario</button>
+    <input id="importFile" type="file" accept="application/json,.json" hidden>
+  </div>
+
+  <section id="directoryView" class="card directory hidden">
+    <h3>Tutti i docenti</h3>
+    <p>Al momento la piattaforma mantiene gli orari privati per ciascun account. Seleziona il tuo nome per tornare al tuo orario.</p>
+  </section>
+
+  <nav class="appnav" aria-label="Sezioni app">
+    <button class="navbtn active" data-view="myScheduleView">📅 Il mio orario</button>
+    <button class="navbtn" data-view="myClassesView">🎓 Le mie classi</button>
+    <button class="navbtn" data-view="schoolView">🏫 Orario scuola</button>
+    <button class="navbtn" data-view="profileView">👤 Profilo</button>
+  </nav>
+
+  <section id="myScheduleView" class="viewpage active">
+  <section id="personalView">
+    <input type="checkbox" id="scheduleToggleCheck" class="schedule-check" hidden checked>
+    <label for="scheduleToggleCheck" class="btn primary schedule-label">👀 <span class="show-text">Vedi il mio orario</span><span class="hide-text">Chiudi il mio orario</span></label>
+    <div class="schedule-container"><section class="card scroll" style="margin-top:10px"><div class="grid" id="timetable"></div></section></div>
+    <section class="legend">
+      <div class="mini c-5be"><strong>5° BE</strong><span>Esempio classe / attività</span></div>
+      <div class="mini c-2b"><strong>2° B</strong><span>Esempio classe / attività</span></div>
+      <div class="mini c-5bs"><strong>5° BS</strong><span>Esempio classe / attività</span></div>
+      <div class="mini c-d"><strong>D</strong><span>Disponibilità</span></div>
+    </section>
+  </section>
+  </section>
+
+  <section id="myClassesView" class="viewpage">
+    <div class="card" style="padding:18px">
+      <div class="school-head"><div><h2>Le mie classi</h2><p>Consulta nell'orario generale della scuola solo le classi che compaiono nel tuo orario personale.</p></div></div>
+      <div id="myClassChips" class="myclasses"></div>
+      <div class="scroll"><div id="myClassSchedule" class="class-schedule"></div></div>
+      <div id="myClassesEmpty" class="school-empty hidden">Carica prima l'orario completo della scuola nella sezione “Orario scuola”.</div>
+    </div>
+  </section>
+
+  <section id="schoolView" class="viewpage">
+    <div class="card" style="padding:18px">
+      <div class="school-head">
+        <div><h2>Orario scuola</h2><p>Carica l'orario completo dell'istituto e consulta docenti, classi, giorni e ore.</p><div id="schoolSourceInfo" class="admin-note"></div></div>
+        <div class="school-file-row"><button class="btn primary" id="schoolUploadBtn">📊 Carica orario completo</button><button class="btn" id="schoolHoursBtn">🕒 Impostazioni orari</button><input id="schoolFile" type="file" accept=".xlsx,.xls"></div>
+      </div>
+      <div class="school-connect">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>🏫 Collegamento scuola</strong><div class="admin-note">Collega il tuo account alla scuola tramite codice. Il ruolo determina cosa puoi gestire.</div></div><div><span class="role-badge" id="schoolRoleBadge">Docente</span></div></div>
+        <div class="school-connect-grid" style="margin-top:12px">
+          <div><label>Nome scuola</label><input id="linkedSchoolName" placeholder="es. Istituto Omnicomprensivo Ancel Keys"></div>
+          <div><label>Codice scuola</label><input id="schoolCodeInput" placeholder="es. AK-48291" style="text-transform:uppercase"></div>
+          <div><label>Ruolo</label><select id="schoolRoleInput"><option value="teacher">Docente</option><option value="coordinator">Referente orario</option><option value="admin">Amministratore scuola</option></select></div>
+          <button class="btn primary" id="connectSchoolBtn">Collega scuola</button>
+        </div>
+        <div id="schoolConnectionInfo" class="admin-note" style="margin-top:10px"></div>
+      </div>
+      <div class="school-summary"><div class="stat"><strong id="schoolTeachersCount">0</strong><span>docenti</span></div><div class="stat"><strong id="schoolClassesCount">0</strong><span>classi / attività</span></div><div class="stat"><strong id="schoolEntriesCount">0</strong><span>impegni</span></div></div>
+      <div class="viewtoggle"><button id="schoolModeClass" class="active">📚 Per classe</button><button id="schoolModeTeacher">👩‍🏫 Per docente</button></div>
+      <div id="schoolClassScheduleWrap" class="hidden"><div class="scroll"><div id="schoolClassSchedule" class="class-schedule"></div></div></div>
+      <div class="school-controls">
+        <input id="schoolSearch" placeholder="Cerca docente o classe…">
+        <select id="schoolTeacherFilter"><option value="">Tutti i docenti</option></select>
+        <select id="schoolClassFilter"><option value="">Tutte le classi</option></select>
+        <select id="schoolDayFilter"><option value="">Tutti i giorni</option><option>Lunedì</option><option>Martedì</option><option>Mercoledì</option><option>Giovedì</option><option>Venerdì</option><option>Sabato</option></select>
+      </div>
+      <div class="scroll"><table class="school-table"><thead><tr><th>Giorno</th><th>Ora</th><th>Docente</th><th>Materia</th><th>Classe / attività</th></tr></thead><tbody id="schoolTableBody"></tbody></table></div>
+      <div id="schoolEmpty" class="school-empty">Nessun orario scuola caricato. Premi “Carica orario completo” e scegli il file Excel dell'istituto.</div>
+    </div>
+  </section>
+
+  <section id="profileView" class="viewpage">
+    <div class="card" style="padding:20px">
+      <h2 style="margin-top:0">Il mio profilo</h2>
+      <p style="color:#607089">Aggiorna nome, cognome, materia di insegnamento, eventuale classe di concorso e istituto. Il saluto iniziale usa automaticamente il tuo nome.</p>
+      <button class="btn primary" id="profilePageEditBtn">✏️ Modifica profilo</button>
+    </div>
+  </section>
+
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · V16</div>
+</div>
+
+<div class="modal" id="metaModal"><div class="modalbox">
+  <h3>Profilo docente</h3>
+  <div class="formgrid">
+    <div class="field"><label>Nome</label><input id="firstNameInput" placeholder="Thomas"></div>
+    <div class="field"><label>Cognome</label><input id="lastNameInput" placeholder="De Angelis"></div>
+    <div class="field"><label>Materia di insegnamento</label><input id="teachingInput" placeholder="es. Laboratorio di servizi enogastronomici – settore cucina"></div>
+    <div class="field"><label>Classe di concorso (facoltativa)</label><input id="subjectInput" placeholder="es. B020"></div>
+    <div class="field"><label>Istituto</label><input id="schoolInput" placeholder="Nome dell'istituto"></div>
+    <div class="field"><label>In vigore dal</label><input id="validFromInput" placeholder="gg/mm/aaaa"></div>
+    <div class="field"><label>Numero massimo di ore al giorno</label><select id="personalMaxPeriodsInput"><option value="1">1 ore</option><option value="2">2 ore</option><option value="3">3 ore</option><option value="4">4 ore</option><option value="5">5 ore</option><option value="6">6 ore</option><option value="7">7 ore</option><option value="8">8 ore</option><option value="9">9 ore</option><option value="10">10 ore</option></select></div>
+  </div>
+  <div class="modal-actions"><button class="btn" data-close="metaModal">Annulla</button><button class="btn primary" id="saveMetaBtn">Salva profilo</button></div>
+</div></div>
+
+<div class="modal" id="importModal"><div class="modalbox">
+  <h3>Importa il tuo orario</h3>
+  <p style="color:#607089">Carica Excel, PDF, foto o screenshot. L'app prova a riconoscere automaticamente giorni, ore e classi; prima di salvare puoi controllare il risultato.</p>
+  <div class="import-grid">
+    <div class="import-choice" data-import-kind="excel">📊<strong>Excel</strong></div>
+    <div class="import-choice" data-import-kind="pdf">📄<strong>PDF</strong></div>
+    <div class="import-choice" data-import-kind="image">📸<strong>Foto</strong></div>
+  </div>
+  <input id="smartImportFile" type="file" accept=".xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp" class="hidden">
+  <div id="importStatus" class="import-status"></div>
+  <div id="importPreview" class="previewbox hidden"></div>
+  <div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary hidden" id="applyImportBtn">Usa questo orario</button></div>
+</div></div>
+
+<div class="modal" id="schoolHoursModal"><div class="modalbox" style="width:min(760px,100%)">
+  <h3>Impostazioni orari scuola</h3>
+  <p style="color:#607089">Imposta da 1 a 10 ore giornaliere, le fasce ufficiali e una o più pause/intervalli per ogni giorno. Puoi lasciare vuote le ore non utilizzate e copiare rapidamente un giorno sugli altri.</p>
+  <div class="hours-actions">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:700">Ore al giorno <select id="schoolMaxPeriodsInput"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select></label>
+    <select id="copyHoursFrom"><option value="0">Lunedì</option><option value="1">Martedì</option><option value="2">Mercoledì</option><option value="3">Giovedì</option><option value="4">Venerdì</option><option value="5">Sabato</option></select>
+    <button class="btn soft" id="copyHoursAllBtn">Copia questo giorno su tutti</button>
+    <button class="btn" id="resetSchoolHoursBtn">Ripristina orari iniziali</button>
+  </div>
+  <div id="schoolHoursGrid" class="school-hours-grid"></div>
+  <div class="modal-actions"><button class="btn" data-close="schoolHoursModal">Annulla</button><button class="btn primary" id="saveSchoolHoursBtn">Salva orari scuola</button></div>
+</div></div>
+
+<div class="modal" id="slotModal"><div class="modalbox">
+  <h3>Modifica ora</h3>
+  <div class="formgrid">
+    <div class="field"><label>Classe / attività</label><input id="slotSubject" placeholder="es. 5° BE, D"></div>
+    <div class="field"><label>Orario</label><input id="slotTime" placeholder="08:25 – 09:26"></div>
+  </div>
+  <div class="modal-actions"><button class="btn danger" id="clearSlotBtn">Svuota</button><button class="btn" data-close="slotModal">Annulla</button><button class="btn primary" id="saveSlotBtn">Salva</button></div>
+</div></div>
+<div class="modal" id="installModal"><div class="modalbox">
+  <h3>Installa Orario Docente</h3>
+  <div id="installInstructions" style="color:#607089;line-height:1.6"></div>
+  <div class="modal-actions"><button class="btn" data-close="installModal">Chiudi</button><button class="btn primary hidden" id="nativeInstallBtn">Installa ora</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DAYS=[
+{name:'Lunedì',range:'08:25 – 13:30'},{name:'Martedì',range:'08:24 – 13:30'},{name:'Mercoledì',range:'08:25 – 13:30'},{name:'Giovedì',range:'08:25 – 13:30'},{name:'Venerdì',range:'08:24 – 13:30'},{name:'Sabato',range:'08:25 – 13:30'}];
+const PERIOD_TIMES={0:['08:25 – 09:26','09:26 – 10:27','10:27 – 11:28','11:28 – 12:29','12:29 – 13:30',''],1:['08:24 – 09:15','09:15 – 10:06','10:06 – 10:57','10:57 – 11:48','11:48 – 12:39','12:39 – 13:30'],2:['08:25 – 09:26','09:26 – 10:27','10:27 – 11:28','11:28 – 12:29','12:29 – 13:30',''],3:['08:25 – 09:26','09:26 – 10:27','10:27 – 11:28','11:28 – 12:29','12:29 – 13:30',''],4:['08:24 – 09:15','09:15 – 10:06','10:06 – 10:57','10:57 – 11:48','11:48 – 12:39','12:39 – 13:30'],5:['08:25 – 09:26','09:26 – 10:27','10:27 – 11:28','11:28 – 12:29','12:29 – 13:30','']};
+const MAX_PERIODS=10;
+const SCHOOL_DEFAULT_TIMES=clone(PERIOD_TIMES);
+for(let d=0;d<6;d++){if(!SCHOOL_DEFAULT_TIMES[d])SCHOOL_DEFAULT_TIMES[d]=[];while(SCHOOL_DEFAULT_TIMES[d].length<MAX_PERIODS)SCHOOL_DEFAULT_TIMES[d].push('')}
+function schoolPeriodTimes(){if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);for(let d=0;d<6;d++){if(!schoolData.periodTimes[d])schoolData.periodTimes[d]=[];while(schoolData.periodTimes[d].length<MAX_PERIODS)schoolData.periodTimes[d].push('')}return schoolData.periodTimes}
+function schoolTime(day,periodIndex){const t=schoolPeriodTimes();return (t[day]&&t[day][periodIndex])||''}
+function ensureSchoolBreaks(){if(!schoolData.breaks||typeof schoolData.breaks!=='object')schoolData.breaks={};for(let d=0;d<6;d++)if(!Array.isArray(schoolData.breaks[d]))schoolData.breaks[d]=[];return schoolData.breaks}
+function parseHm(v){const m=String(v||'').match(/(\d{1,2}):(\d{2})/);if(!m)return null;return Number(m[1])*60+Number(m[2])}
+function fmtHm(mins){mins=((mins%1440)+1440)%1440;return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
+function parseRange(v){const m=String(v||'').match(/(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})/);return m?[m[1],m[2]]:null}
+function dayBreaks(day){return ensureSchoolBreaks()[day].filter(b=>b&&b.enabled!==false&&b.start&&b.end).sort((a,b)=>(parseHm(a.start)||0)-(parseHm(b.start)||0))}
+function breaksAfterPeriod(day,p){const r=parseRange(schoolTime(day,p-1));if(!r)return[];return dayBreaks(day).filter(b=>b.start===r[1])}
+function applyBreaksToTimes(times,breaks){const out=times.slice();for(const b of (breaks||[]).filter(x=>x&&x.enabled!==false&&x.start&&x.end)){const bs=parseHm(b.start),be=parseHm(b.end);if(bs==null||be==null||be<=bs)continue;const delta=be-bs;for(let i=0;i<out.length;i++){const r=parseRange(out[i]);if(!r)continue;const st=parseHm(r[0]),en=parseHm(r[1]);if(st===bs){for(let j=i;j<out.length;j++){const rr=parseRange(out[j]);if(!rr)continue;out[j]=fmtHm(parseHm(rr[0])+delta)+' – '+fmtHm(parseHm(rr[1])+delta)}break}if(st===be)break}}return out}
+function clampPeriods(v,def=6){v=parseInt(v,10);return Number.isFinite(v)?Math.max(1,Math.min(MAX_PERIODS,v)):def}
+function schoolMaxPeriods(){schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,6);return schoolData.maxPeriods}
+function personalMaxPeriods(){state.meta.maxPeriods=clampPeriods(state.meta.maxPeriods,6);return state.meta.maxPeriods}
+let pendingImport=null;
+const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'AK-48291',schoolRole:'admin'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
+const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{}};
+let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false;
+let schoolData={source:'',loadedAt:'',teachers:[],entries:[],classCells:[],periodTimes:clone(SCHOOL_DEFAULT_TIMES),breaks:{0:[],1:[],2:[],3:[],4:[],5:[]},maxPeriods:6},activeMyClass='',schoolMode='class';
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function validState(x){return !!(x&&x.meta&&x.slots&&typeof x.slots==='object')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function cls(subject){const s=(subject||'').toUpperCase().replace(/\s/g,'');if(s==='5°BE'||s==='5BE')return'c-5be';if(s==='2°B'||s==='2B')return'c-2b';if(s==='5°BS'||s==='5BS')return'c-5bs';if(s==='D')return'c-d';return''}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+function fullName(){return [state.meta.firstName,state.meta.lastName].filter(Boolean).join(' ').trim()||state.meta.teacher||'Il mio orario'}
+function syncTeacherMeta(){state.meta.teacher=fullName().toUpperCase()}
+function setCloudStatus(text,ok=true){const el=document.getElementById('cloudStatus');el.textContent=(ok?'● ':'◌ ')+text;el.style.color=ok?'#137333':'#8a5a00'}
+function render(){
+ syncTeacherMeta();
+ const first=(state.meta.firstName||'').trim();welcomeTitle.textContent=first?`Ciao ${first} 👋`:'Ciao 👋';
+ teacherTitle.textContent=(state.meta.teacher||'IL MIO ORARIO').toUpperCase();
+ teachingTitle.textContent='Materia: '+(state.meta.teaching||'—');subjectTitle.textContent=state.meta.subject?('Classe di concorso: '+state.meta.subject):'Classe di concorso: non indicata';schoolTitle.textContent=state.meta.school||'—';validFromTitle.textContent=state.meta.validFrom||'—';
+ const sel=document.getElementById('teacherSelect'),mine='me';const existing=sel.value;sel.innerHTML='<option value="all">Tutti i docenti</option><option value="me">'+esc(fullName())+'</option>';sel.value=(existing==='all'?'all':'me');
+ const g=timetable;let h='<div class="cell head">ORA</div>';DAYS.forEach(d=>h+=`<div class="cell head">${esc(d.name)}<br><small>(${esc(d.range)})</small></div>`);
+ for(let p=0;p<personalMaxPeriods();p++){h+=`<div class="cell period">${p+1}ª ora</div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0])h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div></div></div>`;else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
+ g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));localSave();scheduleCloudSave();
+}
+function localSave(){try{localStorage.setItem('orarioDocenteStateV5',JSON.stringify(state))}catch(e){}}
+
+async function apiCall(name,options={}){
+  if(!currentUser)throw new Error('Accesso richiesto');
+  const token=await currentUser.jwt();
+  const headers=Object.assign({'Authorization':'Bearer '+token},options.headers||{});
+  if(options.body && !headers['Content-Type'])headers['Content-Type']='application/json';
+  const res=await fetch('/.netlify/functions/'+name,{...options,headers});
+  let data={};try{data=await res.json()}catch(e){}
+  if(!res.ok)throw new Error(data.error||('Errore cloud '+res.status));
+  return data;
+}
+async function loadSchoolCloud(){
+  if(!currentUser)return false;
+  try{
+    const data=await apiCall('school-context');
+    schoolCloudReady=true;
+    const m=data.membership||{},sc=data.school||{};
+    state.meta.school=sc.name||state.meta.school||'';
+    state.meta.schoolCode=m.code||sc.code||'';
+    state.meta.schoolRole=m.role||'teacher';
+    if(data.schedule&&Array.isArray(data.schedule.entries)){
+      schoolData=data.schedule;saveSchoolLocal();
+    }
+    schoolInput.value=state.meta.school||'';
+    renderSchool();renderMyClasses();scheduleCloudSave();
+    return true;
+  }catch(e){
+    schoolCloudReady=false;
+    if(!/non collegato|not found|404/i.test(String(e.message)))console.warn('Cloud scuola:',e.message);
+    return false;
+  }
+}
+async function saveSchoolCloud(){
+  if(!currentUser||!['admin','coordinator'].includes(state.meta.schoolRole||''))return false;
+  const data=await apiCall('save-school-schedule',{method:'POST',body:JSON.stringify({schedule:schoolData})});
+  schoolCloudReady=true;
+  schoolData.cloudUpdatedAt=data.updatedAt||schoolData.cloudUpdatedAt;
+  return true;
+}
+
+async function cloudSave(){if(!currentUser)return;try{setCloudStatus('Salvataggio…',false);const data=Object.assign({},currentUser.user_metadata||{},{orarioDocente:state,full_name:fullName()});const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online');hasCloudState=true}catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}}
+function scheduleCloudSave(){clearTimeout(saveTimer);saveTimer=setTimeout(cloudSave,900)}
+function openSlot(key){activeKey=key;const v=state.slots[key]||['',''];slotSubject.value=v[0]||'';slotTime.value=v[1]||'';openModal('slotModal')}
+function showAuth(){authView.classList.remove('hidden');appView.classList.add('hidden')}
+function showApp(){authView.classList.add('hidden');appView.classList.remove('hidden')}
+function getLegacy(){try{const raw=localStorage.getItem('orarioDocenteStateV3');if(!raw)return null;const x=JSON.parse(raw);if(!validState(x))return null;return x}catch(e){return null}}
+function normalizeLegacy(x){const out=clone(x);if(out.meta.teacher&&!out.meta.firstName){const t=(out.meta.teacher||'').trim();if(/DE ANGELIS THOMAS/i.test(t)){out.meta.firstName='Thomas';out.meta.lastName='De Angelis'}else{const parts=t.split(/\s+/);out.meta.firstName=parts.shift()||'';out.meta.lastName=parts.join(' ')||''}}return out}
+async function handleUser(user){
+ currentUser=user;if(!user){showAuth();return}showApp();accountEmail.textContent=user.email||'';loadSchoolLocal();
+ const meta=user.user_metadata||{};const email=(user.email||'').trim().toLowerCase();const isThomas=email==='thomasdeangelisconsulting@gmail.com';
+ const cloud=meta.orarioDocente;hasCloudState=validState(cloud);
+ if(isThomas&&hasCloudState&&!cloud.meta.teaching){cloud.meta.teaching='Laboratorio di servizi enogastronomici – settore cucina';state=clone(cloud);try{const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis'});const updated=await currentUser.update({data});if(updated)currentUser=updated}catch(e){console.error(e)}}
+ if(isThomas&&!meta.thomasProfileInitialized){
+   state=clone(THOMAS_STATE);hasCloudState=true;migrationBox.classList.add('hidden');
+   try{const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',thomasProfileInitialized:true});const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online')}catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}
+ }else if(hasCloudState){state=clone(cloud);migrationBox.classList.add('hidden')}
+ else{state=clone(EMPTY_STATE);const legacy=getLegacy();if(legacy)migrationBox.classList.remove('hidden');else migrationBox.classList.add('hidden')}
+ accountName.textContent=fullName()!=='Il mio orario'?fullName():(meta.full_name||user.email||'Il mio account');
+ render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();await loadSchoolCloud();if(!state.meta.firstName&&!state.meta.lastName&&!getLegacy()){setTimeout(()=>openProfile(),250)}
+}
+function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());openModal('metaModal')}
+function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView.classList.toggle('hidden',!all);personalView.classList.toggle('hidden',all)}
+
+
+
+function switchView(id){document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView')renderSchool();if(id==='myClassesView')renderMyClasses()}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+function schoolStorageKey(){return 'orarioDocenteSchoolV2:'+((currentUser&&currentUser.email)||'guest').toLowerCase()}
+function loadSchoolLocal(){try{const raw=localStorage.getItem(schoolStorageKey());if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.entries)){schoolData=x;if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);ensureSchoolBreaks();schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,Math.min(MAX_PERIODS,Math.max(6,...(schoolData.entries||[]).map(e=>Number(e.period)||0),...(schoolData.classCells||[]).map(e=>Number(e.period)||0))))}}}catch(e){console.error(e)}}
+function saveSchoolLocal(){try{localStorage.setItem(schoolStorageKey(),JSON.stringify(schoolData))}catch(e){console.error(e)}}
+function cleanCell(v){return String(v??'').replace(/\s+/g,' ').trim()}
+function dayLabel(i){return DAYS[i]?.name||''}
+function canonicalActivity(v){return cleanCell(v).replace(/\^/g,'°').replace(/\s*°\s*/g,'°').toUpperCase()}
+function isRealActivity(v){const x=canonicalActivity(v);return !!x && !['LIBERO','-','—'].includes(x)}
+function parseWholeSchoolRows(rows,fileName){
+ let header=-1;for(let r=0;r<Math.min(rows.length,20);r++){const line=(rows[r]||[]).map(normText);const found=['LUNEDI','MARTEDI','MERCOLEDI','GIOVEDI','VENERDI','SABATO'].filter(d=>line.some(v=>v.replace(/ /g,'').includes(d))).length;if(found>=4){header=r;break}}
+ if(header<0)throw new Error('Non riconosco l’intestazione dei giorni nel file.');
+ const h=(rows[header]||[]).map(v=>normText(v).replace(/ /g,''));const dayNames=['LUNEDI','MARTEDI','MERCOLEDI','GIOVEDI','VENERDI','SABATO'];const starts=dayNames.map(n=>h.findIndex(v=>v.includes(n)));if(starts.some(x=>x<0))throw new Error('Non trovo tutti i giorni della settimana nel file.');
+ const teachers=[],entries=[];for(let r=header+1;r<rows.length;r++){const row=rows[r]||[];const teacher=cleanCell(row[1]);if(!teacher)continue;const subject=cleanCell(row[2]);if(!/[A-Za-zÀ-ÿ]/.test(teacher))continue;if(/DOCENTE|MATERIA|TOTAL/i.test(teacher))continue;let hasAny=false;
+   for(let d=0;d<6;d++){const st=starts[d],en=d<5?starts[d+1]:row.length;let period=0;for(let c=st;c<en&&period<MAX_PERIODS;c++,period++){const act=cleanCell(row[c]);if(!isRealActivity(act))continue;hasAny=true;entries.push({teacher,subject,day:d,period:period+1,time:schoolTime(d,period),activity:act})}}
+   if(hasAny)teachers.push({name:teacher,subject});
+ }
+ if(!entries.length)throw new Error('Il file è stato letto, ma non trovo impegni scolastici.');
+ const uniqT=[];const seen=new Set();teachers.forEach(t=>{const k=normText(t.name);if(!seen.has(k)){seen.add(k);uniqT.push(t)}});const detected=Math.min(MAX_PERIODS,Math.max(1,...entries.map(e=>e.period)));return{source:fileName||'File Excel',loadedAt:new Date().toLocaleString('it-IT'),teachers:uniqT,entries,maxPeriods:Math.max(6,detected)};
+}
+function parseClassSheets(wb,fileName){
+ const sheetNames=wb.SheetNames;let teacherSheet=null,subjectSheet=null;
+ for(const name of sheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});if(rows.length<6)continue;const hdr=(rows[3]||[]).map(cleanCell);const hasClasses=hdr.slice(2).filter(x=>/[1-5].*[A-Z]/i.test(x)).length>=5;if(!hasClasses)continue;let sample='';for(let r=4;r<Math.min(rows.length,12);r++)sample+=' '+(rows[r]||[]).slice(2).join(' ');if(/ITALIANO|MATEMATICA|INGLESE|FRANCESE|DIRITTO|CUCINA|ACCOGLIENZA|ALIMENTI|FISICA|RELIGIONE/i.test(sample))subjectSheet={name,rows};else teacherSheet={name,rows}}
+ if(!teacherSheet||!subjectSheet)return null;
+ const tr=teacherSheet.rows,sr=subjectSheet.rows,headers=tr[3]||[];const classCells=[];let day=-1;
+ for(let r=4;r<tr.length;r++){const dayRaw=normText((tr[r]||[])[0]);if(dayRaw){const names=['LUNEDI','MARTEDI','MERCOLEDI','GIOVEDI','VENERDI','SABATO'];const ix=names.findIndex(n=>dayRaw.includes(n));if(ix>=0)day=ix}const period=parseInt((tr[r]||[])[1],10);if(day<0||!period||period>MAX_PERIODS)continue;for(let c=2;c<headers.length;c++){const className=cleanCell(headers[c]);if(!className)continue;const teacher=cleanCell((tr[r]||[])[c]),subject=cleanCell((sr[r]||[])[c]);if(!teacher&&!subject)continue;classCells.push({className,day,period,time:schoolTime(day,period-1),teacher,subject})}}
+ if(!classCells.length)return null;
+ const entries=classCells.filter(x=>x.teacher).map(x=>({teacher:x.teacher,subject:x.subject,day:x.day,period:x.period,time:x.time,activity:x.className}));const tm=new Map();entries.forEach(e=>{const k=normText(e.teacher);if(!tm.has(k))tm.set(k,{name:e.teacher,subject:e.subject})});const detected=Math.min(MAX_PERIODS,Math.max(1,...classCells.map(x=>x.period)));return{source:`${fileName} · ${teacherSheet.name} + ${subjectSheet.name}`,loadedAt:new Date().toLocaleString('it-IT'),teachers:[...tm.values()],entries,classCells,maxPeriods:Math.max(6,detected)};
+}
+async function importWholeSchool(file){const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const paired=parseClassSheets(wb,file.name);if(paired)return paired;let best=null;for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});try{const parsed=parseWholeSchoolRows(rows,file.name+' · '+name);if(!best||parsed.entries.length>best.entries.length)best=parsed}catch(e){}}if(!best)throw new Error('Non riesco a riconoscere l’orario completo in questo Excel.');best.classCells=[];return best}
+function schoolClasses(){const set=new Map();const src=(schoolData.classCells&&schoolData.classCells.length)?schoolData.classCells.map(x=>x.className):schoolData.entries.map(e=>e.activity);src.forEach(a=>{a=cleanCell(a);if(!a||/^D$/i.test(a)||/^LIBERO$/i.test(a))return;const k=canonicalActivity(a);if(!set.has(k))set.set(k,a)});return [...set.values()].sort((a,b)=>a.localeCompare(b,'it',{numeric:true}))}
+function myClasses(){const set=new Map();Object.values(state.slots||{}).forEach(v=>{const a=cleanCell(v&&v[0]);if(!a||/^D$/i.test(a))return;const k=canonicalActivity(a);if(!set.has(k))set.set(k,a)});return [...set.values()]}
+function sameClass(a,b){const A=canonicalActivity(a),B=canonicalActivity(b);return A===B||A.includes(B)||B.includes(A)}
+function refreshSchoolFilters(){const t=schoolTeacherFilter.value,c=schoolClassFilter.value;schoolTeacherFilter.innerHTML='<option value="">Tutti i docenti</option>'+schoolData.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(x=>`<option>${esc(x.name)}</option>`).join('');schoolClassFilter.innerHTML='<option value="">Tutte le classi</option>'+schoolClasses().map(x=>`<option>${esc(x)}</option>`).join('');if([...schoolTeacherFilter.options].some(o=>o.value===t))schoolTeacherFilter.value=t;if([...schoolClassFilter.options].some(o=>o.value===c))schoolClassFilter.value=c}
+function renderClassSchedule(el,className){if(!el)return;let h='<div class="cs csh">ORA</div>';DAYS.forEach(d=>h+=`<div class="cs csh">${esc(d.name)}</div>`);for(let p=1;p<=schoolMaxPeriods();p++){h+=`<div class="cs csp">${p}ª ora</div>`;for(let d=0;d<6;d++){const cell=(schoolData.classCells||[]).find(x=>sameClass(x.className,className)&&x.day===d&&x.period===p);if(cell)h+=`<div class="cs csc"><strong>${esc(cell.subject||'—')}</strong><small>${esc(cell.teacher||'—')}</small><small>(${esc(schoolTime(d,p-1))})</small></div>`;else h+='<div class="cs csc"><span class="empty">—</span></div>'}const anyPause=DAYS.some((_,d)=>breaksAfterPeriod(d,p).length);if(anyPause){h+='<div class="cs csp pause-label">PAUSA</div>';for(let d=0;d<6;d++){const bs=breaksAfterPeriod(d,p);h+=bs.length?`<div class="cs csc pause-cell"><small>${bs.map(b=>`Pausa ${esc(b.start)}–${esc(b.end)}`).join('<br>')}</small></div>`:'<div class="cs csc pause-cell"><small>—</small></div>'}}}el.innerHTML=h}
+function renderSchool(){refreshSchoolFilters();linkedSchoolName.value=state.meta.school||'';schoolCodeInput.value=state.meta.schoolCode||'';schoolRoleInput.value=state.meta.schoolRole||'teacher';const roleNames={teacher:'Docente',coordinator:'Referente orario',admin:'Amministratore scuola'};schoolRoleBadge.textContent=roleNames[state.meta.schoolRole||'teacher'];schoolConnectionInfo.innerHTML=state.meta.schoolCode?`Collegato a <strong>${esc(state.meta.school||'scuola')}</strong> · codice <span class="school-code">${esc(state.meta.schoolCode)}</span>`:'Nessuna scuola collegata tramite codice.';schoolTeachersCount.textContent=schoolData.teachers.length;schoolClassesCount.textContent=schoolClasses().length;schoolEntriesCount.textContent=schoolData.entries.length;schoolSourceInfo.textContent=schoolData.source?`Orario condiviso: ${schoolData.source} · ${schoolData.loadedAt}${schoolData.cloudUpdatedAt?' · cloud '+new Date(schoolData.cloudUpdatedAt).toLocaleString('it-IT'):''}`:(schoolCloudReady?'Scuola collegata: nessun orario generale ancora pubblicato.':'Nessun orario scuola caricato.');schoolRoleInput.disabled=true;schoolUploadBtn.disabled=!['admin','coordinator'].includes(state.meta.schoolRole||'');schoolHoursBtn.disabled=!['admin','coordinator'].includes(state.meta.schoolRole||'');const q=normText(schoolSearch.value),tf=schoolTeacherFilter.value,cf=schoolClassFilter.value,df=schoolDayFilter.value;schoolModeClass.classList.toggle('active',schoolMode==='class');schoolModeTeacher.classList.toggle('active',schoolMode==='teacher');schoolClassScheduleWrap.classList.toggle('hidden',schoolMode!=='class'||!cf);const table=schoolTableBody.closest('.scroll');table.classList.toggle('hidden',schoolMode==='class'&&!!cf);if(schoolMode==='class'&&cf){renderClassSchedule(schoolClassSchedule,cf)}else{let rows=schoolData.entries.filter(e=>(!tf||e.teacher===tf)&&(!cf||sameClass(e.activity,cf))&&(!df||dayLabel(e.day)===df)&&(!q||normText(e.teacher+' '+e.subject+' '+e.activity).includes(q)));rows.sort((a,b)=>a.day-b.day||a.period-b.period||a.teacher.localeCompare(b.teacher,'it'));schoolTableBody.innerHTML=rows.slice(0,1000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${e.period}ª<br><small>${esc(schoolTime(e.day,e.period-1))}</small></td><td><strong>${esc(e.teacher)}</strong></td><td>${esc(e.subject||'—')}</td><td><span class="chip">${esc(e.activity)}</span></td></tr>`).join('');if(schoolData.entries.length&&!rows.length)schoolTableBody.innerHTML='<tr><td colspan="5" class="school-empty">Nessun risultato con questi filtri.</td></tr>'}schoolEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
+function renderMyClasses(){const classes=myClasses();if(!activeMyClass||!classes.some(c=>sameClass(c,activeMyClass)))activeMyClass=classes[0]||'';myClassChips.innerHTML=classes.map(c=>`<button class="classchip ${sameClass(c,activeMyClass)?'active':''}" data-myclass="${esc(c)}">${esc(c)}</button>`).join('');myClassChips.querySelectorAll('[data-myclass]').forEach(b=>b.onclick=()=>{activeMyClass=b.dataset.myclass;renderMyClasses()});renderClassSchedule(myClassSchedule,activeMyClass);myClassesEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
+function renderSchoolHoursEditor(){const times=schoolPeriodTimes(),breaks=ensureSchoolBreaks();schoolMaxPeriodsInput.value=String(schoolMaxPeriods());let h='';
+ DAYS.forEach((d,di)=>{h+=`<div class="school-day-hours"><h4>${esc(d.name)}</h4>`;for(let p=0;p<schoolMaxPeriods();p++){h+=`<div class="hour-row"><strong>${p+1}ª ora</strong><input data-hour-day="${di}" data-hour-period="${p}" value="${esc((times[di]&&times[di][p])||'')}" placeholder="es. 08:00 – 09:00"></div>`}h+=`<div class="pause-block"><div class="pause-title"><strong>☕ Pause / intervalli</strong><button type="button" class="btn soft add-pause" data-pause-day="${di}">+ Aggiungi pausa</button></div><div class="pause-list" data-pause-list="${di}">`;const rows=breaks[di]||[];if(!rows.length)h+='<div class="pause-note">Nessuna pausa impostata per questo giorno.</div>';rows.forEach((b,bi)=>{h+=`<div class="pause-row" data-pause-row="${di}-${bi}"><label><input type="checkbox" data-pause-enabled="${di}-${bi}" ${b.enabled===false?'':'checked'}> attiva</label><input type="time" data-pause-start="${di}-${bi}" value="${esc(b.start||'')}"><input type="time" data-pause-end="${di}-${bi}" value="${esc(b.end||'')}"><button type="button" class="btn danger remove-pause" data-remove-pause="${di}-${bi}">✕</button></div>`});h+='</div><div class="pause-note">Se una pausa inizia esattamente quando dovrebbe partire l’ora successiva, l’app può spostare automaticamente le fasce successive mantenendone la durata.</div></div></div>'});
+ schoolHoursGrid.innerHTML=h;
+ schoolHoursGrid.querySelectorAll('.add-pause').forEach(btn=>btn.onclick=()=>{const d=Number(btn.dataset.pauseDay);ensureSchoolBreaks()[d].push({enabled:true,start:'',end:''});readHoursIntoSchoolData();renderSchoolHoursEditor()});
+ schoolHoursGrid.querySelectorAll('.remove-pause').forEach(btn=>btn.onclick=()=>{const [d,i]=btn.dataset.removePause.split('-').map(Number);ensureSchoolBreaks()[d].splice(i,1);readHoursIntoSchoolData();renderSchoolHoursEditor()});
+}
+function openSchoolHours(){renderSchoolHoursEditor();openModal('schoolHoursModal')}
+function readSchoolHoursEditor(){const out={};for(let d=0;d<6;d++)out[d]=Array(MAX_PERIODS).fill('');schoolHoursGrid.querySelectorAll('[data-hour-day]').forEach(inp=>{out[Number(inp.dataset.hourDay)][Number(inp.dataset.hourPeriod)]=inp.value.trim()});return out}
+function readSchoolBreaksEditor(){const out={0:[],1:[],2:[],3:[],4:[],5:[]};schoolHoursGrid.querySelectorAll('[data-pause-start]').forEach(inp=>{const [d,i]=inp.dataset.pauseStart.split('-').map(Number);const end=schoolHoursGrid.querySelector(`[data-pause-end="${d}-${i}"]`);const en=schoolHoursGrid.querySelector(`[data-pause-enabled="${d}-${i}"]`);out[d].push({enabled:!!(en&&en.checked),start:inp.value||'',end:end?end.value:''})});return out}
+function readHoursIntoSchoolData(){schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor()}
+schoolHoursBtn.onclick=openSchoolHours;
+schoolMaxPeriodsInput.onchange=()=>{readHoursIntoSchoolData();schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);renderSchoolHoursEditor()};
+copyHoursAllBtn.onclick=()=>{readHoursIntoSchoolData();const src=Number(copyHoursFrom.value);const vals=(schoolData.periodTimes[src]||[]).slice(),br=clone(ensureSchoolBreaks()[src]||[]);for(let d=0;d<6;d++){schoolData.periodTimes[d]=vals.slice();schoolData.breaks[d]=clone(br)}renderSchoolHoursEditor();toast('Orari e pause copiati su tutti i giorni')};
+resetSchoolHoursBtn.onclick=()=>{schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);schoolData.breaks={0:[],1:[],2:[],3:[],4:[],5:[]};renderSchoolHoursEditor();toast('Ripristinati gli orari iniziali e rimosse le pause')};
+saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor();for(let d=0;d<6;d++)schoolData.periodTimes[d]=applyBreaksToTimes(schoolData.periodTimes[d],schoolData.breaks[d]);(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();try{await saveSchoolCloud()}catch(e){alert('Salvato sul dispositivo, ma non nel cloud: '+e.message)}renderSchool();renderMyClasses();closeModal('schoolHoursModal');toast('Orari e pause scuola salvati')};
+connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;await loadSchoolCloud();render();cloudSave();toast('Account collegato alla scuola')}catch(e){alert(e.message)}finally{connectSchoolBtn.disabled=false;connectSchoolBtn.textContent='Collega scuola'}};
+schoolUploadBtn.onclick=()=>{if(!['admin','coordinator'].includes(state.meta.schoolRole||'')){alert('Solo il referente orario o l’amministratore scuola può caricare l’orario generale.');return}schoolFile.click()};schoolFile.onchange=async e=>{const f=e.target.files[0];if(!f)return;schoolUploadBtn.disabled=true;schoolUploadBtn.textContent='Analisi e sincronizzazione…';try{const keepTimes=clone(schoolPeriodTimes()),keepBreaks=clone(ensureSchoolBreaks()),keepMax=schoolMaxPeriods();schoolData=await importWholeSchool(f);schoolData.periodTimes=keepTimes;schoolData.breaks=keepBreaks;schoolData.maxPeriods=Math.max(keepMax,clampPeriods(schoolData.maxPeriods,6));(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();await saveSchoolCloud();renderSchool();renderMyClasses();toast(`Orario scuola condiviso: ${schoolData.teachers.length} docenti`)}catch(err){alert(err.message||'Errore durante l’importazione')}finally{schoolUploadBtn.disabled=false;schoolUploadBtn.textContent='📊 Carica orario completo';schoolFile.value=''}};
+schoolModeClass.onclick=()=>{schoolMode='class';renderSchool()};schoolModeTeacher.onclick=()=>{schoolMode='teacher';renderSchool()};
+[schoolSearch,schoolTeacherFilter,schoolClassFilter,schoolDayFilter].forEach(el=>el.addEventListener(el.tagName==='INPUT'?'input':'change',renderSchool));
+profilePageEditBtn.onclick=openProfile;
+function normText(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase()}
+function classToken(s){s=String(s||'').trim();if(!s)return'';if(/^D$/i.test(s))return'D';const m=s.match(/\b([1-5])\s*[°º^]?\s*([A-Z]{1,5})\b/i);return m?`${m[1]}° ${m[2].toUpperCase()}`.replace('° ','°'):''}
+function stateFromDayTokens(dayTokens){const out=clone(EMPTY_STATE);out.meta=clone(state.meta);const detected=Math.min(MAX_PERIODS,Math.max(1,...dayTokens.map(a=>a.length)));out.meta.maxPeriods=Math.max(personalMaxPeriods(),detected);dayTokens.forEach((arr,d)=>arr.slice(0,MAX_PERIODS).forEach((tok,p)=>{if(tok){out.slots[`${d}-${p}`]=[tok,(PERIOD_TIMES[d]&&PERIOD_TIMES[d][p])||'']}}));return out}
+function parseTextSchedule(text){const upper=normText(text);const names=['LUNEDI','MARTEDI','MERCOLEDI','GIOVEDI','VENERDI','SABATO'];const chunks=[];for(let i=0;i<6;i++){const start=upper.indexOf(names[i]);if(start<0){chunks.push('');continue}let end=upper.length;for(let j=i+1;j<6;j++){const x=upper.indexOf(names[j],start+names[i].length);if(x>=0){end=Math.min(end,x);break}}chunks.push(upper.slice(start,end))}const dayTokens=chunks.map(ch=>{const out=[];const re=/\bD\b|\b[1-5]\s*[°º^]?\s*[A-Z]{1,5}\b/g;let m;while((m=re.exec(ch))&&out.length<MAX_PERIODS){const t=classToken(m[0]);if(t)out.push(t)}return out});if(dayTokens.every(a=>!a.length))return null;return stateFromDayTokens(dayTokens)}
+function findTeacherRow(rows){const target=normText(fullName());const last=normText(state.meta.lastName);const first=normText(state.meta.firstName);let best=-1;for(let r=0;r<rows.length;r++){const row=rows[r].map(normText);if(target&&row.some(v=>v.includes(target)))return r;if(first&&last&&row.some(v=>v.includes(first)&&v.includes(last)))best=r}return best}
+function parseExcelRows(rows){const tr=findTeacherRow(rows);if(tr<0)return null;let hr=-1;for(let r=Math.max(0,tr-8);r<tr;r++){const txt=rows[r].map(normText).join(' | ');if((txt.match(/LUNEDI|MARTEDI|MERCOLEDI|GIOVEDI|VENERDI|SABATO/g)||[]).length>=3)hr=r}if(hr<0)return null;const headers=rows[hr].map(normText), dayNames=['LUNEDI','MARTEDI','MERCOLEDI','GIOVEDI','VENERDI','SABATO'];const starts=[];dayNames.forEach(n=>starts.push(headers.findIndex(v=>v.includes(n))));const trv=rows[tr]||[];const dayTokens=[];for(let d=0;d<6;d++){const st=starts[d];if(st<0){dayTokens.push([]);continue}let en=trv.length;for(let j=d+1;j<6;j++)if(starts[j]>st){en=starts[j];break}const vals=[];for(let c=st;c<en;c++){const t=classToken(trv[c]);if(t)vals.push(t);else vals.push('')}dayTokens.push(vals.slice(0,MAX_PERIODS))}const out=stateFromDayTokens(dayTokens);const materialIdx=(rows[hr]||[]).findIndex(v=>normText(v).includes('MATERIA'));if(materialIdx>=0&&trv[materialIdx])out.meta.subject=String(trv[materialIdx]).trim();const all=rows.slice(0,10).flat().join(' ');const dm=all.match(/(?:dal|vigore dal)\s*(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})/i);if(dm)out.meta.validFrom=dm[1].replace(/[.-]/g,'/');return Object.keys(out.slots).length?out:null}
+async function importExcel(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});const parsed=parseExcelRows(rows);if(parsed)return{state:parsed,detail:`Riconosciuto il foglio “${name}” e trovata la riga di ${fullName()}.`}}throw new Error('Non trovo il tuo nome o una struttura di orario riconoscibile nel file Excel.')}
+async function importPdf(file){const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p);const tc=await pg.getTextContent();text+='\n'+tc.items.map(x=>x.str).join(' ')}const parsed=parseTextSchedule(text);if(!parsed)throw new Error('Ho letto il PDF, ma non riesco ancora a ricostruire automaticamente l’orario. Prova con Excel o una foto più nitida.');return{state:parsed,detail:'Testo estratto dal PDF e orario ricostruito automaticamente.'}}
+async function importImage(file){if(!window.Tesseract)throw new Error('Modulo foto non disponibile. Riprova con connessione internet.');importStatus.textContent='Sto leggendo la foto… può richiedere qualche secondo.';const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.status==='recognizing text')importStatus.textContent=`Lettura foto: ${Math.round((m.progress||0)*100)}%`}});const text=result.data.text||'';const parsed=parseTextSchedule(text);if(!parsed)throw new Error('Ho letto la foto ma non riesco a distinguere bene giorni e classi. Prova uno screenshot più dritto e nitido.');return{state:parsed,detail:'Foto analizzata e orario ricostruito. Controlla le celle prima di confermare.'}}
+function importSummary(st){const lines=[];for(let d=0;d<6;d++){const vals=[];for(let p=0;p<6;p++){const v=st.slots[`${d}-${p}`];if(v&&v[0])vals.push(`${p+1}ª ${v[0]}`)}lines.push(`${DAYS[d].name}: ${vals.length?vals.join(' · '):'libero'}`)}return lines.join('\n')}
+async function processSmartImport(file){pendingImport=null;applyImportBtn.classList.add('hidden');importPreview.classList.add('hidden');importStatus.classList.add('show');importStatus.textContent='Analisi in corso…';try{const n=file.name.toLowerCase();let res;if(n.endsWith('.xlsx')||n.endsWith('.xls'))res=await importExcel(file);else if(n.endsWith('.pdf'))res=await importPdf(file);else res=await importImage(file);pendingImport=res.state;importStatus.textContent='✅ '+res.detail;importPreview.textContent=importSummary(res.state);importPreview.classList.remove('hidden');applyImportBtn.classList.remove('hidden')}catch(e){console.error(e);importStatus.textContent='⚠️ '+(e.message||'Non sono riuscito a importare questo file.') }finally{smartImportFile.value=''}}
+
+signupBtn.onclick=()=>window.netlifyIdentity?netlifyIdentity.open('signup'):alert('Registrazione non disponibile: abilita Netlify Identity sul sito.');
+loginBtn.onclick=()=>window.netlifyIdentity?netlifyIdentity.open('login'):alert('Accesso non disponibile: abilita Netlify Identity sul sito.');
+googleBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Se Google è attivato in Identity, scegli “Google” nella finestra di accesso.')}else alert('Accesso Google non disponibile')};
+forgotBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Nella finestra di accesso premi “Forgot password?”.')}else alert('Recupero password non disponibile')};
+logoutBtn.onclick=()=>netlifyIdentity.logout();
+editMetaBtn.onclick=openProfile;
+saveMetaBtn.onclick=()=>{state.meta.firstName=firstNameInput.value.trim();state.meta.lastName=lastNameInput.value.trim();state.meta.teaching=teachingInput.value.trim();state.meta.subject=subjectInput.value.trim();state.meta.school=schoolInput.value.trim();state.meta.validFrom=validFromInput.value.trim();state.meta.maxPeriods=clampPeriods(personalMaxPeriodsInput.value,6);render();accountName.textContent=fullName();closeModal('metaModal');toast('Profilo salvato')};
+saveSlotBtn.onclick=()=>{const s=slotSubject.value.trim(),t=slotTime.value.trim();if(s)state.slots[activeKey]=[s,t];else delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora aggiornata')};
+clearSlotBtn.onclick=()=>{delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora svuotata')};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)}));
+printBtn.onclick=()=>window.print();
+shareBtn.onclick=async()=>{const url=location.origin+location.pathname;try{if(navigator.share){await navigator.share({title:'Orario Docente',text:'Crea e gestisci il tuo orario docente',url});return}await navigator.clipboard.writeText(url);toast('Link dell’app copiato')}catch(e){prompt('Copia questo link:',url)}};
+exportBtn.onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='orario-docente.json';a.click();URL.revokeObjectURL(a.href)};
+importBtn.onclick=()=>openModal('importModal');
+document.querySelectorAll('[data-import-kind]').forEach(el=>el.onclick=()=>{const k=el.dataset.importKind;smartImportFile.accept=k==='excel'?'.xlsx,.xls':k==='pdf'?'.pdf':'.png,.jpg,.jpeg,.webp';smartImportFile.click()});
+smartImportFile.onchange=e=>{const f=e.target.files[0];if(f)processSmartImport(f)};
+applyImportBtn.onclick=()=>{if(!pendingImport)return;state=pendingImport;pendingImport=null;render();closeModal('importModal');toast('Orario importato e salvato nel tuo account')};
+importFile.onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!validState(data))throw new Error();state=normalizeLegacy(data);render();toast('Orario importato')}catch(err){alert('File non valido')}e.target.value=''};
+resetBtn.onclick=()=>{if(confirm('Vuoi creare un nuovo orario vuoto? Il precedente verrà sostituito nel tuo account.')){state=clone(EMPTY_STATE);render();openProfile()}};
+teacherSelect.onchange=toggleTeacherView;
+migrateBtn.onclick=()=>{const x=getLegacy();if(x){state=normalizeLegacy(x);migrationBox.classList.add('hidden');render();accountName.textContent=fullName();toast('Orario importato nel tuo account')}};
+ignoreMigrationBtn.onclick=()=>{migrationBox.classList.add('hidden');openProfile()};
+
+let deferredInstallPrompt=null;
+const installBtn=document.getElementById('installAppBtn');
+const nativeInstallBtn=document.getElementById('nativeInstallBtn');
+const installInstructions=document.getElementById('installInstructions');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;if(installBtn)installBtn.classList.remove('hidden')});
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+async function launchNativeInstall(){
+  if(!deferredInstallPrompt)return false;
+  const promptEvent=deferredInstallPrompt;
+  deferredInstallPrompt=null;
+  try{
+    promptEvent.prompt();
+    const result=await promptEvent.userChoice;
+    if(result.outcome==='accepted'){
+      toast('Installazione avviata');
+      if(installBtn)installBtn.textContent='✓ App installata';
+    }else{
+      toast('Installazione annullata');
+    }
+  }catch(err){
+    console.warn('Install prompt non disponibile',err);
+    return false;
+  }
+  return true;
+}
+if(installBtn){installBtn.onclick=async()=>{
+  if(isStandalone()){toast('Orario Docente è già installato su questo dispositivo');return}
+  // Chrome, Edge e Android: apri direttamente il popup nativo quando disponibile.
+  if(deferredInstallPrompt){await launchNativeInstall();return}
+  // iPhone/iPad richiedono ancora l'aggiunta manuale alla schermata Home.
+  if(isIOS()){
+    installInstructions.innerHTML='<strong>iPhone / iPad:</strong><br>1. Apri questa pagina in Safari.<br>2. Tocca il pulsante <strong>Condividi</strong>.<br>3. Scegli <strong>Aggiungi alla schermata Home</strong>.<br>4. Conferma con <strong>Aggiungi</strong>.';
+    nativeInstallBtn.classList.add('hidden');
+  }else{
+    installInstructions.innerHTML='<strong>Installazione automatica non ancora disponibile.</strong><br><br>Su Chrome o Edge ricarica la pagina e attendi qualche secondo. Se compare l’icona <strong>Installa</strong> nella barra degli indirizzi, puoi usarla direttamente.<br><br>In alternativa apri il menu del browser e scegli <strong>Installa Orario Docente</strong> oppure <strong>Installa app</strong>.';
+    nativeInstallBtn.classList.add('hidden');
+  }
+  document.getElementById('installModal').classList.add('show')
+}}
+if(nativeInstallBtn){nativeInstallBtn.onclick=async()=>{
+  const ok=await launchNativeInstall();
+  if(ok){nativeInstallBtn.classList.add('hidden');document.getElementById('installModal').classList.remove('show')}
+}}
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null;
+  if(installBtn){installBtn.textContent='✓ App installata';installBtn.disabled=true}
+  toast('Orario Docente installato!');
+});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+if(window.netlifyIdentity){netlifyIdentity.on('init',handleUser);netlifyIdentity.on('login',user=>{handleUser(user);netlifyIdentity.close()});netlifyIdentity.on('logout',()=>{currentUser=null;showAuth()});netlifyIdentity.on('error',err=>{console.error(err);toast('Errore di accesso')});netlifyIdentity.init()}else showAuth();
+</script>
+</body>
+</html>
