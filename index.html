@@ -181,7 +181,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.1</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.2</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
@@ -310,6 +310,31 @@ async function apiCall(name,options={}){
   if(!res.ok)throw new Error(data.error||('Errore cloud '+res.status));
   return data;
 }
+async function loadPersistentProfile(){
+  try{
+    const data=await apiCall('profile');
+    return data.profile||null;
+  }catch(e){
+    console.warn('Lettura profilo persistente:',e);
+    return null;
+  }
+}
+async function savePersistentProfile(completed=true){
+  try{
+    const data=await apiCall('profile',{
+      method:'POST',
+      body:JSON.stringify({
+        state,
+        profileCompleted:completed===true,
+        fullName:fullName()
+      })
+    });
+    return !!data.ok;
+  }catch(e){
+    console.error('Salvataggio profilo persistente:',e);
+    return false;
+  }
+}
 async function loadSchoolCloud(){
   if(!currentUser)return false;
   try{
@@ -339,7 +364,34 @@ async function saveSchoolCloud(){
   return true;
 }
 
-async function cloudSave(){if(!currentUser)return;try{setCloudStatus('Salvataggio…',false);const data=Object.assign({},currentUser.user_metadata||{},{orarioDocente:state,full_name:fullName()});const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online');hasCloudState=true}catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}}
+async function cloudSave(){
+  if(!currentUser)return;
+  try{
+    setCloudStatus('Salvataggio…',false);
+
+    const backendOk=await savePersistentProfile(true);
+    if(!backendOk)throw new Error('Salvataggio profilo cloud non riuscito');
+
+    // Manteniamo anche la vecchia copia Identity, ma non dipendiamo più da questa.
+    try{
+      const data=Object.assign({},currentUser.user_metadata||{},{
+        orarioDocente:state,
+        full_name:fullName(),
+        profileCompleted:true
+      });
+      const updated=await currentUser.update({data});
+      if(updated)currentUser=updated;
+    }catch(e){
+      console.warn('Copia Identity non aggiornata:',e);
+    }
+
+    setCloudStatus('Salvato online');
+    hasCloudState=true;
+  }catch(e){
+    console.error(e);
+    setCloudStatus('Errore salvataggio online',false);
+  }
+}
 function scheduleCloudSave(){clearTimeout(saveTimer);saveTimer=setTimeout(cloudSave,900)}
 function openSlot(key){activeKey=key;const v=state.slots[key]||['',''];slotSubject.value=v[0]||'';slotTime.value=v[1]||'';openModal('slotModal')}
 function showAuth(){authView.classList.remove('hidden');appView.classList.add('hidden')}
@@ -357,13 +409,22 @@ async function persistProfileNow(){
   if(!currentUser)return false;
   try{
     setCloudStatus('Salvataggio…',false);
-    const data=Object.assign({},currentUser.user_metadata||{},{
-      orarioDocente:state,
-      full_name:fullName(),
-      profileCompleted:true
-    });
-    const updated=await currentUser.update({data});
-    if(updated)currentUser=updated;
+
+    const backendOk=await savePersistentProfile(true);
+    if(!backendOk)throw new Error('Salvataggio profilo cloud non riuscito');
+
+    try{
+      const data=Object.assign({},currentUser.user_metadata||{},{
+        orarioDocente:state,
+        full_name:fullName(),
+        profileCompleted:true
+      });
+      const updated=await currentUser.update({data});
+      if(updated)currentUser=updated;
+    }catch(e){
+      console.warn('Copia Identity non aggiornata:',e);
+    }
+
     hasCloudState=true;
     setCloudStatus('Salvato online');
     return true;
@@ -384,70 +445,65 @@ function openOnboarding(){
 async function handleUser(user){
  currentUser=user;
  if(!user){showAuth();return}
- showApp();accountEmail.textContent=user.email||'';loadSchoolLocal();
+
+ showApp();
+ accountEmail.textContent=user.email||'';
+ loadSchoolLocal();
+
  const meta=user.user_metadata||{};
  const email=(user.email||'').trim().toLowerCase();
  const isThomas=email==='thomasdeangelisconsulting@gmail.com';
- let cloud=meta.orarioDocente;
+
+ // NEW: first try our persistent profile, keyed by email.
+ // This works even when Google does not retain Netlify Identity user_metadata as expected.
+ const persistent=await loadPersistentProfile();
+ let cloud=(persistent&&validState(persistent.state)) ? persistent.state : meta.orarioDocente;
  hasCloudState=validState(cloud);
 
- // Repair accounts that accidentally inherited Thomas's seeded timetable in older builds.
+ // Repair old accounts that accidentally inherited Thomas's seeded timetable.
  if(!isThomas && hasCloudState && looksLikeThomasSeed(cloud)){
    state=clone(EMPTY_STATE);
    hasCloudState=false;
-   try{
-     const data=Object.assign({},meta,{orarioDocente:state,full_name:'',profileCompleted:false});
-     const updated=await currentUser.update({data});
-     if(updated)currentUser=updated;
-     cloud=null;
-   }catch(e){console.error('Pulizia profilo precedente:',e)}
+   cloud=null;
  }
 
  if(isThomas&&hasCloudState&&!cloud.meta.teaching){
    cloud.meta.teaching='Laboratorio di servizi enogastronomici – settore cucina';
-   state=clone(cloud);
-   try{
-     const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',profileCompleted:true});
-     const updated=await currentUser.update({data});if(updated)currentUser=updated;
-   }catch(e){console.error(e)}
- }
- if(isThomas&&!meta.thomasProfileInitialized){
-   state=clone(THOMAS_STATE);hasCloudState=true;migrationBox.classList.add('hidden');
-   try{
-     const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',thomasProfileInitialized:true,profileCompleted:true});
-     const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online');
-   }catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}
- }else if(hasCloudState){
-   state=clone(cloud);migrationBox.classList.add('hidden');
- }else{
-   state=clone(EMPTY_STATE);
-   migrationBox.classList.add('hidden');
  }
 
- accountName.textContent=fullName()!=='Il mio orario'?fullName():(meta.full_name||user.email||'Il mio account');
+ if(isThomas&&!hasCloudState){
+   state=clone(THOMAS_STATE);
+   hasCloudState=true;
+ }else if(hasCloudState){
+   state=clone(cloud);
+ }else{
+   state=clone(EMPTY_STATE);
+ }
+ migrationBox.classList.add('hidden');
+
+ accountName.textContent=fullName()!=='Il mio orario'
+   ? fullName()
+   : (meta.full_name||meta.name||user.email||'Il mio account');
+
  render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
  await loadSchoolCloud();
 
- const providerName=cleanCell(meta.full_name||meta.name||'');
- const profileDone = meta.profileCompleted===true ||
+ const profileDone =
+   (persistent&&persistent.profileCompleted===true) ||
+   meta.profileCompleted===true ||
    !!cleanCell(state.meta.firstName) ||
-   !!cleanCell(state.meta.lastName) ||
-   !!providerName;
+   !!cleanCell(state.meta.lastName);
 
- // Migration from older versions: if the account already has profile data,
- // never show onboarding again; just record the one-time completion flag.
- if(profileDone && meta.profileCompleted!==true){
-   try{
-     const data=Object.assign({},currentUser.user_metadata||{},{
-       orarioDocente:state,
-       full_name:fullName(),
-       profileCompleted:true
-     });
-     const updated=await currentUser.update({data});
-     if(updated)currentUser=updated;
-   }catch(e){console.warn('Aggiornamento stato profilo:',e)}
+ // One-time migration: if old Identity data exists, copy it to the new persistent profile.
+ if(!persistent && (hasCloudState || profileDone)){
+   await savePersistentProfile(profileDone);
  }
- if(!profileDone)setTimeout(openOnboarding,250);
+
+ if(!profileDone){
+   setTimeout(openOnboarding,250);
+ }else{
+   setCloudStatus('Salvato online');
+ }
 }
 function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());openModal('metaModal')}
 function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView.classList.toggle('hidden',!all);personalView.classList.toggle('hidden',all)}
