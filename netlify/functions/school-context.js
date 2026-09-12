@@ -7,7 +7,13 @@ export default async (req) => {
     if(!user) return json(401,{error:'Accesso richiesto'});
     const r=await requireMember(user);
     if(r.error) return r.error;
-    const schedule=await getJSON(`schedules/${r.membership.code}`);
+    let schedule=null;
+    try{
+      schedule=await getJSON(`schedules/${r.membership.code}`);
+    }catch(e){
+      console.error('school-context schedule read error',e);
+      return json(500,{error:'Errore nel caricamento dell’orario condiviso della scuola',detail:String(e?.message||e)});
+    }
     return json(200,{school:r.school,membership:r.membership,schedule:schedule||null});
   }catch(e){
     console.error('school-context error',e);

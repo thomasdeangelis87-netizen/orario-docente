@@ -202,7 +202,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.5</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7.6</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
@@ -328,7 +328,14 @@ async function apiCall(name,options={}){
   if(options.body && !headers['Content-Type'])headers['Content-Type']='application/json';
   const res=await fetch('/.netlify/functions/'+name,{...options,headers});
   let data={};try{data=await res.json()}catch(e){}
-  if(!res.ok)throw new Error(data.error||('Errore cloud '+res.status));
+  if(!res.ok){
+    const base=data.error||('Errore cloud '+res.status);
+    const detail=data.detail?(' · '+data.detail):'';
+    const err=new Error(base+detail);
+    err.status=res.status;
+    err.payload=data;
+    throw err;
+  }
   return data;
 }
 async function loadPersistentProfile(){
@@ -356,26 +363,34 @@ async function savePersistentProfile(completed=true){
     return false;
   }
 }
-async function loadSchoolCloud(){
+async function loadSchoolCloud({showError=false}={}){
   if(!currentUser)return false;
-  try{
-    const data=await apiCall('school-context');
-    schoolCloudReady=true;
-    const m=data.membership||{},sc=data.school||{};
-    state.meta.school=sc.name||state.meta.school||'';
-    state.meta.schoolCode=m.code||sc.code||'';
-    state.meta.schoolRole=m.role||'teacher';
-    if(data.schedule&&Array.isArray(data.schedule.entries)){
-      schoolData=data.schedule;saveSchoolLocal();
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const data=await apiCall('school-context');
+      schoolCloudReady=true;
+      const m=data.membership||{},sc=data.school||{};
+      state.meta.school=sc.name||state.meta.school||'';
+      state.meta.schoolCode=m.code||sc.code||'';
+      state.meta.schoolRole=m.role||'teacher';
+      if(data.schedule&&Array.isArray(data.schedule.entries)){
+        schoolData=data.schedule;saveSchoolLocal();
+      }
+      schoolInput.value=state.meta.school||'';
+      renderSchool();renderSchoolPersonalImport();renderMyClasses();scheduleCloudSave();
+      return true;
+    }catch(e){
+      lastError=e;
+      if(!(e&&e.status>=500) || attempt===1)break;
+      await new Promise(r=>setTimeout(r,700));
     }
-    schoolInput.value=state.meta.school||'';
-    renderSchool();renderSchoolPersonalImport();renderMyClasses();scheduleCloudSave();
-    return true;
-  }catch(e){
-    schoolCloudReady=false;
-    if(!/non collegato|not found|404/i.test(String(e.message)))console.warn('Cloud scuola:',e.message);
-    return false;
   }
+  schoolCloudReady=false;
+  const msg=String(lastError?.message||'Errore nel caricamento della scuola');
+  if(!/non collegato|not found|404/i.test(msg))console.warn('Cloud scuola:',msg);
+  if(showError)alert(msg);
+  return false;
 }
 async function saveSchoolCloud(){
   if(!currentUser||!['admin','coordinator'].includes(state.meta.schoolRole||''))return false;
@@ -863,7 +878,7 @@ schoolMaxPeriodsInput.onchange=()=>{readHoursIntoSchoolData();schoolData.maxPeri
 copyHoursAllBtn.onclick=()=>{readHoursIntoSchoolData();const src=Number(copyHoursFrom.value);const vals=(schoolData.periodTimes[src]||[]).slice(),br=clone(ensureSchoolBreaks()[src]||[]);for(let d=0;d<6;d++){schoolData.periodTimes[d]=vals.slice();schoolData.breaks[d]=clone(br)}renderSchoolHoursEditor();toast('Orari e pause copiati su tutti i giorni')};
 resetSchoolHoursBtn.onclick=()=>{schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);schoolData.breaks={0:[],1:[],2:[],3:[],4:[],5:[]};renderSchoolHoursEditor();toast('Ripristinati gli orari iniziali e rimosse le pause')};
 saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor();for(let d=0;d<6;d++)schoolData.periodTimes[d]=applyBreaksToTimes(schoolData.periodTimes[d],schoolData.breaks[d]);(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();try{await saveSchoolCloud()}catch(e){alert('Salvato sul dispositivo, ma non nel cloud: '+e.message)}renderSchool();renderMyClasses();closeModal('schoolHoursModal');toast('Orari e pause scuola salvati')};
-connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;await loadSchoolCloud();render();cloudSave();toast('Account collegato alla scuola')}catch(e){alert(e.message)}finally{renderSchool()}};
+connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const already=String(state.meta.schoolCode||'').trim().toUpperCase()===code;if(already){const ok=await loadSchoolCloud({showError:true});if(ok){render();toast('Dati scuola aggiornati')}return}const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;const ok=await loadSchoolCloud({showError:true});if(!ok)return;render();cloudSave();toast('Account collegato alla scuola')}catch(e){alert(e.message)}finally{renderSchool()}};
 schoolUploadBtn.onclick=()=>{if(!['admin','coordinator'].includes(state.meta.schoolRole||'')){alert('Solo il referente orario o l’amministratore scuola può caricare l’orario generale.');return}schoolFile.click()};schoolFile.onchange=async e=>{const f=e.target.files[0];if(!f)return;schoolUploadBtn.disabled=true;schoolUploadBtn.textContent='Analisi e sincronizzazione…';try{const keepTimes=clone(schoolPeriodTimes()),keepBreaks=clone(ensureSchoolBreaks()),keepMax=schoolMaxPeriods();schoolData=await importWholeSchool(f);schoolData.periodTimes=keepTimes;schoolData.breaks=keepBreaks;schoolData.maxPeriods=Math.max(keepMax,clampPeriods(schoolData.maxPeriods,6));(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();await saveSchoolCloud();renderSchool();renderMyClasses();toast(`Orario scuola condiviso: ${schoolData.teachers.length} docenti`)}catch(err){alert(err.message||'Errore durante l’importazione')}finally{schoolUploadBtn.disabled=false;schoolUploadBtn.textContent='📊 Carica orario completo';schoolFile.value=''}};
 document.getElementById('importMySchoolScheduleBtn').onclick=importMySchoolSchedule;
 document.getElementById('schoolOfficialTeacherSelect').onchange=async e=>{

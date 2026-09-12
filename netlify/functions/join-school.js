@@ -18,6 +18,10 @@ export default async (req) => {
     if(current && current.code!==code)
       return json(409,{error:'Questo account è già collegato a un’altra scuola. Scollegalo prima di cambiare istituto.'});
 
+    if(current && current.code===code && current.status==='active'){
+      return json(200,{ok:true,school,membership:current,alreadyConnected:true});
+    }
+
     const membership={
       email:user.email,code,role:(current&&current.role)||'teacher',status:'active',
       joinedAt:new Date().toISOString(),displayName:String(body.displayName||'').slice(0,120)

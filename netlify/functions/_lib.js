@@ -27,7 +27,7 @@ async function currentUser(){
 
 function store(){
   // IMPORTANT: getStore is created only while a modern Netlify Function request is active.
-  return getStore('orario-docente-cloud');
+  return getStore('orario-docente-cloud',{consistency:'strong'});
 }
 
 async function getJSON(key){
