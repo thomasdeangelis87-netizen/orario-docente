@@ -38,7 +38,7 @@ async function api(){
   try{ d=raw ? JSON.parse(raw) : {}; }catch(_){ d={}; }
 
   if(!r.ok){
-    const detail=d.error || raw || `Errore HTTP ${r.status}`;
+    const detail=[d.error,d.detail].filter(Boolean).join(' — ') || raw || `Errore HTTP ${r.status}`;
     throw new Error(detail);
   }
   if(!d.school?.code) throw new Error('Risposta del server valida ma senza codice scuola.');

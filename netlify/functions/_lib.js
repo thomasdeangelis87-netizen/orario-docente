@@ -1,20 +1,47 @@
-const { getStore } = require('@netlify/blobs');
-const crypto = require('crypto');
+import { getStore } from '@netlify/blobs';
+import { getUser } from '@netlify/identity';
+import crypto from 'node:crypto';
 
-const store = () => getStore('orario-docente-cloud');
-const json = (statusCode, body) => ({ statusCode, headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}, body:JSON.stringify(body) });
+const json = (status, body) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store'
+    }
+  });
+
 const normalizeEmail = (v='') => String(v).trim().toLowerCase();
 const normalizeCode = (v='') => String(v).trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
 const emailKey = email => crypto.createHash('sha256').update(normalizeEmail(email)).digest('hex');
-function userFromContext(context){
-  const u = context && context.clientContext && context.clientContext.user;
+
+async function currentUser(){
+  const u = await getUser();
   if(!u || !u.email) return null;
-  return { id:u.sub || u.id || '', email:normalizeEmail(u.email), metadata:u.user_metadata||{} };
+  return {
+    id: u.id || u.sub || '',
+    email: normalizeEmail(u.email),
+    metadata: u.userMetadata || u.user_metadata || {}
+  };
 }
-async function getJSON(key){ try{return await store().get(key,{type:'json'});}catch(e){return null;} }
-async function setJSON(key,value){ return store().setJSON(key,value); }
-async function getMembership(email){ return getJSON(`members-by-email/${emailKey(email)}`); }
-async function setMembership(email,m){ return setJSON(`members-by-email/${emailKey(email)}`,m); }
+
+function store(){
+  // IMPORTANT: getStore is created only while a modern Netlify Function request is active.
+  return getStore('orario-docente-cloud');
+}
+
+async function getJSON(key){
+  return await store().get(key,{type:'json'});
+}
+async function setJSON(key,value){
+  return await store().setJSON(key,value);
+}
+async function getMembership(email){
+  return await getJSON(`members-by-email/${emailKey(email)}`);
+}
+async function setMembership(email,m){
+  return await setJSON(`members-by-email/${emailKey(email)}`,m);
+}
 async function requireMember(user, roles=[]){
   const membership=await getMembership(user.email);
   if(!membership) return {error:json(403,{error:'Account non collegato a una scuola.'})};
@@ -23,4 +50,5 @@ async function requireMember(user, roles=[]){
   if(!school || school.status!=='active') return {error:json(403,{error:'Scuola non attiva.'})};
   return {membership,school};
 }
-module.exports={json,normalizeEmail,normalizeCode,userFromContext,getJSON,setJSON,getMembership,setMembership,requireMember,emailKey};
+
+export {json,normalizeEmail,normalizeCode,emailKey,currentUser,getJSON,setJSON,getMembership,setMembership,requireMember};
