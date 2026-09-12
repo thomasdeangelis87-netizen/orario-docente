@@ -114,12 +114,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <input type="checkbox" id="scheduleToggleCheck" class="schedule-check" hidden checked>
     <label for="scheduleToggleCheck" class="btn primary schedule-label">👀 <span class="show-text">Vedi il mio orario</span><span class="hide-text">Chiudi il mio orario</span></label>
     <div class="schedule-container"><section class="card scroll" style="margin-top:10px"><div class="grid" id="timetable"></div></section></div>
-    <section class="legend">
-      <div class="mini c-5be"><strong>5° BE</strong><span>Esempio classe / attività</span></div>
-      <div class="mini c-2b"><strong>2° B</strong><span>Esempio classe / attività</span></div>
-      <div class="mini c-5bs"><strong>5° BS</strong><span>Esempio classe / attività</span></div>
-      <div class="mini c-d"><strong>D</strong><span>Disponibilità</span></div>
-    </section>
+    <section class="legend" id="personalLegend"></section>
   </section>
   </section>
 
@@ -302,7 +297,7 @@ function render(){
  const g=timetable;let h='<div class="cell head">ORA</div>';DAYS.forEach(d=>h+=`<div class="cell head">${esc(d.name)}<br><small>(${esc(d.range)})</small></div>`);
  for(let p=0;p<personalMaxPeriods();p++){h+=`<div class="cell period">${p+1}ª ora</div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0])h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div></div></div>`;else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
  g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));localSave();scheduleCloudSave();
-}
+;renderPersonalLegend()}
 function localSave(){try{localStorage.setItem('orarioDocenteStateV5',JSON.stringify(state))}catch(e){}}
 
 async function apiCall(name,options={}){
@@ -473,6 +468,47 @@ function parseClassSheets(wb,fileName){
 async function importWholeSchool(file){const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const paired=parseClassSheets(wb,file.name);if(paired)return paired;let best=null;for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});try{const parsed=parseWholeSchoolRows(rows,file.name+' · '+name);if(!best||parsed.entries.length>best.entries.length)best=parsed}catch(e){}}if(!best)throw new Error('Non riesco a riconoscere l’orario completo in questo Excel.');best.classCells=[];return best}
 function schoolClasses(){const set=new Map();const src=(schoolData.classCells&&schoolData.classCells.length)?schoolData.classCells.map(x=>x.className):schoolData.entries.map(e=>e.activity);src.forEach(a=>{a=cleanCell(a);if(!a||/^D$/i.test(a)||/^LIBERO$/i.test(a))return;const k=canonicalActivity(a);if(!set.has(k))set.set(k,a)});return [...set.values()].sort((a,b)=>a.localeCompare(b,'it',{numeric:true}))}
 function myClasses(){const set=new Map();Object.values(state.slots||{}).forEach(v=>{const a=cleanCell(v&&v[0]);if(!a||/^D$/i.test(a))return;const k=canonicalActivity(a);if(!set.has(k))set.set(k,a)});return [...set.values()]}
+function renderPersonalLegend(){
+  const el=document.getElementById('personalLegend');
+  if(!el)return;
+
+  const items=[];
+  const seen=new Set();
+  let hasAvailability=false;
+
+  Object.values(state.slots||{}).forEach(v=>{
+    const raw=cleanCell(v&&v[0]);
+    if(!raw)return;
+
+    raw.split('/').map(cleanCell).filter(Boolean).forEach(activity=>{
+      if(/^D$/i.test(activity)||/^DISPONIBIL/i.test(activity)){
+        hasAvailability=true;
+        return;
+      }
+      const key=canonicalActivity(activity);
+      if(!key||seen.has(key))return;
+      seen.add(key);
+      items.push(activity);
+    });
+  });
+
+  items.sort((a,b)=>a.localeCompare(b,'it',{numeric:true}));
+
+  let html=items.map((activity,i)=>{
+    const cls=['c-5be','c-2b','c-5bs'][i%3];
+    return `<div class="mini ${cls}"><strong>${esc(activity)}</strong><span>Classe / attività</span></div>`;
+  }).join('');
+
+  if(hasAvailability){
+    html+=`<div class="mini c-d"><strong>D</strong><span>Disponibilità</span></div>`;
+  }
+
+  if(!html){
+    html='<div class="admin-note">Le classi compariranno qui dopo l’importazione del tuo orario.</div>';
+  }
+
+  el.innerHTML=html;
+}
 function sameClass(a,b){const A=canonicalActivity(a),B=canonicalActivity(b);return A===B||A.includes(B)||B.includes(A)}
 function refreshSchoolFilters(){const t=schoolTeacherFilter.value,c=schoolClassFilter.value;schoolTeacherFilter.innerHTML='<option value="">Tutti i docenti</option>'+schoolData.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(x=>`<option>${esc(x.name)}</option>`).join('');schoolClassFilter.innerHTML='<option value="">Tutte le classi</option>'+schoolClasses().map(x=>`<option>${esc(x)}</option>`).join('');if([...schoolTeacherFilter.options].some(o=>o.value===t))schoolTeacherFilter.value=t;if([...schoolClassFilter.options].some(o=>o.value===c))schoolClassFilter.value=c}
 function renderClassSchedule(el,className){if(!el)return;let h='<div class="cs csh">ORA</div>';DAYS.forEach(d=>h+=`<div class="cs csh">${esc(d.name)}</div>`);for(let p=1;p<=schoolMaxPeriods();p++){h+=`<div class="cs csp">${p}ª ora</div>`;for(let d=0;d<6;d++){const cell=(schoolData.classCells||[]).find(x=>sameClass(x.className,className)&&x.day===d&&x.period===p);if(cell)h+=`<div class="cs csc"><strong>${esc(cell.subject||'—')}</strong><small>${esc(cell.teacher||'—')}</small><small>(${esc(schoolTime(d,p-1))})</small></div>`;else h+='<div class="cs csc"><span class="empty">—</span></div>'}const anyPause=DAYS.some((_,d)=>breaksAfterPeriod(d,p).length);if(anyPause){h+='<div class="cs csp pause-label">PAUSA</div>';for(let d=0;d<6;d++){const bs=breaksAfterPeriod(d,p);h+=bs.length?`<div class="cs csc pause-cell"><small>${bs.map(b=>`Pausa ${esc(b.start)}–${esc(b.end)}`).join('<br>')}</small></div>`:'<div class="cs csc pause-cell"><small>—</small></div>'}}}el.innerHTML=h}
