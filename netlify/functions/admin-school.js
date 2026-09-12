@@ -4,6 +4,7 @@ function makeCode(mech='SCUOLA'){
   return `${root}-${Math.floor(10000+Math.random()*90000)}`;
 }
 exports.handler=async(event,context)=>{
+  try{
   if(event.httpMethod!=='POST') return json(405,{error:'Metodo non consentito'});
   const user=userFromContext(context); if(!user) return json(401,{error:'Accesso richiesto'});
   const key=event.headers['x-platform-admin-key']||event.headers['X-Platform-Admin-Key'];
@@ -20,4 +21,8 @@ exports.handler=async(event,context)=>{
   const membership={email:adminEmail,code,role:'admin',status:'active',joinedAt:now,assignedBy:user.email,displayName:String(body.adminName||'')};
   await setMembership(adminEmail,membership); await setJSON(`school-members/${code}`,[membership]);
   return json(200,{ok:true,school,membership});
+  }catch(e){
+    console.error('admin-school error', e);
+    return json(500,{error:'Errore backend durante l’attivazione della scuola',detail:String(e && e.message || e)});
+  }
 };
