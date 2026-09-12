@@ -181,13 +181,13 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · V16</div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.7</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
  <div class="modal-card">
   <h3>👋 Completa il tuo profilo</h3>
-  <p class="muted">Questi dati servono per riconoscerti nell'orario della scuola. Li inserisci una sola volta; in seguito potrai modificarli dalla sezione <strong>Profilo</strong>.</p>
+  <p class="muted">Questa schermata compare solo al primo accesso. Dopo il salvataggio, i dati si modificano esclusivamente dalla sezione <strong>Profilo</strong>.</p>
   <div class="form-grid">
    <div class="field"><label>Nome *</label><input id="onFirstName" autocomplete="given-name"></div>
    <div class="field"><label>Cognome *</label><input id="onLastName" autocomplete="family-name"></div>
@@ -323,7 +323,7 @@ async function loadSchoolCloud(){
       schoolData=data.schedule;saveSchoolLocal();
     }
     schoolInput.value=state.meta.school||'';
-    renderSchool();renderMyClasses();scheduleCloudSave();
+    renderSchool();renderSchoolPersonalImport();renderMyClasses();scheduleCloudSave();
     return true;
   }catch(e){
     schoolCloudReady=false;
@@ -360,7 +360,7 @@ async function persistProfileNow(){
     const data=Object.assign({},currentUser.user_metadata||{},{
       orarioDocente:state,
       full_name:fullName(),
-      profileCompleted:!!(state.meta.firstName&&state.meta.lastName)
+      profileCompleted:true
     });
     const updated=await currentUser.update({data});
     if(updated)currentUser=updated;
@@ -428,7 +428,24 @@ async function handleUser(user){
  render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
  await loadSchoolCloud();
 
- const profileDone=!!(state.meta.firstName&&state.meta.lastName);
+ const profileDone = meta.profileCompleted===true ||
+   !!cleanCell(state.meta.firstName) ||
+   !!cleanCell(state.meta.lastName) ||
+   !!cleanCell(meta.full_name);
+
+ // Migration from older versions: if the account already has profile data,
+ // never show onboarding again; just record the one-time completion flag.
+ if(profileDone && meta.profileCompleted!==true){
+   try{
+     const data=Object.assign({},currentUser.user_metadata||{},{
+       orarioDocente:state,
+       full_name:fullName(),
+       profileCompleted:true
+     });
+     const updated=await currentUser.update({data});
+     if(updated)currentUser=updated;
+   }catch(e){console.warn('Aggiornamento stato profilo:',e)}
+ }
  if(!profileDone)setTimeout(openOnboarding,250);
 }
 function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());openModal('metaModal')}
@@ -578,7 +595,7 @@ function renderSchoolPersonalImport(){
   if(!box||!select||!text)return;
 
   const teachers=schoolTeacherNames().slice().sort((a,b)=>a.localeCompare(b,'it'));
-  const available=!!(schoolCloudReady&&state.meta.schoolCode&&teachers.length);
+  const available=teachers.length>0;
   box.classList.toggle('hidden',!available);
   if(!available)return;
 
@@ -595,8 +612,9 @@ function renderSchoolPersonalImport(){
     text.innerHTML=`Docente associato: <strong>${esc(real)}</strong> · ${entries.length} impegni trovati.`;
   }else{
     select.value='';
-    text.textContent='Seleziona una sola volta come compare il tuo nome nell’orario ufficiale della scuola.';
+    text.textContent='Orario scuola disponibile. Seleziona una sola volta come compare il tuo nome nell’orario ufficiale.';
   }
+  importMySchoolScheduleBtn.disabled=!teachers.length;
 }
 async function importMySchoolSchedule(){
   const select=document.getElementById('schoolOfficialTeacherSelect');
@@ -691,7 +709,7 @@ googleBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');
 forgotBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Nella finestra di accesso premi “Forgot password?”.')}else alert('Recupero password non disponibile')};
 logoutBtn.onclick=()=>netlifyIdentity.logout();
 editMetaBtn.onclick=openProfile;
-saveOnboardingBtn.onclick=async()=>{const first=onFirstName.value.trim(),last=onLastName.value.trim();if(!first||!last){onboardingError.textContent='Inserisci almeno Nome e Cognome.';return}saveOnboardingBtn.disabled=true;saveOnboardingBtn.textContent='Salvataggio…';state.meta.firstName=first;state.meta.lastName=last;state.meta.teaching=onTeaching.value.trim();state.meta.subject=onSubject.value.trim();syncTeacherMeta();render();accountName.textContent=fullName();const ok=await persistProfileNow();saveOnboardingBtn.disabled=false;saveOnboardingBtn.textContent='Salva e continua';if(ok){closeModal('onboardingModal');renderSchool();toast('Profilo creato')}else onboardingError.textContent='Salvataggio online non riuscito. Riprova.';};
+saveOnboardingBtn.onclick=async()=>{const first=onFirstName.value.trim(),last=onLastName.value.trim();if(!first&&!last){onboardingError.textContent='Inserisci almeno il tuo nome.';return}saveOnboardingBtn.disabled=true;saveOnboardingBtn.textContent='Salvataggio…';state.meta.firstName=first;state.meta.lastName=last;state.meta.teaching=onTeaching.value.trim();state.meta.subject=onSubject.value.trim();syncTeacherMeta();render();accountName.textContent=fullName();const ok=await persistProfileNow();saveOnboardingBtn.disabled=false;saveOnboardingBtn.textContent='Salva e continua';if(ok){closeModal('onboardingModal');renderSchool();toast('Profilo salvato. Da ora si modifica solo da Profilo.')}else onboardingError.textContent='Salvataggio online non riuscito. Riprova.';};
 saveMetaBtn.onclick=async()=>{state.meta.firstName=firstNameInput.value.trim();state.meta.lastName=lastNameInput.value.trim();state.meta.teaching=teachingInput.value.trim();state.meta.subject=subjectInput.value.trim();state.meta.school=schoolInput.value.trim();state.meta.validFrom=validFromInput.value.trim();state.meta.maxPeriods=clampPeriods(personalMaxPeriodsInput.value,6);render();accountName.textContent=fullName();const ok=await persistProfileNow();if(ok){closeModal('metaModal');toast('Profilo salvato online')}else{alert('Non sono riuscito a salvare il profilo online. Riprova senza chiudere la pagina.')}};
 saveSlotBtn.onclick=()=>{const s=slotSubject.value.trim(),t=slotTime.value.trim();if(s)state.slots[activeKey]=[s,t];else delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora aggiornata')};
 clearSlotBtn.onclick=()=>{delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora svuotata')};
