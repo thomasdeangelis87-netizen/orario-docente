@@ -182,6 +182,20 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · V16</div>
 </div>
 
+<div class="modal" id="onboardingModal">
+ <div class="modal-card">
+  <h3>👋 Completa il tuo profilo</h3>
+  <p class="muted">Questi dati servono per riconoscerti nell'orario della scuola. Li inserisci una sola volta; in seguito potrai modificarli dalla sezione <strong>Profilo</strong>.</p>
+  <div class="form-grid">
+   <div class="field"><label>Nome *</label><input id="onFirstName" autocomplete="given-name"></div>
+   <div class="field"><label>Cognome *</label><input id="onLastName" autocomplete="family-name"></div>
+   <div class="field"><label>Materia insegnata</label><input id="onTeaching"></div>
+   <div class="field"><label>Classe di concorso</label><input id="onSubject"></div>
+  </div>
+  <div id="onboardingError" class="admin-note" style="color:#a61b1b;margin-top:8px"></div>
+  <div class="modal-actions"><button class="btn primary" id="saveOnboardingBtn">Salva e continua</button></div>
+ </div>
+</div>
 <div class="modal" id="metaModal"><div class="modalbox">
   <h3>Profilo docente</h3>
   <div class="formgrid">
@@ -258,7 +272,7 @@ function clampPeriods(v,def=6){v=parseInt(v,10);return Number.isFinite(v)?Math.m
 function schoolMaxPeriods(){schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,6);return schoolData.maxPeriods}
 function personalMaxPeriods(){state.meta.maxPeriods=clampPeriods(state.meta.maxPeriods,6);return state.meta.maxPeriods}
 let pendingImport=null;
-const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'AK-48291',schoolRole:'admin'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
+const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
 const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{}};
 let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false;
 let schoolData={source:'',loadedAt:'',teachers:[],entries:[],classCells:[],periodTimes:clone(SCHOOL_DEFAULT_TIMES),breaks:{0:[],1:[],2:[],3:[],4:[],5:[]},maxPeriods:6},activeMyClass='',schoolMode='class';
@@ -330,18 +344,90 @@ function showAuth(){authView.classList.remove('hidden');appView.classList.add('h
 function showApp(){authView.classList.add('hidden');appView.classList.remove('hidden')}
 function getLegacy(){try{const raw=localStorage.getItem('orarioDocenteStateV3');if(!raw)return null;const x=JSON.parse(raw);if(!validState(x))return null;return x}catch(e){return null}}
 function normalizeLegacy(x){const out=clone(x);if(out.meta.teacher&&!out.meta.firstName){const t=(out.meta.teacher||'').trim();if(/DE ANGELIS THOMAS/i.test(t)){out.meta.firstName='Thomas';out.meta.lastName='De Angelis'}else{const parts=t.split(/\s+/);out.meta.firstName=parts.shift()||'';out.meta.lastName=parts.join(' ')||''}}return out}
+
+function looksLikeThomasSeed(x){
+  if(!validState(x))return false;
+  const n=normText([x.meta.firstName,x.meta.lastName].filter(Boolean).join(' '));
+  const slots=Object.keys(x.slots||{});
+  return n==='thomas de angelis' && slots.length>=10;
+}
+async function persistProfileNow(){
+  if(!currentUser)return false;
+  try{
+    setCloudStatus('Salvataggio…',false);
+    const data=Object.assign({},currentUser.user_metadata||{},{
+      orarioDocente:state,
+      full_name:fullName(),
+      profileCompleted:!!(state.meta.firstName&&state.meta.lastName)
+    });
+    const updated=await currentUser.update({data});
+    if(updated)currentUser=updated;
+    hasCloudState=true;
+    setCloudStatus('Salvato online');
+    return true;
+  }catch(e){
+    console.error('Salvataggio profilo:',e);
+    setCloudStatus('Errore salvataggio online',false);
+    return false;
+  }
+}
+function openOnboarding(){
+  onFirstName.value=state.meta.firstName||'';
+  onLastName.value=state.meta.lastName||'';
+  onTeaching.value=state.meta.teaching||'';
+  onSubject.value=state.meta.subject||'';
+  onboardingError.textContent='';
+  openModal('onboardingModal');
+}
 async function handleUser(user){
- currentUser=user;if(!user){showAuth();return}showApp();accountEmail.textContent=user.email||'';loadSchoolLocal();
- const meta=user.user_metadata||{};const email=(user.email||'').trim().toLowerCase();const isThomas=email==='thomasdeangelisconsulting@gmail.com';
- const cloud=meta.orarioDocente;hasCloudState=validState(cloud);
- if(isThomas&&hasCloudState&&!cloud.meta.teaching){cloud.meta.teaching='Laboratorio di servizi enogastronomici – settore cucina';state=clone(cloud);try{const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis'});const updated=await currentUser.update({data});if(updated)currentUser=updated}catch(e){console.error(e)}}
+ currentUser=user;
+ if(!user){showAuth();return}
+ showApp();accountEmail.textContent=user.email||'';loadSchoolLocal();
+ const meta=user.user_metadata||{};
+ const email=(user.email||'').trim().toLowerCase();
+ const isThomas=email==='thomasdeangelisconsulting@gmail.com';
+ let cloud=meta.orarioDocente;
+ hasCloudState=validState(cloud);
+
+ // Repair accounts that accidentally inherited Thomas's seeded timetable in older builds.
+ if(!isThomas && hasCloudState && looksLikeThomasSeed(cloud)){
+   state=clone(EMPTY_STATE);
+   hasCloudState=false;
+   try{
+     const data=Object.assign({},meta,{orarioDocente:state,full_name:'',profileCompleted:false});
+     const updated=await currentUser.update({data});
+     if(updated)currentUser=updated;
+     cloud=null;
+   }catch(e){console.error('Pulizia profilo precedente:',e)}
+ }
+
+ if(isThomas&&hasCloudState&&!cloud.meta.teaching){
+   cloud.meta.teaching='Laboratorio di servizi enogastronomici – settore cucina';
+   state=clone(cloud);
+   try{
+     const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',profileCompleted:true});
+     const updated=await currentUser.update({data});if(updated)currentUser=updated;
+   }catch(e){console.error(e)}
+ }
  if(isThomas&&!meta.thomasProfileInitialized){
    state=clone(THOMAS_STATE);hasCloudState=true;migrationBox.classList.add('hidden');
-   try{const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',thomasProfileInitialized:true});const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online')}catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}
- }else if(hasCloudState){state=clone(cloud);migrationBox.classList.add('hidden')}
- else{state=clone(EMPTY_STATE);const legacy=getLegacy();if(legacy)migrationBox.classList.remove('hidden');else migrationBox.classList.add('hidden')}
+   try{
+     const data=Object.assign({},meta,{orarioDocente:state,full_name:'Thomas De Angelis',thomasProfileInitialized:true,profileCompleted:true});
+     const updated=await currentUser.update({data});if(updated)currentUser=updated;setCloudStatus('Salvato online');
+   }catch(e){console.error(e);setCloudStatus('Salvato sul dispositivo',false)}
+ }else if(hasCloudState){
+   state=clone(cloud);migrationBox.classList.add('hidden');
+ }else{
+   state=clone(EMPTY_STATE);
+   migrationBox.classList.add('hidden');
+ }
+
  accountName.textContent=fullName()!=='Il mio orario'?fullName():(meta.full_name||user.email||'Il mio account');
- render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();await loadSchoolCloud();if(!state.meta.firstName&&!state.meta.lastName&&!getLegacy()){setTimeout(()=>openProfile(),250)}
+ render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
+ await loadSchoolCloud();
+
+ const profileDone=!!(state.meta.firstName&&state.meta.lastName);
+ if(!profileDone)setTimeout(openOnboarding,250);
 }
 function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());openModal('metaModal')}
 function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView.classList.toggle('hidden',!all);personalView.classList.toggle('hidden',all)}
@@ -487,7 +573,8 @@ googleBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');
 forgotBtn.onclick=()=>{if(window.netlifyIdentity){netlifyIdentity.open('login');toast('Nella finestra di accesso premi “Forgot password?”.')}else alert('Recupero password non disponibile')};
 logoutBtn.onclick=()=>netlifyIdentity.logout();
 editMetaBtn.onclick=openProfile;
-saveMetaBtn.onclick=()=>{state.meta.firstName=firstNameInput.value.trim();state.meta.lastName=lastNameInput.value.trim();state.meta.teaching=teachingInput.value.trim();state.meta.subject=subjectInput.value.trim();state.meta.school=schoolInput.value.trim();state.meta.validFrom=validFromInput.value.trim();state.meta.maxPeriods=clampPeriods(personalMaxPeriodsInput.value,6);render();accountName.textContent=fullName();closeModal('metaModal');toast('Profilo salvato')};
+saveOnboardingBtn.onclick=async()=>{const first=onFirstName.value.trim(),last=onLastName.value.trim();if(!first||!last){onboardingError.textContent='Inserisci almeno Nome e Cognome.';return}saveOnboardingBtn.disabled=true;saveOnboardingBtn.textContent='Salvataggio…';state.meta.firstName=first;state.meta.lastName=last;state.meta.teaching=onTeaching.value.trim();state.meta.subject=onSubject.value.trim();syncTeacherMeta();render();accountName.textContent=fullName();const ok=await persistProfileNow();saveOnboardingBtn.disabled=false;saveOnboardingBtn.textContent='Salva e continua';if(ok){closeModal('onboardingModal');renderSchool();toast('Profilo creato')}else onboardingError.textContent='Salvataggio online non riuscito. Riprova.';};
+saveMetaBtn.onclick=async()=>{state.meta.firstName=firstNameInput.value.trim();state.meta.lastName=lastNameInput.value.trim();state.meta.teaching=teachingInput.value.trim();state.meta.subject=subjectInput.value.trim();state.meta.school=schoolInput.value.trim();state.meta.validFrom=validFromInput.value.trim();state.meta.maxPeriods=clampPeriods(personalMaxPeriodsInput.value,6);render();accountName.textContent=fullName();const ok=await persistProfileNow();if(ok){closeModal('metaModal');toast('Profilo salvato online')}else{alert('Non sono riuscito a salvare il profilo online. Riprova senza chiudere la pagina.')}};
 saveSlotBtn.onclick=()=>{const s=slotSubject.value.trim(),t=slotTime.value.trim();if(s)state.slots[activeKey]=[s,t];else delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora aggiornata')};
 clearSlotBtn.onclick=()=>{delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora svuotata')};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)}));
