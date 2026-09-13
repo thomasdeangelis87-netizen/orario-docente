@@ -7,20 +7,16 @@ function makeCode(mech='SCUOLA'){
   const root=normalizeCode(mech).replace(/[^A-Z]/g,'').slice(0,4)||'SCU';
   return `${root}-${Math.floor(10000+Math.random()*90000)}`;
 }
-
-function idFrom(userEmail, mechanical){
+function idFrom(mechanical){
   const safe=normalizeCode(mechanical)||'SCUOLA';
   const t=Date.now().toString(36).toUpperCase();
   return `${safe}-${t}`;
 }
-
-async function requirePlatformAdmin(req){
-  const user=await currentUser();
-  if(!user) return {error:json(401,{error:'Accesso richiesto'})};
+function requirePlatformAdmin(req){
   const key=req.headers.get('x-platform-admin-key') || '';
   const expected=process.env.PLATFORM_ADMIN_KEY || '';
   if(!expected || key!==expected) return {error:json(403,{error:'Chiave amministratore piattaforma non valida'})};
-  return {user};
+  return {ok:true};
 }
 
 export default async (req) => {
@@ -28,7 +24,6 @@ export default async (req) => {
     if(req.method==='POST'){
       let body={};
       try{ body=await req.json(); }catch{ return json(400,{error:'Dati non validi'}); }
-
       const action=String(body.action||'submit');
 
       if(action==='submit'){
@@ -40,15 +35,12 @@ export default async (req) => {
         if(!schoolName || !mechanicalCode)
           return json(400,{error:'Denominazione scuola e codice meccanografico sono obbligatori.'});
 
-        const id=idFrom(user.email,mechanicalCode);
+        const id=idFrom(mechanicalCode);
         const now=new Date().toISOString();
         const request={
-          id,
-          status:'pending',
-          createdAt:now,
+          id,status:'pending',createdAt:now,
           accountEmail:normalizeEmail(user.email),
-          schoolName,
-          mechanicalCode,
+          schoolName,mechanicalCode,
           schoolType:String(body.schoolType||'').trim(),
           city:String(body.city||'').trim(),
           province:String(body.province||'').trim().toUpperCase(),
@@ -62,33 +54,29 @@ export default async (req) => {
           contactPhone:String(body.contactPhone||'').trim(),
           notes:String(body.notes||'').trim()
         };
-
         await setJSON(`accreditations/${id}`,request);
         let index=await getJSON('accreditations-index');
         if(!Array.isArray(index)) index=[];
         index=[id,...index.filter(x=>x!==id)].slice(0,500);
         await setJSON('accreditations-index',index);
-
         return json(200,{ok:true,request});
       }
 
       if(action==='approve'){
-        const auth=await requirePlatformAdmin(req);
+        const auth=requirePlatformAdmin(req);
         if(auth.error) return auth.error;
 
         const id=String(body.id||'').trim();
         if(!id) return json(400,{error:'ID richiesta mancante'});
         const request=await getJSON(`accreditations/${id}`);
         if(!request) return json(404,{error:'Richiesta non trovata'});
-        if(request.status==='approved' && request.schoolCode){
+        if(request.status==='approved' && request.schoolCode)
           return json(200,{ok:true,alreadyApproved:true,schoolCode:request.schoolCode,request});
-        }
 
         const adminEmail=normalizeEmail(request.accountEmail);
         if(!adminEmail) return json(400,{error:'La richiesta non contiene un account referente valido.'});
 
-        let code=makeCode(request.mechanicalCode);
-        let tries=0;
+        let code=makeCode(request.mechanicalCode), tries=0;
         while(await getJSON(`schools/${code}`)){
           if(++tries>10) return json(409,{error:'Impossibile generare un codice scuola univoco'});
           code=makeCode(request.mechanicalCode);
@@ -96,35 +84,25 @@ export default async (req) => {
 
         const now=new Date().toISOString();
         const school={
-          code,
-          name:request.schoolName,
+          code,name:request.schoolName,
           mechanicalCode:String(request.mechanicalCode||'').toUpperCase(),
-          city:request.city||'',
-          province:String(request.province||'').toUpperCase(),
-          status:'active',
-          createdAt:now,
-          createdBy:auth.user.email,
-          inviteCode:code,
-          accreditationId:id
+          city:request.city||'',province:String(request.province||'').toUpperCase(),
+          status:'active',createdAt:now,createdBy:'platform-admin',
+          inviteCode:code,accreditationId:id
         };
         await setJSON(`schools/${code}`,school);
 
         const displayName=[request.contactFirstName,request.contactLastName].filter(Boolean).join(' ').trim();
         const membership={
-          email:adminEmail,
-          code,
-          role:'admin',
-          status:'active',
-          joinedAt:now,
-          assignedBy:auth.user.email,
-          displayName
+          email:adminEmail,code,role:'admin',status:'active',
+          joinedAt:now,assignedBy:'platform-admin',displayName
         };
         await setMembership(adminEmail,membership);
         await setJSON(`school-members/${code}`,[membership]);
 
         request.status='approved';
         request.approvedAt=now;
-        request.approvedBy=auth.user.email;
+        request.approvedBy='platform-admin';
         request.schoolCode=code;
         await setJSON(`accreditations/${id}`,request);
 
@@ -135,7 +113,7 @@ export default async (req) => {
     }
 
     if(req.method==='GET'){
-      const auth=await requirePlatformAdmin(req);
+      const auth=requirePlatformAdmin(req);
       if(auth.error) return auth.error;
 
       let index=await getJSON('accreditations-index');

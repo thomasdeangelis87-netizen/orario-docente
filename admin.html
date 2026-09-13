@@ -2,69 +2,80 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Amministrazione · Orario Docente</title>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<title>Pannello amministratore sistema · Orario Docente</title>
 <style>
 body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
-.wrap{max-width:980px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #dfe7f0;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(20,50,80,.08);margin-bottom:18px}
+.wrap{max-width:1050px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #dfe7f0;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(20,50,80,.08);margin-bottom:18px}
 .field{display:flex;flex-direction:column;gap:6px;margin:12px 0}.field input{padding:11px;border:1px solid #cbd7e4;border-radius:10px}
 .btn{padding:11px 14px;border-radius:12px;border:1px solid #dbe5f0;background:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55}
-.primary{background:#0b2a5b;color:#fff}.note{padding:12px;border-radius:12px;background:#fff4d6}.ok{background:#e6f6ea}
+.primary{background:#0b2a5b;color:#fff}.danger{background:#fff0f0;border-color:#f1caca}.note{padding:12px;border-radius:12px;background:#fff4d6}.ok{background:#e6f6ea}
 .row{display:flex;gap:8px;flex-wrap:wrap}a{color:#0b2a5b}.req{border:1px solid #dfe7f0;border-radius:16px;padding:16px;margin:12px 0}
 .meta{font-size:13px;color:#5d6f86;line-height:1.5}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef4fb;font-size:12px;font-weight:800}.approved{background:#e6f6ea}.pending{background:#fff4d6}
+.hidden{display:none!important}.hero{background:linear-gradient(135deg,#0b2a5b,#163d78);color:#fff;border-radius:24px;padding:26px;margin-bottom:18px}.hero h1{margin:0 0 8px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 </style>
 </head>
 <body><div class="wrap">
 <p><a href="/">← Orario Docente</a></p>
 
-<div class="card">
-<h1>Amministrazione piattaforma</h1>
-<p class="note">Qui approvi le richieste di accreditamento delle scuole. Dopo l'approvazione viene generato il codice scuola e l'account del referente diventa amministratore della scuola.</p>
-<button class="btn" id="loginBtn">Accedi</button>
-<div class="field"><label>Chiave amministratore piattaforma</label><input id="adminKey" type="password" autocomplete="off"></div>
-<button class="btn primary" id="loadBtn">Carica richieste scuole</button>
-<div id="reqMsg" style="margin-top:12px"></div>
-<div id="requests"></div>
+<div id="loginPanel" class="hero">
+  <h1>Amministratore sistema</h1>
+  <p>Accesso riservato alla gestione della piattaforma Orario Docente.</p>
+  <div class="field">
+    <label>Chiave amministratore piattaforma</label>
+    <input id="adminKey" type="password" autocomplete="off" placeholder="Inserisci la chiave segreta">
+  </div>
+  <button id="adminLoginBtn" class="btn primary">ACCEDI</button>
+  <div id="loginMsg" style="margin-top:12px"></div>
 </div>
 
-<div class="card">
-<h2>Attivazione manuale</h2>
-<p class="meta">Usa questa sezione solo per casi eccezionali o richieste già verificate fuori dal portale.</p>
-<div class="field"><label>Denominazione scuola *</label><input id="name"></div>
-<div class="field"><label>Codice meccanografico *</label><input id="mechanical"></div>
-<div class="row"><div class="field" style="flex:1"><label>Comune</label><input id="city"></div><div class="field" style="width:120px"><label>Provincia</label><input id="province" maxlength="2"></div></div>
-<div class="field"><label>Email account del primo amministratore scuola *</label><input id="adminEmail" type="email"></div>
-<div class="field"><label>Nome amministratore</label><input id="adminName"></div>
-<button class="btn primary" id="createBtn">Attiva scuola e genera codice</button>
-<div id="msg" style="margin-top:14px"></div>
+<div id="dashboard" class="hidden">
+  <div class="hero">
+    <div class="toolbar" style="justify-content:space-between">
+      <div><h1>Pannello di controllo</h1><p style="margin:4px 0 0">Gestione richieste, approvazioni e codici scuola.</p></div>
+      <button id="logoutBtn" class="btn danger">Esci</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar" style="justify-content:space-between">
+      <div><h2 style="margin:0">Richieste scuole</h2><p class="meta">Approva le richieste e genera il codice scuola.</p></div>
+      <button class="btn primary" id="refreshBtn">Aggiorna richieste</button>
+    </div>
+    <div id="reqMsg" style="margin-top:12px"></div>
+    <div id="requests"></div>
+  </div>
+
+  <div class="card">
+    <h2>Attivazione manuale</h2>
+    <p class="meta">Per casi eccezionali o scuole già verificate fuori dal portale.</p>
+    <div class="field"><label>Denominazione scuola *</label><input id="name"></div>
+    <div class="field"><label>Codice meccanografico *</label><input id="mechanical"></div>
+    <div class="row"><div class="field" style="flex:1"><label>Comune</label><input id="city"></div><div class="field" style="width:120px"><label>Provincia</label><input id="province" maxlength="2"></div></div>
+    <div class="field"><label>Email account primo amministratore scuola *</label><input id="adminEmail" type="email"></div>
+    <div class="field"><label>Nome amministratore</label><input id="adminName"></div>
+    <button class="btn primary" id="createBtn">Attiva scuola e genera codice</button>
+    <div id="msg" style="margin-top:14px"></div>
+  </div>
 </div>
 </div>
 
 <script>
-let user=null; const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);
+let adminKey='';
 
-async function token(){ if(!user) throw new Error('Prima accedi con il tuo account Orario Docente.'); return await user.jwt(); }
-function key(){ const k=$('adminKey').value.trim(); if(!k) throw new Error('Inserisci la chiave amministratore piattaforma.'); return k; }
 function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-async function listRequests(){
-  const t=await token(), k=key();
-  const r=await fetch('/.netlify/functions/school-accreditation',{headers:{'Authorization':'Bearer '+t,'X-Platform-Admin-Key':k}});
-  const raw=await r.text(); let d={}; try{d=raw?JSON.parse(raw):{};}catch(_){}
-  if(!r.ok) throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
-  return d.items||[];
+async function api(url,opts={}){
+  opts.headers={...(opts.headers||{}),'X-Platform-Admin-Key':adminKey};
+  const r=await fetch(url,opts);
+  const raw=await r.text();let d={};try{d=raw?JSON.parse(raw):{};}catch(_){}
+  if(!r.ok)throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
+  return d;
 }
 
-async function approve(id){
-  const t=await token(), k=key();
-  const r=await fetch('/.netlify/functions/school-accreditation',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+t,'X-Platform-Admin-Key':k,'Content-Type':'application/json'},
-    body:JSON.stringify({action:'approve',id})
-  });
-  const raw=await r.text(); let d={}; try{d=raw?JSON.parse(raw):{};}catch(_){}
-  if(!r.ok) throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
-  return d;
+async function loadRequests(){
+  const d=await api('/.netlify/functions/school-accreditation');
+  return d.items||[];
 }
 
 function render(items){
@@ -91,40 +102,69 @@ function render(items){
       </div>
     </div>`;
   }).join('');
+
   box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
-    b.disabled=true; b.textContent='Approvazione…';
+    b.disabled=true;b.textContent='Approvazione…';
     try{
-      const d=await approve(b.dataset.approve);
+      const d=await api('/.netlify/functions/school-accreditation',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'approve',id:b.dataset.approve})
+      });
       alert('Scuola approvata. Codice scuola: '+d.school.code);
       await refresh();
-    }catch(e){alert('Errore: '+(e?.message||e)); b.disabled=false; b.textContent='Approva e genera codice scuola';}
+    }catch(e){alert('Errore: '+(e?.message||e));b.disabled=false;b.textContent='Approva e genera codice scuola';}
   });
 }
 
 async function refresh(){
-  const m=$('reqMsg'); m.className='note'; m.textContent='Caricamento richieste…';
-  try{const items=await listRequests();render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e caricate.`;}
+  const m=$('reqMsg');m.className='note';m.textContent='Caricamento richieste…';
+  try{const items=await loadRequests();render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e caricate.`;}
   catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
 }
-$('loadBtn').onclick=refresh;
-$('loginBtn').onclick=()=>netlifyIdentity.open('login');
 
-async function manualApi(){
-  const t=await token(), k=key();
-  const payload={name:$('name').value.trim(),mechanicalCode:$('mechanical').value.trim(),city:$('city').value.trim(),province:$('province').value.trim(),adminEmail:$('adminEmail').value.trim(),adminName:$('adminName').value.trim()};
-  if(!payload.name||!payload.mechanicalCode||!payload.adminEmail)throw new Error('Compila denominazione scuola, codice meccanografico ed email amministratore.');
-  const r=await fetch('/.netlify/functions/admin-school',{method:'POST',headers:{'Authorization':'Bearer '+t,'Content-Type':'application/json','X-Platform-Admin-Key':k},body:JSON.stringify(payload)});
-  const raw=await r.text();let d={};try{d=raw?JSON.parse(raw):{};}catch(_){}
-  if(!r.ok)throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
-  return d;
-}
-$('createBtn').onclick=async()=>{const m=$('msg');m.className='note';m.textContent='Attivazione…';try{const d=await manualApi();m.className='note ok';m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}`;}catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}};
+$('adminLoginBtn').onclick=async()=>{
+  const k=$('adminKey').value.trim();
+  if(!k){$('loginMsg').textContent='Inserisci la chiave amministratore.';return;}
+  adminKey=k;
+  $('adminLoginBtn').disabled=true;$('adminLoginBtn').textContent='Accesso…';
+  try{
+    await loadRequests();
+    $('loginPanel').classList.add('hidden');
+    $('dashboard').classList.remove('hidden');
+    await refresh();
+  }catch(e){
+    adminKey='';
+    $('loginMsg').textContent='⚠️ '+(e?.message||e);
+  }finally{
+    $('adminLoginBtn').disabled=false;$('adminLoginBtn').textContent='ACCEDI';
+  }
+};
 
-if(window.netlifyIdentity){
-  netlifyIdentity.on('init',u=>{user=u;$('loginBtn').textContent=u?`Connesso: ${u.email}`:'Accedi';});
-  netlifyIdentity.on('login',u=>{user=u;$('loginBtn').textContent=`Connesso: ${u.email}`;netlifyIdentity.close();});
-  netlifyIdentity.on('logout',()=>{user=null;$('loginBtn').textContent='Accedi';});
-  netlifyIdentity.init();
-}
+$('logoutBtn').onclick=()=>{
+  adminKey='';$('adminKey').value='';
+  $('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('loginMsg').textContent='';
+};
+
+$('refreshBtn').onclick=refresh;
+
+$('createBtn').onclick=async()=>{
+  const m=$('msg');m.className='note';m.textContent='Attivazione…';
+  try{
+    const payload={
+      name:$('name').value.trim(),mechanicalCode:$('mechanical').value.trim(),
+      city:$('city').value.trim(),province:$('province').value.trim(),
+      adminEmail:$('adminEmail').value.trim(),adminName:$('adminName').value.trim()
+    };
+    if(!payload.name||!payload.mechanicalCode||!payload.adminEmail)throw new Error('Compila denominazione, codice meccanografico ed email amministratore.');
+    const d=await api('/.netlify/functions/platform-admin-school',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    m.className='note ok';
+    m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}`;
+  }catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
+};
 </script>
 </body></html>
