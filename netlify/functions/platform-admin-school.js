@@ -1,8 +1,13 @@
 import {json,getJSON,setJSON,setMembership,normalizeEmail,normalizeCode} from './_lib.js';
+import { sendSchoolApprovalEmail } from './_brevo.js';
 
+function env(name){
+  try { return Netlify.env.get(name) || ''; }
+  catch { return ''; }
+}
 function requirePlatformAdmin(req){
   const key=req.headers.get('x-platform-admin-key') || '';
-  const expected=process.env.PLATFORM_ADMIN_KEY || '';
+  const expected=env('PLATFORM_ADMIN_KEY');
   if(!expected || key!==expected) return {error:json(403,{error:'Chiave amministratore piattaforma non valida'})};
   return {ok:true};
 }
@@ -30,7 +35,22 @@ export default async (req)=>{
     const membership={email:adminEmail,code,role:'admin',status:'active',joinedAt:now,assignedBy:'platform-admin',displayName:String(body.adminName||'').trim()};
     await setMembership(adminEmail,membership);
     await setJSON(`school-members/${code}`,[membership]);
-    return json(200,{ok:true,school,membership});
+
+    let emailSent=false, emailError='';
+    try{
+      await sendSchoolApprovalEmail({
+        to:adminEmail,
+        schoolName:name,
+        schoolCode:code,
+        contactName:String(body.adminName||'').trim()
+      });
+      emailSent=true;
+    }catch(e){
+      emailError=String(e?.message||e);
+      console.error('manual school approval email error',e);
+    }
+
+    return json(200,{ok:true,school,membership,emailSent,emailError});
   }catch(e){
     console.error('platform-admin-school error',e);
     return json(500,{error:'Errore backend amministrazione piattaforma',detail:String(e?.message||e)});

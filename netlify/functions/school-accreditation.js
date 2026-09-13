@@ -2,7 +2,12 @@ import {
   json,currentUser,getJSON,setJSON,setMembership,
   normalizeEmail,normalizeCode
 } from './_lib.js';
+import { sendSchoolApprovalEmail } from './_brevo.js';
 
+function env(name){
+  try { return Netlify.env.get(name) || ''; }
+  catch { return ''; }
+}
 function makeCode(mech='SCUOLA'){
   const root=normalizeCode(mech).replace(/[^A-Z]/g,'').slice(0,4)||'SCU';
   return `${root}-${Math.floor(10000+Math.random()*90000)}`;
@@ -14,9 +19,40 @@ function idFrom(mechanical){
 }
 function requirePlatformAdmin(req){
   const key=req.headers.get('x-platform-admin-key') || '';
-  const expected=process.env.PLATFORM_ADMIN_KEY || '';
+  const expected=env('PLATFORM_ADMIN_KEY');
   if(!expected || key!==expected) return {error:json(403,{error:'Chiave amministratore piattaforma non valida'})};
   return {ok:true};
+}
+async function sendAndSave(request){
+  const to=normalizeEmail(request.accountEmail);
+  if(!to) throw new Error('Email account referente mancante');
+  const contactName=[request.contactFirstName,request.contactLastName].filter(Boolean).join(' ').trim();
+
+  try{
+    const result=await sendSchoolApprovalEmail({
+      to,
+      schoolName:request.schoolName,
+      schoolCode:request.schoolCode,
+      contactName
+    });
+    request.approvalEmail={
+      status:'sent',
+      sentAt:new Date().toISOString(),
+      recipient:to,
+      messageId:result.messageId||''
+    };
+    await setJSON(`accreditations/${request.id}`,request);
+    return {sent:true,messageId:result.messageId||''};
+  }catch(e){
+    request.approvalEmail={
+      status:'error',
+      attemptedAt:new Date().toISOString(),
+      recipient:to,
+      error:String(e?.message||e)
+    };
+    await setJSON(`accreditations/${request.id}`,request);
+    return {sent:false,error:String(e?.message||e)};
+  }
 }
 
 export default async (req) => {
@@ -70,8 +106,13 @@ export default async (req) => {
         if(!id) return json(400,{error:'ID richiesta mancante'});
         const request=await getJSON(`accreditations/${id}`);
         if(!request) return json(404,{error:'Richiesta non trovata'});
-        if(request.status==='approved' && request.schoolCode)
-          return json(200,{ok:true,alreadyApproved:true,schoolCode:request.schoolCode,request});
+
+        if(request.status==='approved' && request.schoolCode){
+          return json(200,{
+            ok:true,alreadyApproved:true,schoolCode:request.schoolCode,request,
+            emailSent:request.approvalEmail?.status==='sent'
+          });
+        }
 
         const adminEmail=normalizeEmail(request.accountEmail);
         if(!adminEmail) return json(400,{error:'La richiesta non contiene un account referente valido.'});
@@ -106,7 +147,24 @@ export default async (req) => {
         request.schoolCode=code;
         await setJSON(`accreditations/${id}`,request);
 
-        return json(200,{ok:true,school,membership,request});
+        const email=await sendAndSave(request);
+        return json(200,{ok:true,school,membership,request,emailSent:email.sent,emailError:email.error||''});
+      }
+
+      if(action==='resend-email'){
+        const auth=requirePlatformAdmin(req);
+        if(auth.error) return auth.error;
+
+        const id=String(body.id||'').trim();
+        if(!id) return json(400,{error:'ID richiesta mancante'});
+        const request=await getJSON(`accreditations/${id}`);
+        if(!request) return json(404,{error:'Richiesta non trovata'});
+        if(request.status!=='approved' || !request.schoolCode)
+          return json(409,{error:'La scuola deve essere approvata prima di inviare l’email.'});
+
+        const email=await sendAndSave(request);
+        if(!email.sent) return json(502,{error:'Scuola approvata, ma invio email non riuscito.',detail:email.error});
+        return json(200,{ok:true,emailSent:true,messageId:email.messageId||''});
       }
 
       return json(400,{error:'Azione non riconosciuta'});

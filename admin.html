@@ -94,11 +94,14 @@ function render(items){
         Referente: ${esc([r.contactFirstName,r.contactLastName].filter(Boolean).join(' '))} · ${esc(r.contactRole||'')}<br>
         Account: <strong>${esc(r.accountEmail||'')}</strong><br>
         Richiesta: ${esc(r.createdAt||'')}
-        ${approved?`<br>Codice scuola: <strong>${esc(r.schoolCode||'')}</strong>`:''}
+        ${approved?`<br>Codice scuola: <strong>${esc(r.schoolCode||'')}</strong>
+          <br>Email approvazione: <strong>${r.approvalEmail?.status==='sent'?'✅ inviata':'⚠️ non inviata'}</strong>
+          ${r.approvalEmail?.sentAt?` · ${esc(r.approvalEmail.sentAt)}`:''}`:''}
       </div>
       <div class="row" style="margin-top:12px">
-        ${approved?`<button class="btn" onclick="navigator.clipboard.writeText('${esc(r.schoolCode||'')}')">Copia codice</button>`:
-        `<button class="btn primary" data-approve="${esc(r.id)}">Approva e genera codice scuola</button>`}
+        ${approved?`<button class="btn" onclick="navigator.clipboard.writeText('${esc(r.schoolCode||'')}')">Copia codice</button>
+          <button class="btn" data-resend="${esc(r.id)}">Reinvia email</button>`:
+        `<button class="btn primary" data-approve="${esc(r.id)}">Approva, genera codice e invia email</button>`}
       </div>
     </div>`;
   }).join('');
@@ -111,9 +114,28 @@ function render(items){
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'approve',id:b.dataset.approve})
       });
-      alert('Scuola approvata. Codice scuola: '+d.school.code);
+      alert(
+        'Scuola approvata. Codice scuola: '+d.school.code+
+        (d.emailSent?'\nEmail di approvazione inviata automaticamente.':'\nATTENZIONE: scuola approvata, ma email non inviata. Puoi usare “Reinvia email”.')
+      );
       await refresh();
     }catch(e){alert('Errore: '+(e?.message||e));b.disabled=false;b.textContent='Approva e genera codice scuola';}
+  });
+
+  box.querySelectorAll('[data-resend]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;b.textContent='Invio…';
+    try{
+      await api('/.netlify/functions/school-accreditation',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'resend-email',id:b.dataset.resend})
+      });
+      alert('Email di approvazione inviata.');
+      await refresh();
+    }catch(e){
+      alert('Invio email non riuscito: '+(e?.message||e));
+      b.disabled=false;b.textContent='Reinvia email';
+    }
   });
 }
 
@@ -163,7 +185,7 @@ $('createBtn').onclick=async()=>{
       body:JSON.stringify(payload)
     });
     m.className='note ok';
-    m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}`;
+    m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}<br>${d.emailSent?'✅ Email di approvazione inviata.':'⚠️ Email non inviata: '+esc(d.emailError||'errore sconosciuto')}`;
   }catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
 };
 </script>
