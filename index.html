@@ -243,6 +243,12 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   </div>
   <input id="smartImportFile" type="file" accept=".xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp" class="hidden">
   <div id="importStatus" class="import-status"></div>
+  <div id="pdfTeacherFallback" class="field hidden" style="margin-top:12px">
+    <label for="pdfTeacherSelect">Docente rilevato nel PDF</label>
+    <select id="pdfTeacherSelect"></select>
+    <div class="admin-note" id="pdfTeacherFallbackNote"></div>
+    <button class="btn soft" id="confirmPdfTeacherBtn" type="button" style="margin-top:10px">Analizza questa pagina</button>
+  </div>
   <div id="importPreview" class="previewbox hidden"></div>
   <div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary hidden" id="applyImportBtn">Usa questo orario</button></div>
 </div></div>
@@ -294,7 +300,7 @@ function applyBreaksToTimes(times,breaks){const out=times.slice();for(const b of
 function clampPeriods(v,def=6){v=parseInt(v,10);return Number.isFinite(v)?Math.max(1,Math.min(MAX_PERIODS,v)):def}
 function schoolMaxPeriods(){schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,6);return schoolData.maxPeriods}
 function personalMaxPeriods(){state.meta.maxPeriods=clampPeriods(state.meta.maxPeriods,6);return state.meta.maxPeriods}
-let pendingImport=null;
+let pendingImport=null,pendingPdfChoice=null;
 const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
 const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher',schoolTeacherName:''},slots:{}};
 let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false;
@@ -904,7 +910,7 @@ function parseExcelRows(rows){const tr=findTeacherRow(rows);if(tr<0)return null;
 async function importExcel(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});const parsed=parseExcelRows(rows);if(parsed)return{state:parsed,detail:`Riconosciuto il foglio “${name}” e trovata la riga di ${fullName()}.`}}throw new Error('Non trovo il tuo nome o una struttura di orario riconoscibile nel file Excel.')}
 async function importPdf(file){
  const pdfjsLib=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');
- const {parseIndexEducationPages}=await import('/pdf-layout-parser.js');
+ const {parseIndexEducationPages,resolveTeacherPage,listDetectedTeachers}=await import('/pdf-layout-parser.js');
  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,pages=[];
  for(let p=1;p<=pdf.numPages;p++){
@@ -913,7 +919,14 @@ async function importPdf(file){
    opList.fnArray.forEach((fn,i)=>{if(fn!==pdfjsLib.OPS.constructPath)return;const bounds=opList.argsArray[i]&&opList.argsArray[i][2];if(!bounds||bounds.length<4)return;const vr=viewport.convertToViewportRectangle(bounds),left=Math.min(vr[0],vr[2]),top=Math.min(vr[1],vr[3]),right=Math.max(vr[0],vr[2]),bottom=Math.max(vr[1],vr[3]);if(right-left>8&&bottom-top>8)boxes.push({left,top,right,bottom})});
    pages.push({number:p,width:viewport.width,height:viewport.height,boxes,items:tc.items.filter(x=>String(x.str||'').trim()).map(x=>({str:x.str,x:x.transform[4],y:viewport.height-x.transform[5],width:x.width||0,height:Math.abs(x.height||x.transform[3]||0)}))});
  }
- const result=parseIndexEducationPages(pages,{firstName:state.meta.firstName,lastName:state.meta.lastName,fullName:fullName()},{maxPeriods:MAX_PERIODS});
+ const profile={firstName:state.meta.firstName,lastName:state.meta.lastName,fullName:fullName()};
+ const match=resolveTeacherPage(pages,profile),teachers=listDetectedTeachers(pages);
+ let selectedPage=match.status==='matched'?match.pageNumber:null;
+ if(selectedPage==null){
+   if(!teachers.length)throw new Error('Non riesco a rilevare le intestazioni dei docenti nel PDF.');
+   selectedPage=await choosePdfTeacher(teachers,match.status==='ambiguous'?'Ho trovato più corrispondenze possibili: scegli il tuo nome.':`Non ho trovato con certezza “${fullName()}”: scegli il nome riportato nel PDF.`);
+ }
+ const result=parseIndexEducationPages(pages,profile,{maxPeriods:MAX_PERIODS,pageNumber:selectedPage});
  const out=clone(EMPTY_STATE);out.meta=clone(state.meta);out.meta.maxPeriods=Math.max(personalMaxPeriods(),result.detectedMaxPeriods||6);
  result.lessons.forEach(lesson=>{
    const activity=lesson.className||lesson.subject||'Lezione';
@@ -923,9 +936,15 @@ async function importPdf(file){
  if(!Object.keys(out.slots).length)throw new Error('Ho trovato la pagina del docente, ma non riesco a distinguere le lezioni nella griglia del PDF.');
  return{state:out,detail:`Trovata la pagina ${result.pageNumber} di ${fullName()}: ${result.lessons.length} lezioni ricostruite dalla posizione nella griglia.`};
 }
+function choosePdfTeacher(teachers,note){
+ const box=document.getElementById('pdfTeacherFallback'),select=document.getElementById('pdfTeacherSelect'),label=document.getElementById('pdfTeacherFallbackNote'),button=document.getElementById('confirmPdfTeacherBtn');
+ box.classList.remove('hidden');label.textContent=note;select.innerHTML='<option value="">Seleziona il docente…</option>'+teachers.map(t=>`<option value="${t.pageNumber}">${esc(t.name)} · pagina ${t.pageNumber}</option>`).join('');
+ importStatus.textContent='Seleziona il docente corretto per continuare.';
+ return new Promise(resolve=>{pendingPdfChoice=resolve;button.onclick=()=>{const page=Number(select.value);if(!page){label.textContent='Seleziona un docente dall’elenco.';return}box.classList.add('hidden');pendingPdfChoice=null;resolve(page)}});
+}
 async function importImage(file){if(!window.Tesseract)throw new Error('Modulo foto non disponibile. Riprova con connessione internet.');importStatus.textContent='Sto leggendo la foto… può richiedere qualche secondo.';const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.status==='recognizing text')importStatus.textContent=`Lettura foto: ${Math.round((m.progress||0)*100)}%`}});const text=result.data.text||'';const parsed=parseTextSchedule(text);if(!parsed)throw new Error('Ho letto la foto ma non riesco a distinguere bene giorni e classi. Prova uno screenshot più dritto e nitido.');return{state:parsed,detail:'Foto analizzata e orario ricostruito. Controlla le celle prima di confermare.'}}
 function importSummary(st){const lines=[];for(let d=0;d<6;d++){const vals=[];for(let p=0;p<MAX_PERIODS;p++){const v=st.slots[`${d}-${p}`];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:{},details=[];if(info.subjects&&info.subjects.length)details.push(info.subjects.join(' + '));if(info.room)details.push('aula '+info.room);if(info.coTeachers&&info.coTeachers.length)details.push('con '+info.coTeachers.join(' + '));vals.push(`${p+1}ª ${v[1]?v[1]+' · ':''}${v[0]}${details.length?' ('+details.join(', ')+')':''}`)}}lines.push(`${DAYS[d].name}: ${vals.length?vals.join(' · '):'libero'}`)}return lines.join('\n')}
-async function processSmartImport(file){pendingImport=null;applyImportBtn.classList.add('hidden');importPreview.classList.add('hidden');importStatus.classList.add('show');importStatus.textContent='Analisi in corso…';try{const n=file.name.toLowerCase();let res;if(n.endsWith('.xlsx')||n.endsWith('.xls'))res=await importExcel(file);else if(n.endsWith('.pdf'))res=await importPdf(file);else res=await importImage(file);pendingImport=res.state;importStatus.textContent='✅ '+res.detail;importPreview.textContent=importSummary(res.state);importPreview.classList.remove('hidden');applyImportBtn.classList.remove('hidden')}catch(e){console.error(e);importStatus.textContent='⚠️ '+(e.message||'Non sono riuscito a importare questo file.') }finally{smartImportFile.value=''}}
+async function processSmartImport(file){pendingImport=null;document.getElementById('pdfTeacherFallback').classList.add('hidden');applyImportBtn.classList.add('hidden');importPreview.classList.add('hidden');importStatus.classList.add('show');importStatus.textContent='Analisi in corso…';try{const n=file.name.toLowerCase();let res;if(n.endsWith('.xlsx')||n.endsWith('.xls'))res=await importExcel(file);else if(n.endsWith('.pdf'))res=await importPdf(file);else res=await importImage(file);pendingImport=res.state;importStatus.textContent='✅ '+res.detail;importPreview.textContent=importSummary(res.state);importPreview.classList.remove('hidden');applyImportBtn.classList.remove('hidden')}catch(e){console.error(e);importStatus.textContent='⚠️ '+(e.message||'Non sono riuscito a importare questo file.') }finally{smartImportFile.value=''}}
 
 signupBtn.onclick=()=>{
   regFirstName.value='';
