@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseIndexEducationPages} from '../pdf-layout-parser.js';
+import {listDetectedTeachers,parseIndexEducationPages,resolveTeacherPage} from '../pdf-layout-parser.js';
 
 function item(str,x,y,width=40,height=10){return{str,x,y,width,height}}
-function page(number,name,lessonText=''){const items=[item(name,220,35,120),...['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'].map((d,i)=>item(d,100+i*80,100,60)),item('08:00 – 09:00',20,145,70),item('09:00 – 10:00',20,205,70),item('10:00 – 11:00',20,265,70)];if(lessonText)items.push(item('3° A',105,130,30),item(lessonText,105,140,55),item('Aula 12',105,150,45),item('ROSSI MARIO',105,160,65));return{number,width:600,height:400,items}}
+function page(number,name,lessonText=''){const items=[item(name,220,35,120),...['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'].map((d,i)=>item(d,100+i*80,60,60)),item('08:00 – 09:00',20,145,70),item('09:00 – 10:00',20,205,70),item('10:00 – 11:00',20,265,70)];if(lessonText)items.push(item('3° A',105,130,30),item(lessonText,105,140,55),item('Aula 12',105,150,45),item('ROSSI MARIO',105,160,65));return{number,width:600,height:400,items}}
 
 test('seleziona soltanto la pagina intestata al docente',()=>{const result=parseIndexEducationPages([page(1,'BIANCHI ANNA','Italiano'),page(2,'THOMAS DE ANGELIS','Pasticceria')],{firstName:'Thomas',lastName:'De Angelis',fullName:'Thomas De Angelis'},{maxPeriods:10});assert.equal(result.pageNumber,2);assert.equal(result.lessons[0].className,'3°A');assert.equal(result.lessons[0].room,'12');assert.match(result.lessons[0].subject,/Pasticceria/);assert.deepEqual(result.lessons[0].coTeachers,['ROSSI MARIO'])});
 
@@ -12,3 +12,11 @@ test('mantiene fasce pomeridiane e periodi oltre la sesta ora',()=>{const p=page
 test('non dipende dall ordine testuale degli elementi PDF',()=>{const p=page(1,'THOMAS DE ANGELIS','Pasticceria');p.items.reverse();const result=parseIndexEducationPages([p],{fullName:'Thomas De Angelis',firstName:'Thomas',lastName:'De Angelis'});assert.equal(result.lessons[0].day,0);assert.equal(result.lessons[0].period,0)});
 
 test('espande una lezione graficamente alta su piu ore',()=>{const p=page(1,'THOMAS DE ANGELIS','Pasticceria');p.boxes=[{left:90,right:170,top:112,bottom:230}];const result=parseIndexEducationPages([p],{fullName:'Thomas De Angelis',firstName:'Thomas',lastName:'De Angelis'});assert.deepEqual(result.lessons.map(l=>l.period),[0,1])});
+
+test('riconosce cognome nome e una forma abbreviata non ambigua del nome',()=>{const match=resolveTeacherPage([page(146,'RAIOLA ANGELO'),page(147,'ROSSI MICHELE')],{firstName:'Michelangelo',lastName:'Raiola',fullName:'Michelangelo Raiola'});assert.equal(match.status,'matched');assert.equal(match.pageNumber,146);assert.equal(match.name,'RAIOLA ANGELO')});
+
+test('riconosce iniziali ma non sceglie quando la corrispondenza e ambigua',()=>{const pages=[page(1,'ROSSI MARIO'),page(2,'ROSSI MARCO')];const match=resolveTeacherPage(pages,{firstName:'M.',lastName:'Rossi',fullName:'M. Rossi'});assert.equal(match.status,'ambiguous');assert.equal(match.candidates.length,2)});
+
+test('estrae solo le intestazioni dei docenti, non le compresenze nella griglia',()=>{const p=page(146,'RAIOLA ANGELO','SCIENZE ALIMENTARI');assert.deepEqual(listDetectedTeachers([p]).map(t=>t.name),['RAIOLA ANGELO'])});
+
+test('permette di analizzare una pagina scelta manualmente',()=>{const pages=[page(1,'ROSSI MARIO','Italiano'),page(2,'BIANCHI ANNA','Matematica')];const result=parseIndexEducationPages(pages,{firstName:'Nome',lastName:'Assente',fullName:'Nome Assente'},{pageNumber:2});assert.equal(result.pageNumber,2);assert.match(result.lessons[0].subject,/Matematica/)});
