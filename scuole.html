@@ -108,7 +108,7 @@ a{color:inherit}.wrap{max-width:1080px;margin:auto;padding:20px}.top{display:fle
     </aside>
   </div>
 
-  <div class="footer">Orario Docente · Portale Scuole · Versione 16.7.9</div>
+  <div class="footer">Orario Docente · Portale Scuole · Versione 16.8.0</div>
 </div>
 <script>
 const accreditationArea=document.getElementById('schoolAccreditationArea');
@@ -148,8 +148,44 @@ document.getElementById('schoolLogoutBtn').onclick=()=>{
   if(window.netlifyIdentity)netlifyIdentity.logout();
 };
 
+
+async function registerPendingAccreditation(user){
+  const token=await user.jwt();
+  const val=n=>{
+    const el=schoolForm?.elements?.namedItem(n);
+    return el ? String(el.value||'').trim() : '';
+  };
+  const payload={
+    action:'submit',
+    schoolName:val('istituto'),
+    mechanicalCode:val('codice_meccanografico'),
+    schoolType:val('tipologia'),
+    city:val('comune'),
+    province:val('provincia'),
+    institutionalEmail:val('email_istituzionale'),
+    pec:val('pec'),
+    website:val('sito_web'),
+    contactFirstName:val('nome_referente'),
+    contactLastName:val('cognome_referente'),
+    contactRole:val('ruolo_referente'),
+    contactEmail:val('email_referente'),
+    contactPhone:val('telefono_referente'),
+    notes:val('note')
+  };
+  const r=await fetch('/.netlify/functions/school-accreditation',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  const raw=await r.text();
+  let d={};
+  try{d=raw?JSON.parse(raw):{};}catch(_){}
+  if(!r.ok) throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
+  return d;
+}
+
 if(schoolForm){
-  schoolForm.addEventListener('submit',e=>{
+  schoolForm.addEventListener('submit',async e=>{
     const user=window.netlifyIdentity&&netlifyIdentity.currentUser();
     if(!user){
       e.preventDefault();
@@ -159,6 +195,17 @@ if(schoolForm){
       return;
     }
     if(emailAccount)emailAccount.value=(user.email||'').trim();
+    e.preventDefault();
+    const submitBtn=schoolForm.querySelector('button[type="submit"],input[type="submit"]');
+    const oldText=submitBtn?.textContent;
+    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Invio richiesta…';}
+    try{
+      await registerPendingAccreditation(user);
+      schoolForm.submit();
+    }catch(err){
+      alert('Non è stato possibile registrare la richiesta di accreditamento: '+(err?.message||String(err)));
+      if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldText||'Invia richiesta';}
+    }
   });
 }
 

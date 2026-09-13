@@ -1,80 +1,130 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amministrazione · Orario Docente</title><script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script><style>body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}.wrap{max-width:760px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #dfe7f0;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(20,50,80,.08)}.field{display:flex;flex-direction:column;gap:6px;margin:12px 0}.field input{padding:11px;border:1px solid #cbd7e4;border-radius:10px}.btn{padding:11px 14px;border-radius:12px;border:1px solid #dbe5f0;background:#fff;font-weight:800;cursor:pointer}.primary{background:#0b2a5b;color:#fff}.note{padding:12px;border-radius:12px;background:#fff4d6}.ok{background:#e6f6ea}.row{display:flex;gap:8px;flex-wrap:wrap}a{color:#0b2a5b}</style></head><body><div class="wrap"><p><a href="/">← Orario Docente</a></p><div class="card"><h1>Attiva una scuola</h1><p class="note">Questa pagina serve all'amministrazione della piattaforma dopo aver verificato una richiesta ricevuta dal Portale Scuole.</p><button class="btn" id="loginBtn">Accedi</button><div class="field"><label>Chiave amministratore piattaforma</label><input id="adminKey" type="password" autocomplete="off"></div><div class="field"><label>Denominazione scuola *</label><input id="name"></div><div class="field"><label>Codice meccanografico *</label><input id="mechanical"></div><div class="row"><div class="field" style="flex:1"><label>Comune</label><input id="city"></div><div class="field" style="width:120px"><label>Provincia</label><input id="province" maxlength="2"></div></div><div class="field"><label>Email account del primo amministratore scuola *</label><input id="adminEmail" type="email"></div><div class="field"><label>Nome amministratore</label><input id="adminName"></div><button class="btn primary" id="createBtn">Attiva scuola e genera codice</button><div id="msg" style="margin-top:14px"></div></div></div><script>
-let user=null;
-const $=id=>document.getElementById(id);
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amministrazione · Orario Docente</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
+.wrap{max-width:980px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #dfe7f0;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(20,50,80,.08);margin-bottom:18px}
+.field{display:flex;flex-direction:column;gap:6px;margin:12px 0}.field input{padding:11px;border:1px solid #cbd7e4;border-radius:10px}
+.btn{padding:11px 14px;border-radius:12px;border:1px solid #dbe5f0;background:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55}
+.primary{background:#0b2a5b;color:#fff}.note{padding:12px;border-radius:12px;background:#fff4d6}.ok{background:#e6f6ea}
+.row{display:flex;gap:8px;flex-wrap:wrap}a{color:#0b2a5b}.req{border:1px solid #dfe7f0;border-radius:16px;padding:16px;margin:12px 0}
+.meta{font-size:13px;color:#5d6f86;line-height:1.5}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef4fb;font-size:12px;font-weight:800}.approved{background:#e6f6ea}.pending{background:#fff4d6}
+</style>
+</head>
+<body><div class="wrap">
+<p><a href="/">← Orario Docente</a></p>
 
-async function api(){
-  if(!user) throw new Error('Prima accedi con il tuo account Orario Docente.');
-  const token=await user.jwt();
-  const payload={
-    name:$('name').value.trim(),
-    mechanicalCode:$('mechanical').value.trim(),
-    city:$('city').value.trim(),
-    province:$('province').value.trim(),
-    adminEmail:$('adminEmail').value.trim(),
-    adminName:$('adminName').value.trim()
-  };
-  const key=$('adminKey').value.trim();
-  if(!key) throw new Error('Inserisci la chiave amministratore piattaforma.');
-  if(!payload.name || !payload.mechanicalCode || !payload.adminEmail)
-    throw new Error('Compila denominazione scuola, codice meccanografico ed email amministratore.');
+<div class="card">
+<h1>Amministrazione piattaforma</h1>
+<p class="note">Qui approvi le richieste di accreditamento delle scuole. Dopo l'approvazione viene generato il codice scuola e l'account del referente diventa amministratore della scuola.</p>
+<button class="btn" id="loginBtn">Accedi</button>
+<div class="field"><label>Chiave amministratore piattaforma</label><input id="adminKey" type="password" autocomplete="off"></div>
+<button class="btn primary" id="loadBtn">Carica richieste scuole</button>
+<div id="reqMsg" style="margin-top:12px"></div>
+<div id="requests"></div>
+</div>
 
-  let r;
-  try{
-    r=await fetch('/.netlify/functions/admin-school',{
-      method:'POST',
-      headers:{
-        'Authorization':'Bearer '+token,
-        'Content-Type':'application/json',
-        'X-Platform-Admin-Key':key
-      },
-      body:JSON.stringify(payload)
-    });
-  }catch(err){
-    throw new Error('Impossibile contattare il backend: '+(err?.message||String(err)));
-  }
+<div class="card">
+<h2>Attivazione manuale</h2>
+<p class="meta">Usa questa sezione solo per casi eccezionali o richieste già verificate fuori dal portale.</p>
+<div class="field"><label>Denominazione scuola *</label><input id="name"></div>
+<div class="field"><label>Codice meccanografico *</label><input id="mechanical"></div>
+<div class="row"><div class="field" style="flex:1"><label>Comune</label><input id="city"></div><div class="field" style="width:120px"><label>Provincia</label><input id="province" maxlength="2"></div></div>
+<div class="field"><label>Email account del primo amministratore scuola *</label><input id="adminEmail" type="email"></div>
+<div class="field"><label>Nome amministratore</label><input id="adminName"></div>
+<button class="btn primary" id="createBtn">Attiva scuola e genera codice</button>
+<div id="msg" style="margin-top:14px"></div>
+</div>
+</div>
 
-  const raw=await r.text();
-  let d={};
-  try{ d=raw ? JSON.parse(raw) : {}; }catch(_){ d={}; }
+<script>
+let user=null; const $=id=>document.getElementById(id);
 
-  if(!r.ok){
-    const detail=[d.error,d.detail].filter(Boolean).join(' — ') || raw || `Errore HTTP ${r.status}`;
-    throw new Error(detail);
-  }
-  if(!d.school?.code) throw new Error('Risposta del server valida ma senza codice scuola.');
+async function token(){ if(!user) throw new Error('Prima accedi con il tuo account Orario Docente.'); return await user.jwt(); }
+function key(){ const k=$('adminKey').value.trim(); if(!k) throw new Error('Inserisci la chiave amministratore piattaforma.'); return k; }
+function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+async function listRequests(){
+  const t=await token(), k=key();
+  const r=await fetch('/.netlify/functions/school-accreditation',{headers:{'Authorization':'Bearer '+t,'X-Platform-Admin-Key':k}});
+  const raw=await r.text(); let d={}; try{d=raw?JSON.parse(raw):{};}catch(_){}
+  if(!r.ok) throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
+  return d.items||[];
+}
+
+async function approve(id){
+  const t=await token(), k=key();
+  const r=await fetch('/.netlify/functions/school-accreditation',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+t,'X-Platform-Admin-Key':k,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'approve',id})
+  });
+  const raw=await r.text(); let d={}; try{d=raw?JSON.parse(raw):{};}catch(_){}
+  if(!r.ok) throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
   return d;
 }
 
+function render(items){
+  const box=$('requests');
+  if(!items.length){box.innerHTML='<p class="meta">Nessuna richiesta registrata.</p>';return;}
+  box.innerHTML=items.map(r=>{
+    const approved=r.status==='approved';
+    return `<div class="req">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong>${esc(r.schoolName||'Scuola')}</strong>
+        <span class="pill ${approved?'approved':'pending'}">${approved?'APPROVATA':'IN ATTESA'}</span>
+      </div>
+      <div class="meta">
+        Codice meccanografico: <strong>${esc(r.mechanicalCode||'')}</strong><br>
+        ${esc(r.city||'')}${r.province?' ('+esc(r.province)+')':''}<br>
+        Referente: ${esc([r.contactFirstName,r.contactLastName].filter(Boolean).join(' '))} · ${esc(r.contactRole||'')}<br>
+        Account: <strong>${esc(r.accountEmail||'')}</strong><br>
+        Richiesta: ${esc(r.createdAt||'')}
+        ${approved?`<br>Codice scuola: <strong>${esc(r.schoolCode||'')}</strong>`:''}
+      </div>
+      <div class="row" style="margin-top:12px">
+        ${approved?`<button class="btn" onclick="navigator.clipboard.writeText('${esc(r.schoolCode||'')}')">Copia codice</button>`:
+        `<button class="btn primary" data-approve="${esc(r.id)}">Approva e genera codice scuola</button>`}
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true; b.textContent='Approvazione…';
+    try{
+      const d=await approve(b.dataset.approve);
+      alert('Scuola approvata. Codice scuola: '+d.school.code);
+      await refresh();
+    }catch(e){alert('Errore: '+(e?.message||e)); b.disabled=false; b.textContent='Approva e genera codice scuola';}
+  });
+}
+
+async function refresh(){
+  const m=$('reqMsg'); m.className='note'; m.textContent='Caricamento richieste…';
+  try{const items=await listRequests();render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e caricate.`;}
+  catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
+}
+$('loadBtn').onclick=refresh;
 $('loginBtn').onclick=()=>netlifyIdentity.open('login');
-$('createBtn').onclick=async()=>{
-  const m=$('msg');
-  m.className='note';
-  m.textContent='Attivazione…';
-  try{
-    const d=await api();
-    m.className='note ok';
-    m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${d.school.code}</strong><br>Amministratore: ${d.membership.email}`;
-  }catch(e){
-    console.error('Attivazione scuola:',e);
-    m.className='note';
-    m.textContent='⚠️ '+(e?.message || String(e) || 'Errore sconosciuto');
-  }
-};
+
+async function manualApi(){
+  const t=await token(), k=key();
+  const payload={name:$('name').value.trim(),mechanicalCode:$('mechanical').value.trim(),city:$('city').value.trim(),province:$('province').value.trim(),adminEmail:$('adminEmail').value.trim(),adminName:$('adminName').value.trim()};
+  if(!payload.name||!payload.mechanicalCode||!payload.adminEmail)throw new Error('Compila denominazione scuola, codice meccanografico ed email amministratore.');
+  const r=await fetch('/.netlify/functions/admin-school',{method:'POST',headers:{'Authorization':'Bearer '+t,'Content-Type':'application/json','X-Platform-Admin-Key':k},body:JSON.stringify(payload)});
+  const raw=await r.text();let d={};try{d=raw?JSON.parse(raw):{};}catch(_){}
+  if(!r.ok)throw new Error(d.error||d.detail||raw||`Errore HTTP ${r.status}`);
+  return d;
+}
+$('createBtn').onclick=async()=>{const m=$('msg');m.className='note';m.textContent='Attivazione…';try{const d=await manualApi();m.className='note ok';m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}`;}catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}};
 
 if(window.netlifyIdentity){
-  netlifyIdentity.on('init',u=>{
-    user=u;
-    $('loginBtn').textContent=u ? `Connesso: ${u.email}` : 'Accedi';
-  });
-  netlifyIdentity.on('login',u=>{
-    user=u;
-    $('loginBtn').textContent=`Connesso: ${u.email}`;
-    netlifyIdentity.close();
-  });
-  netlifyIdentity.on('logout',()=>{
-    user=null;
-    $('loginBtn').textContent='Accedi';
-  });
+  netlifyIdentity.on('init',u=>{user=u;$('loginBtn').textContent=u?`Connesso: ${u.email}`:'Accedi';});
+  netlifyIdentity.on('login',u=>{user=u;$('loginBtn').textContent=`Connesso: ${u.email}`;netlifyIdentity.close();});
+  netlifyIdentity.on('logout',()=>{user=null;$('loginBtn').textContent='Accedi';});
   netlifyIdentity.init();
 }
-</script></body></html>
+</script>
+</body></html>
