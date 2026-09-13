@@ -915,8 +915,9 @@ async function importPdf(file){
  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,pages=[];
  for(let p=1;p<=pdf.numPages;p++){
    importStatus.textContent=`Analisi PDF: pagina ${p} di ${pdf.numPages}…`;
-   const pg=await pdf.getPage(p),viewport=pg.getViewport({scale:1}),tc=await pg.getTextContent(),opList=await pg.getOperatorList(),boxes=[];
-   opList.fnArray.forEach((fn,i)=>{if(fn!==pdfjsLib.OPS.constructPath)return;const bounds=opList.argsArray[i]&&opList.argsArray[i][2];if(!bounds||bounds.length<4)return;const vr=viewport.convertToViewportRectangle(bounds),left=Math.min(vr[0],vr[2]),top=Math.min(vr[1],vr[3]),right=Math.max(vr[0],vr[2]),bottom=Math.max(vr[1],vr[3]);if(right-left>8&&bottom-top>8)boxes.push({left,top,right,bottom})});
+   const pg=await pdf.getPage(p),viewport=pg.getViewport({scale:1}),tc=await pg.getTextContent(),opList=await pg.getOperatorList(),boxes=[],stack=[];
+   let ctm=[1,0,0,1,0,0];const multiply=(a,b)=>[a[0]*b[0]+a[2]*b[1],a[1]*b[0]+a[3]*b[1],a[0]*b[2]+a[2]*b[3],a[1]*b[2]+a[3]*b[3],a[0]*b[4]+a[2]*b[5]+a[4],a[1]*b[4]+a[3]*b[5]+a[5]],point=(m,x,y)=>[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];
+   opList.fnArray.forEach((fn,i)=>{const args=opList.argsArray[i];if(fn===pdfjsLib.OPS.save){stack.push(ctm.slice());return}if(fn===pdfjsLib.OPS.restore){ctm=stack.pop()||ctm;return}if(fn===pdfjsLib.OPS.transform){ctm=multiply(ctm,args);return}if(fn!==pdfjsLib.OPS.constructPath||!args||!args[0]||!args[0].includes(pdfjsLib.OPS.rectangle))return;const bounds=args[2];if(!bounds||bounds.length<4)return;const corners=[[bounds[0],bounds[1]],[bounds[0],bounds[3]],[bounds[2],bounds[1]],[bounds[2],bounds[3]]].map(([x,y])=>{const q=point(ctm,x,y);return viewport.convertToViewportPoint(q[0],q[1])}),xs=corners.map(q=>q[0]),ys=corners.map(q=>q[1]),left=Math.min(...xs),top=Math.min(...ys),right=Math.max(...xs),bottom=Math.max(...ys);if(right-left>8&&bottom-top>8)boxes.push({left,top,right,bottom})});
    pages.push({number:p,width:viewport.width,height:viewport.height,boxes,items:tc.items.filter(x=>String(x.str||'').trim()).map(x=>({str:x.str,x:x.transform[4],y:viewport.height-x.transform[5],width:x.width||0,height:Math.abs(x.height||x.transform[3]||0)}))});
  }
  const profile={firstName:state.meta.firstName,lastName:state.meta.lastName,fullName:fullName()};
