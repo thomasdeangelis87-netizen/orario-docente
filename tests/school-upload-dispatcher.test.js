@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import '../school-upload-dispatcher.js';
 import '../schedule-file-type.js';
 
@@ -23,4 +24,14 @@ test('Carica orario completo invia xlsx e xls solo al parser Excel',async()=>{
     await dispatchSchoolScheduleUpload({name,type:''},{pdf:async()=>calls.push('pdf'),excel:async()=>calls.push('excel')},detectScheduleFileKind);
     assert.deepEqual(calls,['excel']);
   }
+});
+
+test('la Deploy Preview disattiva service worker e rende visibile la build',()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html,/id="buildVersion"[^>]*>PR #2 · v16\.8\.5</);
+  assert.match(html,/IS_DEPLOY_PREVIEW=\/\^deploy-preview-/);
+  assert.match(html,/registration=>registration\.unregister\(\)/);
+  assert.match(html,/caches\.delete\(key\)/);
+  assert.match(html,/schoolFile\.onchange=async event=>/);
+  assert.match(html,/schoolData=await dispatchSchoolScheduleFile\(selectedFile\)/);
 });

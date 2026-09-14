@@ -12,9 +12,9 @@
 <title>Orario Docente</title>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/account-storage.js"></script>
-<script src="/schedule-file-type.js"></script>
-<script src="/school-upload-dispatcher.js"></script>
+<script src="/account-storage.js?v=16.8.5"></script>
+<script src="/schedule-file-type.js?v=16.8.5"></script>
+<script src="/school-upload-dispatcher.js?v=16.8.5"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -43,9 +43,11 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .school-hours-grid{display:grid;gap:14px;margin-top:12px}.school-day-hours{border:1px solid #dbe5f0;border-radius:14px;padding:12px;background:#f9fbfe}.school-day-hours h4{margin:0 0 10px}.hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:7px 0}.hour-row input{width:100%;padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.hours-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.hours-actions select{padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-block{margin-top:12px;padding-top:10px;border-top:1px dashed #cbd7e4}.pause-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pause-list{display:grid;gap:8px}.pause-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}.pause-row input[type="time"]{width:100%;padding:8px 9px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-row .remove-pause{padding:8px 10px}.pause-note{font-size:12px;color:#6f7e91;margin-top:8px}.pause-cell{background:#fff7df!important;color:#705c13;font-weight:800;min-height:54px!important}.pause-cell small{margin:0!important;color:#705c13!important}.pause-label{background:#fff4c9!important;color:#705c13!important;font-size:13px!important;min-height:54px!important}
 
 .school-connect{margin:14px 0;padding:16px;border:1px solid #cfe0f4;border-radius:18px;background:linear-gradient(135deg,#f7fbff,#eef6ff)}.school-connect-grid{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:10px;align-items:end}.school-connect input,.school-connect select{width:100%;padding:10px 11px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-code{font-size:20px;font-weight:900;letter-spacing:.08em;color:#0b2a5b}.role-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#dceeff;font-size:12px;font-weight:800}@media(max-width:720px){.school-connect-grid{grid-template-columns:1fr}}
+.build-version{position:fixed;right:8px;bottom:8px;z-index:100;background:#10233f;color:#fff;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:800;opacity:.82;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
+<div id="buildVersion" class="build-version">PR #2 · v16.8.5</div>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -1067,7 +1069,13 @@ window.addEventListener('appinstalled',()=>{
   if(installBtn){installBtn.textContent='✓ App installata';installBtn.disabled=true}
   toast('Orario Docente installato!');
 });
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+const IS_DEPLOY_PREVIEW=/^deploy-preview-/i.test(location.hostname);
+if(IS_DEPLOY_PREVIEW){
+ if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(registrations=>Promise.all(registrations.map(registration=>registration.unregister()))).catch(()=>{});
+ if('caches'in window)caches.keys().then(keys=>Promise.all(keys.map(key=>caches.delete(key)))).catch(()=>{});
+}else if('serviceWorker'in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
 if(window.netlifyIdentity){netlifyIdentity.on('init',handleUser);netlifyIdentity.on('login',user=>{handleUser(user);netlifyIdentity.close()});netlifyIdentity.on('logout',()=>{resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();showAuth()});netlifyIdentity.on('error',err=>{console.error(err);toast('Errore di accesso')});netlifyIdentity.init()}else showAuth();
 </script>
 </body>
