@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {listDetectedTeachers,parseIndexEducationPages,resolveTeacherPage} from '../pdf-layout-parser.js';
+import {listDetectedTeachers,parseIndexEducationPages,parseIndexEducationSchoolPages,resolveTeacherPage} from '../pdf-layout-parser.js';
 
 function item(str,x,y,width=40,height=10){return{str,x,y,width,height}}
 function page(number,name,lessonText=''){const items=[item(name,220,35,120),...['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'].map((d,i)=>item(d,100+i*80,60,60)),item('08:00 – 09:00',20,145,70),item('09:00 – 10:00',20,205,70),item('10:00 – 11:00',20,265,70)];if(lessonText)items.push(item(lessonText,105,130,55),item('ROSSI M.',105,140,45),item('3° A',105,150,30),item('Aula 12',105,160,45));return{number,width:600,height:400,items}}
@@ -26,3 +26,13 @@ test('ignora ora di stampa, intestazioni dei giorni e testo fuori griglia',()=>{
 test('usa sempre il fallback testuale se i rettangoli grafici non sono riconoscibili',()=>{const p=page(146,'RAIOLA ANGELO','SCIENZE ALIMENTARI');p.boxes=[{left:5,top:5,right:20,bottom:20}];const result=parseIndexEducationPages([p],{firstName:'Michelangelo',lastName:'Raiola',fullName:'Michelangelo Raiola'});assert.ok(result.lessons.length>0);assert.match(result.lessons[0].subject,/SCIENZE ALIMENTARI/)});
 
 test('ricostruisce visivamente i blocchi reali della pagina 146',()=>{const items=[item('RAIOLA ANGELO',247,45,100),...['lunedì 14/09','martedì 15/09','mercoledì 16/09','giovedì 17/09','venerdì 18/09','sabato 19/09'].map((d,i)=>item(d,70+i*80,60,60)),item('11/09/2026 08:31 - Pagina 146',455,30,110)];for(let h=8;h<=18;h++)items.push(item(`${h}h00`,35,70+(h-8)*48,22));items.push(item('SCIENZE ALIMENTARI',150,172,72),item('GIANOTTI S.',165,184,45),item('4ARD',176,195,25),item('B2.3',177,205,22),item('LAB. SERVIZI ENOGASTRONOMICI',145,300,78),item('5APS',178,308,24),item('A2.8',179,316,22),item('LAB. SERV.CUCINA',235,244,68),item('4ARD',258,256,24),item('FORNI CUCINA',240,268,60),item('LAB. SERV.CUCINA',315,244,68),item('4ARD',338,256,24),item('FORNI CUCINA',320,268,60),item('DISPOSIZIONE',405,212,58),item('SCIENZE ALIMENTARI',485,220,72),item('BALLISTA I.',505,232,44),item('3ARP',515,244,23),item('A3.4',516,255,22));const boxes=[{left:140,right:220,top:166,bottom:214},{left:140,right:220,top:262,bottom:358},{left:220,right:300,top:166,bottom:358},{left:300,right:380,top:166,bottom:358},{left:380,right:460,top:166,bottom:262},{left:460,right:540,top:214,bottom:262}];const result=parseIndexEducationPages([{number:146,width:595,height:842,items,boxes}],{firstName:'Michelangelo',lastName:'Raiola',fullName:'Michelangelo Raiola'},{maxPeriods:10});const at=(day,period)=>result.lessons.find(l=>l.day===day&&l.period===period),count=day=>result.lessons.filter(l=>l.day===day).length;assert.deepEqual(result.periodTimes,['08:00 – 09:00','09:00 – 10:00','10:00 – 11:00','11:00 – 12:00','12:00 – 13:00','13:00 – 14:00']);assert.equal(result.detectedMaxPeriods,6);assert.equal(count(0),0);assert.equal(at(1,2).time,'10:00 – 11:00');assert.equal(at(1,2).className,'4°ARD');assert.equal(at(1,2).subject,'SCIENZE ALIMENTARI');assert.equal(at(1,2).room,'B2.3');assert.deepEqual(at(1,2).coTeachers,['GIANOTTI S.']);assert.equal(at(1,3),undefined);assert.equal(at(1,4).subject,'LAB. SERVIZI ENOGASTRONOMICI');assert.equal(at(1,5).subject,'LAB. SERVIZI ENOGASTRONOMICI');assert.equal(count(2),4);assert.equal(at(2,2).room,'FORNI CUCINA');assert.equal(count(3),4);assert.equal(at(4,2).subject,'DISPOSIZIONE');assert.equal(at(4,3).subject,'DISPOSIZIONE');assert.equal(count(4),2);assert.equal(at(5,3).room,'A3.4');assert.ok(!result.lessons.some(l=>l.time.includes('08:31')))});
+
+test('modalita scuola completa importa tutte le pagine docente',()=>{
+ const pages=[page(1,'ROSSI MARIO','Italiano'),page(2,'BIANCHI ANNA','Matematica')];
+ const result=parseIndexEducationSchoolPages(pages,{maxPeriods:10});
+ assert.deepEqual(result.teachers.map(t=>t.name),['ROSSI MARIO','BIANCHI ANNA']);
+ assert.equal(result.entries.length,2);
+ assert.deepEqual(result.entries.map(e=>e.teacher),['ROSSI MARIO','BIANCHI ANNA']);
+ assert.deepEqual(result.classCells.map(e=>e.className),['3°A','3°A']);
+ assert.equal(result.pagesAnalyzed,2);
+});
