@@ -12,9 +12,9 @@
 <title>Orario Docente</title>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/account-storage.js?v=16.8.6"></script>
-<script src="/schedule-file-type.js?v=16.8.6"></script>
-<script src="/school-upload-dispatcher.js?v=16.8.6"></script>
+<script src="/account-storage.js?v=16.9.0"></script>
+<script src="/schedule-file-type.js?v=16.9.0"></script>
+<script src="/school-upload-dispatcher.js?v=16.9.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -37,7 +37,10 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .class-schedule{display:grid;grid-template-columns:105px repeat(6,minmax(145px,1fr));min-width:980px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.class-schedule .cs{min-height:104px;padding:10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;background:#fff}.class-schedule .csh{min-height:64px;background:var(--navy);color:#fff;font-weight:850}.class-schedule .csp{background:#f5f9fd;font-weight:850}.class-schedule .csc{background:#fbfdff;flex-direction:column}.class-schedule .csc strong{font-size:16px;line-height:1.15}.class-schedule .csc small{display:block;margin-top:7px;color:#64758b;font-size:12px;line-height:1.2}.viewtoggle{display:flex;gap:8px;margin:12px 0}.viewtoggle button{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.viewtoggle button.active{background:#dceeff;border-color:#9fc2e8}
 
 .install-hint{margin-top:10px;padding:12px 14px;border:1px solid #cfe0f4;background:#f6fbff;border-radius:14px;color:#45617f;font-size:13px}
-@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
+.mobile-schedule-toolbar,.mobile-timetable{display:none}
+.mobile-mode-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.mobile-mode-buttons button{border:1px solid #cfe0f4;background:#fff;color:var(--navy);border-radius:10px;padding:9px 5px;font-size:12px;font-weight:850;cursor:pointer}.mobile-mode-buttons button.active{background:var(--navy);border-color:var(--navy);color:#fff}.mobile-day-select{width:100%;margin-top:8px;padding:10px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff;color:var(--ink)}
+.mobile-day-card{min-width:0;overflow:hidden;background:#fff;border:1px solid #dbe5f0;border-radius:17px;box-shadow:0 5px 18px rgba(31,56,88,.08)}.mobile-day-head{padding:12px 14px;background:var(--navy);color:#fff;font-size:16px;font-weight:900}.mobile-lesson{display:grid;grid-template-columns:minmax(82px,96px) minmax(0,1fr);gap:12px;align-items:start;padding:12px;border-bottom:1px solid var(--line);min-width:0;overflow:hidden}.mobile-lesson:last-child{border-bottom:0}.mobile-lesson-time{font-size:12px;line-height:1.35;color:#52647b}.mobile-lesson-time strong{display:block;color:var(--ink);font-size:14px}.mobile-lesson-content{min-width:0;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title{font-size:15px;line-height:1.18;font-weight:850;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title.subject-long{font-size:14px}.mobile-lesson-title.subject-xlong{font-size:13px}.mobile-lesson-detail{margin-top:5px;color:#52647b;font-size:12px;line-height:1.35;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-detail span{display:block}.mobile-day-empty{padding:14px;color:var(--muted);font-size:13px}
+@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.mobile-schedule-toolbar{display:block;margin:10px 0}.mobile-timetable{display:grid;gap:12px;min-width:0;width:100%;max-width:100%;overflow-x:hidden}.desktop-week-card{display:none}.schedule-container.mobile-week-active .desktop-week-card{display:block}.schedule-container.mobile-week-active .mobile-timetable{display:none}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
 @media print{body{background:#fff}.app{max-width:none;padding:0}.toolbar,.footer,.schedule-label,.accountbar,.teacherbox,.migration{display:none!important}.schedule-container{display:block!important}.hero,.card{box-shadow:none}.grid{min-width:0;grid-template-columns:75px repeat(6,1fr)}.cell{min-height:92px;padding:6px}.head{font-size:12px}.period{font-size:14px}.slot .subject{font-size:16px}.slot .time{font-size:11px}.slot .compresenza{font-size:9px}.legend{grid-template-columns:repeat(4,1fr)}}
 
 .school-hours-grid{display:grid;gap:14px;margin-top:12px}.school-day-hours{border:1px solid #dbe5f0;border-radius:14px;padding:12px;background:#f9fbfe}.school-day-hours h4{margin:0 0 10px}.hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:7px 0}.hour-row input{width:100%;padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.hours-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.hours-actions select{padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-block{margin-top:12px;padding-top:10px;border-top:1px dashed #cbd7e4}.pause-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pause-list{display:grid;gap:8px}.pause-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}.pause-row input[type="time"]{width:100%;padding:8px 9px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-row .remove-pause{padding:8px 10px}.pause-note{font-size:12px;color:#6f7e91;margin-top:8px}.pause-cell{background:#fff7df!important;color:#705c13;font-weight:800;min-height:54px!important}.pause-cell small{margin:0!important;color:#705c13!important}.pause-label{background:#fff4c9!important;color:#705c13!important;font-size:13px!important;min-height:54px!important}
@@ -47,7 +50,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #2 · v16.8.6</div>
+<div id="buildVersion" class="build-version">PR #2 · v16.9.0</div>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -139,7 +142,18 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   <section id="personalView">
     <input type="checkbox" id="scheduleToggleCheck" class="schedule-check" hidden checked>
     <label for="scheduleToggleCheck" class="btn primary schedule-label">👀 <span class="show-text">Vedi il mio orario</span><span class="hide-text">Chiudi il mio orario</span></label>
-    <div class="schedule-container"><section class="card scroll" style="margin-top:10px"><div class="grid" id="timetable"></div></section></div>
+    <div class="schedule-container" id="personalScheduleContainer">
+      <div class="mobile-schedule-toolbar" aria-label="Visualizzazione orario su smartphone">
+        <div class="mobile-mode-buttons">
+          <button type="button" class="active" data-mobile-schedule-mode="complete">COMPLETO</button>
+          <button type="button" data-mobile-schedule-mode="day">GIORNO</button>
+          <button type="button" data-mobile-schedule-mode="week">SETTIMANA</button>
+        </div>
+        <select id="mobileDaySelect" class="mobile-day-select hidden" aria-label="Scegli il giorno"></select>
+      </div>
+      <div id="mobileTimetable" class="mobile-timetable" aria-live="polite"></div>
+      <section class="card scroll desktop-week-card" style="margin-top:10px"><div class="grid" id="timetable"></div></section>
+    </div>
     <section class="legend" id="personalLegend"></section>
   </section>
   </section>
@@ -207,7 +221,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.8.2</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.9.0</strong></div>
 </div>
 
 <div class="modal" id="onboardingModal">
@@ -309,6 +323,7 @@ let pendingImport=null,pendingPdfChoice=null;
 const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
 const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher',schoolTeacherName:''},slots:{}};
 let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false;
+let personalMobileMode='complete',personalMobileDay=null;
 function emptySchoolData(){return{source:'',loadedAt:'',teachers:[],entries:[],classCells:[],periodTimes:clone(SCHOOL_DEFAULT_TIMES),breaks:{0:[],1:[],2:[],3:[],4:[],5:[]},maxPeriods:6}}
 let schoolData=emptySchoolData(),activeMyClass='',schoolMode='class';
 function clone(x){return JSON.parse(JSON.stringify(x))}
@@ -322,6 +337,38 @@ function closeModal(id){document.getElementById(id).classList.remove('show')}
 function fullName(){return [state.meta.firstName,state.meta.lastName].filter(Boolean).join(' ').trim()||state.meta.teacher||'Il mio orario'}
 function syncTeacherMeta(){state.meta.teacher=fullName().toUpperCase()}
 function setCloudStatus(text,ok=true){const el=document.getElementById('cloudStatus');el.textContent=(ok?'● ':'◌ ')+text;el.style.color=ok?'#137333':'#8a5a00'}
+function personalDayHasLessons(day){for(let p=0;p<personalMaxPeriods();p++){const v=state.slots[`${day}-${p}`];if(v&&v[0])return true}return false}
+function defaultPersonalMobileDay(){
+ const today=(new Date().getDay()+6)%7;
+ for(let offset=0;offset<7;offset++){const day=(today+offset)%7;if(day<6&&personalDayHasLessons(day))return day}
+ return today<6?today:0
+}
+function mobileLessonHtml(day,period,value){
+ const info=value[2]&&typeof value[2]==='object'?value[2]:{};
+ const subjects=Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];
+ const coTeachers=Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];
+ const time=value[1]||(state.meta.periodTimes&&state.meta.periodTimes[period])||(PERIOD_TIMES[day]&&PERIOD_TIMES[day][period])||'';
+ const details=[];
+ if(subjects.length)details.push(`<span>Materia: ${esc(subjects.join(' · '))}</span>`);
+ if(info.room)details.push(`<span>📍 Aula ${esc(info.room)}</span>`);
+ if(coTeachers.length)details.push(`<span>👥 Compresenza: ${esc(coTeachers.join(' + '))}</span>`);
+ return `<div class="mobile-lesson ${cls(value[0])}"><div class="mobile-lesson-time"><strong>${period+1}ª ora</strong>${esc(time)}</div><div class="mobile-lesson-content"><div class="mobile-lesson-title ${subjectSizeClass(value[0])}">${esc(value[0])}</div>${details.length?`<div class="mobile-lesson-detail">${details.join('')}</div>`:''}</div></div>`
+}
+function mobileDayCardHtml(day){
+ let lessons='';
+ for(let p=0;p<personalMaxPeriods();p++){const value=state.slots[`${day}-${p}`];if(value&&value[0])lessons+=mobileLessonHtml(day,p,value)}
+ return `<section class="mobile-day-card"><div class="mobile-day-head">${esc(DAYS[day].name)}</div>${lessons||'<div class="mobile-day-empty">Nessuna lezione</div>'}</section>`
+}
+function renderPersonalMobileSchedule(){
+ const wrap=document.getElementById('personalScheduleContainer'),mobile=document.getElementById('mobileTimetable'),select=document.getElementById('mobileDaySelect');
+ if(!wrap||!mobile||!select)return;
+ if(personalMobileDay===null)personalMobileDay=defaultPersonalMobileDay();
+ select.innerHTML=DAYS.map((day,index)=>`<option value="${index}">${esc(day.name)}</option>`).join('');select.value=String(personalMobileDay);
+ select.classList.toggle('hidden',personalMobileMode!=='day');
+ wrap.classList.toggle('mobile-week-active',personalMobileMode==='week');
+ document.querySelectorAll('[data-mobile-schedule-mode]').forEach(button=>button.classList.toggle('active',button.dataset.mobileScheduleMode===personalMobileMode));
+ mobile.innerHTML=personalMobileMode==='day'?mobileDayCardHtml(personalMobileDay):DAYS.map((_,day)=>mobileDayCardHtml(day)).join('');
+}
 function render(){
  syncTeacherMeta();
  const first=(state.meta.firstName||'').trim();welcomeTitle.textContent=first?`Ciao ${first} 👋`:'Ciao 👋';
@@ -330,7 +377,7 @@ function render(){
  const sel=document.getElementById('teacherSelect'),mine='me';const existing=sel.value;sel.innerHTML='<option value="all">Tutti i docenti</option><option value="me">'+esc(fullName())+'</option>';sel.value=(existing==='all'?'all':'me');
  const g=timetable,detectedTimes=Array.isArray(state.meta.periodTimes)?state.meta.periodTimes.filter(Boolean):[],detectedRange=detectedTimes.length?`${detectedTimes[0].split(/\s*[–—-]\s*/)[0]} – ${detectedTimes[detectedTimes.length-1].split(/\s*[–—-]\s*/).slice(-1)[0]}`:'';let h='<div class="cell head">ORA</div>';DAYS.forEach(d=>h+=`<div class="cell head">${esc(d.name)}<br><small>(${esc(detectedRange||d.range)})</small></div>`);
  for(let p=0;p<personalMaxPeriods();p++){const detectedTime=state.meta.periodTimes&&state.meta.periodTimes[p]||'';h+=`<div class="cell period"><div>${p+1}ª ora${detectedTime?`<div class="time">${esc(detectedTime)}</div>`:''}</div></div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:null;const co=info&&Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];const mats=info&&Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];const room=info&&info.room?String(info.room):'';const detail=(co.length||mats.length||room)?`<div class="compresenza">${co.length?`<strong>👥 con ${esc(co.join(' + '))}</strong>`:''}${mats.length?`<span class="materia">${esc(mats.join(' · '))}</span>`:''}${room?`<span class="materia">📍 Aula ${esc(room)}</span>`:''}</div>`:'';h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject ${subjectSizeClass(v[0])}">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div>${detail}</div></div>`}else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
- g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));localSave();scheduleCloudSave();
+ g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));renderPersonalMobileSchedule();localSave();scheduleCloudSave();
 ;renderPersonalLegend()}
 function personalStorageKey(user=currentUser){return window.OrarioAccountStorage.personalStorageKey(user)}
 function localSave(){try{const key=personalStorageKey();if(key)localStorage.setItem(key,JSON.stringify(state))}catch(e){}}
@@ -1018,6 +1065,8 @@ applyImportBtn.onclick=()=>{if(!pendingImport)return;state=pendingImport;pending
 importFile.onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!validState(data))throw new Error();state=normalizeLegacy(data);render();toast('Orario importato')}catch(err){alert('File non valido')}e.target.value=''};
 resetBtn.onclick=()=>{if(confirm('Vuoi creare un nuovo orario vuoto? Il precedente verrà sostituito nel tuo account.')){state=clone(EMPTY_STATE);render();openProfile()}};
 teacherSelect.onchange=toggleTeacherView;
+document.querySelectorAll('[data-mobile-schedule-mode]').forEach(button=>button.onclick=()=>{personalMobileMode=button.dataset.mobileScheduleMode;renderPersonalMobileSchedule()});
+mobileDaySelect.onchange=()=>{personalMobileDay=Number(mobileDaySelect.value);renderPersonalMobileSchedule()};
 migrateBtn.onclick=()=>{const x=getLegacy();if(x){state=normalizeLegacy(x);migrationBox.classList.add('hidden');render();accountName.textContent=fullName();toast('Orario importato nel tuo account')}};
 ignoreMigrationBtn.onclick=()=>{migrationBox.classList.add('hidden');openProfile()};
 
