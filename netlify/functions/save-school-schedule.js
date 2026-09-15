@@ -22,6 +22,8 @@ export default async (req) => {
     if(previous?.schoolCode && previous.schoolCode!==r.membership.code)
       return json(409,{error:'Il dataset già salvato non appartiene a questa scuola. Caricamento bloccato.'});
     const isPublication=body.publish===true;
+    if(!isPublication && !previous)
+      return json(409,{error:'Nessun orario scolastico pubblicato: prima carica un orario completo.'});
     const version=scheduleVersion(previous,isPublication);
     const validFrom=isPublication?String(body.validFrom||'').trim().slice(0,32):String(previous?.validFrom||'').trim();
     const clean={...data,version,validFrom,publishedAt:isPublication?new Date().toISOString():(previous?.publishedAt||''),cloudUpdatedAt:new Date().toISOString(),cloudUpdatedBy:user.email,schoolCode:r.membership.code};

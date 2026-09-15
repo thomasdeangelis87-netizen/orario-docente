@@ -52,6 +52,7 @@ test('un orario già presente blocca il nuovo upload se non è recuperabile',()=
  assert.match(html,/if\(!savedToCloud\)schoolData=previous/);
  assert.match(code('school-storage-audit.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
  assert.match(code('save-school-schedule.js'),/const previous=await getJSON\(key\)/);
+ assert.match(code('save-school-schedule.js'),/if\(!isPublication && !previous\)/);
  assert.equal(scheduleVersion({entries:[{}],version:3},true),4);
 });
 
