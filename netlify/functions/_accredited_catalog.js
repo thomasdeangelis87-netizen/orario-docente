@@ -1,5 +1,9 @@
 import {normalizeCode,normalizeEmail} from './_lib.js';
 
+export function requestedSchoolCode(url){
+  return normalizeCode(new URL(url).searchParams.get('code')||'');
+}
+
 function projectedSchool(approval,code){
   return {code,name:approval.schoolName||'Scuola accreditata',
     mechanicalCode:String(approval.mechanicalCode||'').trim().toUpperCase(),

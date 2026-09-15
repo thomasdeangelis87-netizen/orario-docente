@@ -2,13 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {accreditedCatalog} from '../netlify/functions/_accredited_catalog.js';
+import {accreditedCatalog,requestedSchoolCode} from '../netlify/functions/_accredited_catalog.js';
 
 const CODE='VAIS-32128';
 const approval={id:'legacy-falcone',status:'approved',schoolCode:CODE,
   schoolName:'Istituto professionale Giovanni Falcone di Gallarate',mechanicalCode:'VAIS32128',
   accountEmail:'amministratore@example.it',accountUserId:'falcone-admin',
   approvedAt:'2026-09-14T12:00:00Z'};
+test('GET platform-schools senza parametro code non cerca la scuola inesistente NULL',()=>{
+ assert.equal(requestedSchoolCode('https://preview.example.it/.netlify/functions/platform-schools'),'');
+ assert.equal(requestedSchoolCode('https://preview.example.it/.netlify/functions/platform-schools?code=VAIS-32128'),CODE);
+});
 function storage({school,schoolMembers}={}){
  const schedule={schoolCode:CODE,version:3,entries:[{teacher:'Raiola'}],teachers:['Raiola']};
  const data=new Map([['accreditations-index',[approval.id]],

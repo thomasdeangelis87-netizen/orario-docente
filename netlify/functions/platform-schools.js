@@ -3,7 +3,7 @@ import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
 import {changeManagerLogin} from './_school_email_change.js';
 import {sendSchoolApprovalEmail} from './_brevo.js';
 import {changeAccreditation} from './_accreditation_status.js';
-import {accreditedCatalog} from './_accredited_catalog.js';
+import {accreditedCatalog,requestedSchoolCode} from './_accredited_catalog.js';
 
 function authorized(req){
   let secret='';try{secret=Netlify.env.get('PLATFORM_ADMIN_KEY')||''}catch{}
@@ -15,7 +15,7 @@ export default async (req,context={})=>{
     if(!authorized(req))return json(403,{error:'Accesso piattaforma non autorizzato'});
     if(req.method==='GET'){
       stage='catalog';
-      const code=normalizeCode(new URL(req.url).searchParams.get('code'));
+      const code=requestedSchoolCode(req.url);
       const schools=await accreditedCatalog({read:getJSON},code);
       if(code)return schools[0]?json(200,schools[0]):json(404,{error:'Scuola non trovata'});
       return json(200,{schools});
