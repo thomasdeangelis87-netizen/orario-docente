@@ -1,5 +1,3 @@
-import { getStore } from '@netlify/blobs';
-import { getUser } from '@netlify/identity';
 import crypto from 'node:crypto';
 
 const json = (status, body) =>
@@ -18,6 +16,8 @@ const emailKey = email => crypto.createHash('sha256').update(normalizeEmail(emai
 const schoolScheduleKey = code => `schedules/${normalizeCode(code)}`;
 
 async function currentUser(){
+  // Load platform SDKs only after the Function request context is active.
+  const {getUser}=await import('@netlify/identity');
   const u = await getUser();
   if(!u || !u.email) return null;
   return {
@@ -27,19 +27,20 @@ async function currentUser(){
   };
 }
 
-function store(){
-  // IMPORTANT: getStore is created only while a modern Netlify Function request is active.
+async function store(){
+  const {getStore}=await import('@netlify/blobs');
+  // Site-scoped store; this is the same document on main and deploy previews.
   return getStore({name:'orario-docente-cloud',consistency:'strong'});
 }
 
 async function getJSON(key){
-  return await store().get(key,{type:'json'});
+  return await (await store()).get(key,{type:'json'});
 }
 async function setJSON(key,value){
-  return await store().setJSON(key,value);
+  return await (await store()).setJSON(key,value);
 }
 async function listKeys(prefix){
-  const result=await store().list({prefix});
+  const result=await (await store()).list({prefix});
   return (result.blobs||[]).map(item=>item.key);
 }
 async function getMembership(email){

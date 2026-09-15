@@ -38,6 +38,9 @@ test('un dataset unico per scuola indipendente da amministratore, docente, brows
  assert.equal(schoolScheduleKey('VAIS-32128'),'schedules/VAIS-32128');
  assert.doesNotMatch(schoolScheduleKey('VAIS-32128'),/email|user|guest|preview/);
  assert.match(code('_lib.js'),/getStore\(\{name:'orario-docente-cloud',consistency:'strong'\}\)/);
+ assert.match(code('_lib.js'),/await import\('@netlify\/blobs'\)/);
+ assert.match(code('_lib.js'),/await import\('@netlify\/identity'\)/);
+ assert.doesNotMatch(code('_lib.js'),/^import \{ getStore \} from '@netlify\/blobs'/m);
  assert.doesNotMatch(code('_lib.js'),/getDeployStore\(/);
  assert.match(code('save-school-schedule.js'),/const key=schoolScheduleKey\(r\.membership\.code\)/);
  assert.match(code('save-school-schedule.js'),/const verified=await getJSON\(key\)/);
@@ -54,6 +57,11 @@ test('un orario già presente blocca il nuovo upload se non è recuperabile',()=
  assert.match(code('save-school-schedule.js'),/const previous=await getJSON\(key\)/);
  assert.match(code('save-school-schedule.js'),/if\(!isPublication && !previous\)/);
  assert.equal(scheduleVersion({entries:[{}],version:3},true),4);
+ for(const fn of ['school-context.js','save-school-schedule.js','school-storage-audit.js']){
+   assert.match(code(fn),/console\.info\('[^']+ start',\{requestId/);
+   assert.match(code(fn),/console\.error\('[^']+ failure',\{requestId,stage/);
+   assert.match(code(fn),/return json\(500,\{error:[^}]+requestId,stage\}\)/);
+ }
 });
 
 test('registrazione e accesso hanno due moduli distinti e non esiste pre-registrazione',()=>{
