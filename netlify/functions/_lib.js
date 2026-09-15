@@ -30,11 +30,11 @@ async function currentUser(){
 async function store(){
   const {getStore}=await import('@netlify/blobs');
   // Site-scoped store; this is the same document on main and deploy previews.
-  return getStore({name:'orario-docente-cloud',consistency:'strong'});
+  return getStore('orario-docente-cloud');
 }
 
 async function getJSON(key){
-  return await (await store()).get(key,{type:'json'});
+  return await (await store()).get(key,{type:'json',consistency:'strong'});
 }
 async function setJSON(key,value){
   return await (await store()).setJSON(key,value);

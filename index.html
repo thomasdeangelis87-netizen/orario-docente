@@ -52,7 +52,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #3 · v16.10.2</div>
+<div id="buildVersion" class="build-version">PR #3 · v16.10.3</div>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -371,8 +371,9 @@ async function apiCall(name,options={}){
   if(!res.ok){
     const base=data.error||('Errore cloud '+res.status);
     const requestId=res.headers.get('x-nf-request-id')||res.headers.get('x-request-id')||'';
-    const detail=data.detail?(' · '+data.detail):(requestId?' · ID richiesta '+requestId:'');
-    const err=new Error(base+detail);
+    const detail=data.stage?(' · Fase '+data.stage):'';
+    const visibleRequestId=data.requestId||requestId;
+    const err=new Error(base+detail+(visibleRequestId?' · ID richiesta '+visibleRequestId:''));
     err.status=res.status;
     err.payload=data;
     throw err;
@@ -409,7 +410,7 @@ async function loadSchoolCloud({showError=false}={}){
   let lastError=null;
   for(let attempt=0;attempt<2;attempt++){
     try{
-      const data=await apiCall('school-context');
+      const data=await apiCall('school-schedule');
       schoolCloudReady=true;
       schoolCloudError='';
       const m=data.membership||{},sc=data.school||{};
@@ -449,7 +450,7 @@ async function loadSchoolCloud({showError=false}={}){
 }
 async function saveSchoolCloud(){
   if(!currentUser||!['admin','coordinator'].includes(state.meta.schoolRole||''))return false;
-  const data=await apiCall('save-school-schedule',{method:'POST',body:JSON.stringify({schedule:schoolData,publish:schoolData.pendingPublication===true,validFrom:schoolData.validFrom||''})});
+  const data=await apiCall('school-schedule',{method:'POST',body:JSON.stringify({schedule:schoolData,publish:schoolData.pendingPublication===true,validFrom:schoolData.validFrom||''})});
   if(!data.ok||data.schoolCode!==state.meta.schoolCode||data.entries!==schoolData.entries.length||data.teachers!==schoolData.teachers.length)
     throw new Error('L’orario non è stato verificato nello storage della scuola.');
   schoolCloudReady=true;
@@ -897,11 +898,11 @@ function renderSchoolManagementUI(){
   schoolManagementTitle.textContent='Amministrazione scuola – '+(state.meta.school||'Istituto');
   schoolManagementCode.textContent=state.meta.schoolCode||'';
   schoolPortalCloudStatus.textContent=schoolCloudError?'Sincronizzazione cloud non riuscita: '+schoolCloudError+' · Le copie locali non sono state cancellate. Riprova dopo aver risolto il problema cloud.':'';
-  schoolManagementMeta.textContent=schoolData.entries.length?`${schoolCloudVerified?'Orario pubblicato':'Copia locale non verificata nel cloud'} · versione ${schoolData.version||1} · In vigore dal ${schoolData.validFrom||'non indicato'} · ${schoolData.teachers.length} docenti · ${schoolClasses().length} classi`:(schoolCloudError?'Orario cloud non verificabile. Verifica lo storage prima di caricare.':'Nessun orario pubblicato. Puoi caricare il primo orario completo.');
+  schoolManagementMeta.textContent=schoolCloudVerified?`Orario pubblicato · versione ${schoolData.version||1} · In vigore dal ${schoolData.validFrom||'non indicato'} · ${schoolData.teachers.length} docenti · ${schoolClasses().length} classi`:(schoolCloudError?'Orario cloud non verificabile. Copia locale conservata, ma non mostrata come orario ufficiale.':'Nessun orario pubblicato. Puoi caricare il primo orario completo.');
   schoolStorageAuditInfo.textContent=schoolAuditStatus==='present'?`Orario presente nello storage della scuola ${state.meta.schoolCode}.`:schoolAuditStatus==='missing'?`Nessun orario trovato nello storage della scuola ${state.meta.schoolCode}.`:'Storage non ancora verificato.';
-  schoolPortalTeachers.textContent='Docenti: '+((schoolData.teachers||[]).map(t=>typeof t==='string'?t:t.name||'').filter(Boolean).join(', ')||'nessuno');
-  schoolPortalClasses.textContent='Classi / attività: '+(schoolClasses().join(', ')||'nessuna');
-  schoolPortalEntries.innerHTML=(schoolData.entries||[]).slice(0,5000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${esc(e.period)}ª</td><td>${esc(e.teacher)}</td><td>${esc(e.subject||'—')}</td><td>${esc(e.activity)}</td></tr>`).join('')||'<tr><td colspan="5">Nessun orario completo disponibile.</td></tr>';
+  schoolPortalTeachers.textContent='Docenti: '+((schoolCloudVerified?(schoolData.teachers||[]).map(t=>typeof t==='string'?t:t.name||'').filter(Boolean).join(', '):'')||'nessuno');
+  schoolPortalClasses.textContent='Classi / attività: '+((schoolCloudVerified?schoolClasses().join(', '):'')||'nessuna');
+  schoolPortalEntries.innerHTML=(schoolCloudVerified?(schoolData.entries||[]):[]).slice(0,5000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${esc(e.period)}ª</td><td>${esc(e.teacher)}</td><td>${esc(e.subject||'—')}</td><td>${esc(e.activity)}</td></tr>`).join('')||'<tr><td colspan="5">Nessun orario completo disponibile.</td></tr>';
   schoolUploadBtn.textContent=schoolAuditStatus==='present'?'📊 Carica nuovo orario':'📊 Carica orario completo';
   schoolValidFrom.value=/^\d{4}-\d\d-\d\d$/.test(schoolData.validFrom||'')?schoolData.validFrom:'';
  }else if(state.meta.schoolCode&&!schoolCloudError){
@@ -966,18 +967,19 @@ async function auditSchoolStorage(){
   let audited=false;
   try{
     schoolStorageAuditInfo.textContent='Verifica storage scuola…';
-    const data=await apiCall('school-storage-audit');
-    if(data.storageScope!=='site'||!data.schoolCode||!['admin','coordinator'].includes(data.role))throw new Error('Risposta storage non valida.');
-    state.meta.schoolCode=data.schoolCode;state.meta.school=data.schoolName;state.meta.schoolRole=data.role;
-    schoolAuditStatus=data.status;
+    const data=await apiCall('school-schedule');
+    const m=data.membership||{},sc=data.school||{};
+    if(data.storageScope!=='site'||!m.code||!['admin','coordinator'].includes(m.role))throw new Error('Risposta storage non valida.');
+    state.meta.schoolCode=m.code;state.meta.school=sc.name||state.meta.school;state.meta.schoolRole=m.role;
+    schoolAuditStatus=data.scheduleStatus;
     audited=true;
     schoolCloudReady=true;
-    if(data.status==='present'){
-      schoolStorageAuditInfo.textContent=`Orario già presente per ${data.schoolCode}: versione ${data.summary.version}, ${data.summary.teachers} docenti, ${data.summary.entries} impegni. Recupero il dataset completo…`;
-      if(!await loadSchoolCloud())throw new Error('Orario trovato nello storage, ma la lettura completa non è riuscita. Non sovrascriverlo.');
-    }else if(data.status==='missing'){
+    if(data.scheduleStatus==='present'){
+      schoolData=data.schedule;schoolCloudVerified=true;schoolCloudError='';saveSchoolLocal();
+      schoolStorageAuditInfo.textContent=`Orario già presente per ${m.code}: versione ${data.schedule.version||1}, ${data.schedule.teachers?.length||0} docenti, ${data.schedule.entries?.length||0} impegni.`;
+    }else if(data.scheduleStatus==='missing'){
       schoolCloudVerified=false;schoolCloudError='';
-      schoolStorageAuditInfo.textContent=`Nessun orario presente nello storage del sito per ${data.schoolCode}. Puoi caricare il primo orario.`;
+      schoolStorageAuditInfo.textContent=`Nessun orario presente nello storage del sito per ${m.code}. Puoi caricare il primo orario.`;
       await loadSchoolManagement();
     }else throw new Error('Stato dello storage non riconosciuto.');
     renderSchool();return data;
@@ -991,8 +993,7 @@ async function auditSchoolStorage(){
 auditSchoolStorageBtn.onclick=async()=>{try{await auditSchoolStorage()}catch(e){alert(e.message)}};
 schoolUploadBtn.onclick=async()=>{
  if(!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole)){alert('Solo il referente o amministratore collegato può pubblicare l’orario generale.');return}
- try{const audit=await auditSchoolStorage();if(audit.status==='present'&&!schoolCloudVerified)throw new Error('Orario già esistente non recuperato: caricamento bloccato per evitare la perdita dei dati.');schoolFile.click()}
- catch(e){alert('Caricamento bloccato: '+e.message)}
+ schoolFile.click();
 };
 schoolFile.onchange=async event=>{
  const selectedFile=event.target.files[0];if(!selectedFile)return;

@@ -22,7 +22,7 @@ test('un docente normale non vede il portale, mentre admin e referente lo gestis
  assert.match(html,/id="schoolPortalNavBtn" data-view="schoolPortalView"/);
  assert.match(html,/if\(id==='schoolPortalView'&&!window\.OrarioSchoolPermissions\.canManageSchool/);
  assert.doesNotMatch(html,/schoolPortalBtn\.onclick=\(\)=>\{switchView\('schoolView'\)/);
- assert.match(code('save-school-schedule.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
+ assert.match(code('_school_schedule_handler.js'),/requireMember\(user,req\.method==='POST'\?\['admin','coordinator'\]:\[\]\)/);
  assert.match(code('school-members.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
 });
 
@@ -30,38 +30,37 @@ test('cloud non cancella la copia locale della scuola in caso di 500 o risposta 
  assert.match(html,/schoolCloudError=msg/);
  assert.match(html,/if\(!schoolData\.entries\?\.length \|\| schoolData\.schoolCode/);
  assert.match(html,/Le copie locali non sono state cancellate/);
- assert.match(code('school-context.js'),/schedule=await getJSON\(schoolScheduleKey\(r\.membership\.code\)\)/);
+ assert.match(code('_school_schedule_handler.js'),/getOfficialSchedule\(code,deps\.getJSON\)/);
 });
 
 test('un dataset unico per scuola indipendente da amministratore, docente, browser e deploy',()=>{
  assert.equal(schoolScheduleKey('vais-32128'),'schedules/VAIS-32128');
  assert.equal(schoolScheduleKey('VAIS-32128'),'schedules/VAIS-32128');
  assert.doesNotMatch(schoolScheduleKey('VAIS-32128'),/email|user|guest|preview/);
- assert.match(code('_lib.js'),/getStore\(\{name:'orario-docente-cloud',consistency:'strong'\}\)/);
+ assert.match(code('_lib.js'),/getStore\('orario-docente-cloud'\)/);
+ assert.match(code('_lib.js'),/\.get\(key,\{type:'json',consistency:'strong'\}\)/);
  assert.match(code('_lib.js'),/await import\('@netlify\/blobs'\)/);
  assert.match(code('_lib.js'),/await import\('@netlify\/identity'\)/);
  assert.doesNotMatch(code('_lib.js'),/^import \{ getStore \} from '@netlify\/blobs'/m);
  assert.doesNotMatch(code('_lib.js'),/getDeployStore\(/);
- assert.match(code('save-school-schedule.js'),/const key=schoolScheduleKey\(r\.membership\.code\)/);
- assert.match(code('save-school-schedule.js'),/const verified=await getJSON\(key\)/);
+ assert.match(code('_school_schedule_core.js'),/const previous=await getOfficialSchedule\(code,read\)/);
+ assert.match(code('_school_schedule_core.js'),/const verified=await getOfficialSchedule\(code,read\)/);
  assert.match(code('school-storage-audit.js'),/getJSON\(schoolScheduleKey\(code\)\)/);
  assert.match(html,/if\(!schoolCloudVerified\)\{alert\('L’orario condiviso/);
  assert.match(html,/if\(!await loadSchoolCloud\(\)\)throw new Error\('Scrittura verificata/);
 });
 
-test('un orario già presente blocca il nuovo upload se non è recuperabile',()=>{
- assert.match(html,/if\(audit\.status==='present'&&!schoolCloudVerified\)throw new Error/);
+test('il selettore resta disponibile, ma un errore di lettura impedisce la scrittura',()=>{
+ assert.match(html,/schoolUploadBtn\.onclick=async\(\)=>\{[^]*?schoolFile\.click\(\)/);
+ assert.doesNotMatch(html,/if\(audit\.status==='present'&&!schoolCloudVerified\)throw new Error/);
  assert.match(html,/schoolAuditStatus='unknown';schoolCloudVerified=false/);
  assert.match(html,/if\(!savedToCloud\)schoolData=previous/);
- assert.match(code('school-storage-audit.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
- assert.match(code('save-school-schedule.js'),/const previous=await getJSON\(key\)/);
- assert.match(code('save-school-schedule.js'),/if\(!isPublication && !previous\)/);
+ assert.match(code('_school_schedule_core.js'),/const previous=await getOfficialSchedule\(code,read\)/);
+ assert.match(code('_school_schedule_core.js'),/if\(!publish&&!previous\)/);
  assert.equal(scheduleVersion({entries:[{}],version:3},true),4);
- for(const fn of ['school-context.js','save-school-schedule.js','school-storage-audit.js']){
-   assert.match(code(fn),/console\.info\('[^']+ start',\{requestId/);
-   assert.match(code(fn),/console\.error\('[^']+ failure',\{requestId,stage/);
-   assert.match(code(fn),/return json\(500,\{error:[^}]+requestId,stage\}\)/);
- }
+ assert.match(code('_school_schedule_handler.js'),/console\.info\('school-schedule request',\{requestId/);
+ assert.match(code('_school_schedule_handler.js'),/console\.error\('school-schedule failure',\{requestId,stage/);
+ assert.match(code('_school_schedule_handler.js'),/return json\(500,\{error:[^}]+requestId,stage\}\)/);
 });
 
 test('registrazione e accesso hanno due moduli distinti e non esiste pre-registrazione',()=>{
