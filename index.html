@@ -408,10 +408,12 @@ async function savePersistentProfile(completed=true){
 }
 async function loadSchoolCloud({showError=false}={}){
   if(!currentUser)return false;
+  const accountId=currentUser.id;
   let lastError=null;
   for(let attempt=0;attempt<2;attempt++){
     try{
       const data=await apiCall('school-schedule');
+      if(currentUser?.id!==accountId)return false;
       schoolCloudReady=true;
       schoolCloudError='';
       const m=data.membership||{},sc=data.school||{};
@@ -467,10 +469,12 @@ async function saveSchoolCloud(){
 
 async function cloudSave(){
   if(!currentUser)return;
+  const accountId=currentUser.id;
   try{
     setCloudStatus('Salvataggio…',false);
 
     const backendOk=await savePersistentProfile(true);
+    if(currentUser?.id!==accountId)return;
     if(!backendOk)throw new Error('Salvataggio profilo cloud non riuscito');
 
     // Manteniamo anche la vecchia copia Identity, ma non dipendiamo più da questa.
@@ -481,7 +485,7 @@ async function cloudSave(){
         profileCompleted:true
       });
       const updated=await window.OrarioIdentity.updateUser({data});
-      if(updated)currentUser=updated;
+      if(updated&&currentUser?.id===accountId)currentUser=updated;
     }catch(e){
       console.warn('Copia Identity non aggiornata:',e);
     }
@@ -939,7 +943,7 @@ schoolAccessAssign.onclick=async()=>{
  const email=schoolAccessEmail.value.trim(),role=schoolAccessRole.value;
  if(!email){schoolAccessStatus.textContent='Inserisci l’email dell’account.';return}
  schoolAccessAssign.disabled=true;
- try{const data=await apiCall('school-members',{method:'POST',body:JSON.stringify({action:'assign',email,role})});schoolAccessStatus.textContent=data.membership.status==='pending'?'Invito in attesa: l’account dovrà accedere e inserire il codice scuola.':'Ruolo aggiornato per l’account autenticato.';schoolAccessEmail.value='';await loadSchoolManagement()}
+ try{const data=await apiCall('school-members',{method:'POST',body:JSON.stringify({action:'assign',email,role})});schoolAccessStatus.textContent=data.membership.status==='pending'?'Invito in attesa: registrati, collega l’account con il codice; poi il gestore assegnerà il ruolo al nuovo ID. Nessun nuovo account eredita ruoli da una vecchia email.':'Ruolo aggiornato per l’account autenticato.';schoolAccessEmail.value='';await loadSchoolManagement()}
  catch(e){schoolAccessStatus.textContent=e.message}
  finally{schoolAccessAssign.disabled=false}
 };

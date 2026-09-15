@@ -41,6 +41,7 @@ test('Portale scuola e pannello piattaforma non eliminano orari esistenti per re
   assert.match(handlers[0],/if\(schedule\|\|members\.length/);
   assert.match(handlers[1],/mayRevoke\(list,email\)/);
   assert.match(handlers[2],/prior\?\.status==='revoked'/);
+  assert.match(handlers[2],/invitation\.userId===user\.id/);
   assert.doesNotMatch(handlers[1],/schedules\/\$\{code\}.*delete/);
   assert.match(fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8'),/Scuole accreditate/);
   assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/Gestione accessi/);
