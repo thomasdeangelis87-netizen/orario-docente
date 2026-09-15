@@ -14,10 +14,22 @@ test('un docente normale non vede il portale, mentre admin e referente lo gestis
  assert.equal(canManageSchool('teacher',true),false);
  assert.equal(canManageSchool('admin',true),true);
  assert.equal(canManageSchool('coordinator',true),true);
- assert.equal(canManageSchool('admin',false),false);
+ assert.equal(canManageSchool('admin',false),true);
  assert.match(html,/schoolPortalBtn\.classList\.toggle\('hidden',!authorized\)/);
+ assert.match(html,/id="schoolPortalView"/);
+ assert.match(html,/schoolPortalBtn\.onclick=\(\)=>switchView\('schoolPortalView'\)/);
+ assert.match(html,/id="schoolPortalNavBtn" data-view="schoolPortalView"/);
+ assert.match(html,/if\(id==='schoolPortalView'&&!window\.OrarioSchoolPermissions\.canManageSchool/);
+ assert.doesNotMatch(html,/schoolPortalBtn\.onclick=\(\)=>\{switchView\('schoolView'\)/);
  assert.match(code('save-school-schedule.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
  assert.match(code('school-members.js'),/requireMember\(user,\['admin','coordinator'\]\)/);
+});
+
+test('cloud non cancella la copia locale della scuola in caso di 500 o risposta senza orario',()=>{
+ assert.match(html,/schoolCloudError=msg/);
+ assert.match(html,/if\(!schoolData\.entries\?\.length \|\| schoolData\.schoolCode/);
+ assert.match(html,/Le copie locali non sono state cancellate/);
+ assert.match(code('school-context.js'),/schedule=await getJSON\(`schedules\/\$\{r\.membership\.code\}`\)/);
 });
 
 test('registrazione e accesso hanno due moduli distinti e non esiste pre-registrazione',()=>{
