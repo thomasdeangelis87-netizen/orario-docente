@@ -14,6 +14,8 @@ const json = (status, body) =>
 const normalizeEmail = (v='') => String(v).trim().toLowerCase();
 const normalizeCode = (v='') => String(v).trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
 const emailKey = email => crypto.createHash('sha256').update(normalizeEmail(email)).digest('hex');
+// A single site-scoped document per accredited school, never per user or deploy.
+const schoolScheduleKey = code => `schedules/${normalizeCode(code)}`;
 
 async function currentUser(){
   const u = await getUser();
@@ -52,7 +54,7 @@ async function requireMember(user, roles=[]){
   if(roles.length && !roles.includes(membership.role)) return {error:json(403,{error:'Permessi insufficienti.'})};
   const school=await getJSON(`schools/${normalizeCode(membership.code)}`);
   if(!school || school.status!=='active') return {error:json(403,{error:'Scuola non attiva.'})};
-  return {membership,school};
+  return {membership:{...membership,code:normalizeCode(membership.code)},school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,currentUser,getJSON,setJSON,listKeys,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,schoolScheduleKey,currentUser,getJSON,setJSON,listKeys,getMembership,setMembership,requireMember};

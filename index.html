@@ -52,7 +52,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #3 · v16.10.0</div>
+<div id="buildVersion" class="build-version">PR #3 · v16.10.1</div>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -202,7 +202,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <section id="schoolPortalView" class="viewpage hidden" aria-label="Portale scuola">
     <div class="card" style="padding:18px">
-      <div id="schoolManagement" class="school-management"><h2 id="schoolManagementTitle">Amministrazione scuola</h2><div id="schoolManagementMeta" class="admin-note"></div><div id="schoolPortalCloudStatus" class="admin-note"></div><div class="school-date"><label for="schoolValidFrom">In vigore dal</label><input id="schoolValidFrom" type="date"></div><div class="school-file-row"><button class="btn primary" id="schoolUploadBtn">📊 Carica orario completo</button><button class="btn" id="schoolHoursBtn">🕒 Impostazioni orari</button><input id="schoolFile" type="file" accept=".xlsx,.xls,.pdf"></div><h3>Docenti e classi nell'orario pubblicato</h3><div id="schoolPortalTeachers" class="school-list"></div><div id="schoolPortalClasses" class="school-list"></div><h3>Orario completo pubblicato</h3><div class="scroll"><table class="school-table"><thead><tr><th>Giorno</th><th>Ora</th><th>Docente</th><th>Materia</th><th>Classe / attività</th></tr></thead><tbody id="schoolPortalEntries"></tbody></table></div><h3>Docenti collegati</h3><div id="schoolMembersList" class="school-list"></div><h3>Richieste di collegamento</h3><div id="schoolRequestsList" class="school-list"></div><p class="admin-note">Codice rapido dell'istituto: <strong id="schoolManagementCode"></strong></p></div>
+      <div id="schoolManagement" class="school-management"><h2 id="schoolManagementTitle">Amministrazione scuola</h2><div id="schoolManagementMeta" class="admin-note"></div><div id="schoolPortalCloudStatus" class="admin-note"></div><div class="auth-note">La Deploy Preview usa l’archivio condiviso della scuola: un nuovo caricamento sostituisce l’orario visibile ai docenti collegati, anche sul sito di produzione. Verifica prima l’orario esistente.</div><div class="school-file-row"><button class="btn soft" id="auditSchoolStorageBtn">🔎 Verifica orario nello storage scuola</button><span id="schoolStorageAuditInfo" class="admin-note"></span></div><div class="school-date"><label for="schoolValidFrom">In vigore dal</label><input id="schoolValidFrom" type="date"></div><div class="school-file-row"><button class="btn primary" id="schoolUploadBtn">📊 Carica orario completo</button><button class="btn" id="schoolHoursBtn">🕒 Impostazioni orari</button><input id="schoolFile" type="file" accept=".xlsx,.xls,.pdf"></div><h3>Docenti e classi nell'orario pubblicato</h3><div id="schoolPortalTeachers" class="school-list"></div><div id="schoolPortalClasses" class="school-list"></div><h3>Orario completo pubblicato</h3><div class="scroll"><table class="school-table"><thead><tr><th>Giorno</th><th>Ora</th><th>Docente</th><th>Materia</th><th>Classe / attività</th></tr></thead><tbody id="schoolPortalEntries"></tbody></table></div><h3>Docenti collegati</h3><div id="schoolMembersList" class="school-list"></div><h3>Richieste di collegamento</h3><div id="schoolRequestsList" class="school-list"></div><p class="admin-note">Codice rapido dell'istituto: <strong id="schoolManagementCode"></strong></p></div>
     </div>
   </section>
   <div id="schoolUpdateNotice" class="school-change hidden">🔔 <strong>Nuovo orario disponibile – La tua scuola ha pubblicato un nuovo orario.</strong><div id="schoolChangesPreview" class="admin-note hidden"></div><button class="btn" id="seeSchoolChangesBtn">Vedi modifiche</button><button class="btn primary" id="updateMySchoolScheduleBtn">Aggiorna il mio orario</button></div>
@@ -302,7 +302,7 @@ function personalMaxPeriods(){state.meta.maxPeriods=clampPeriods(state.meta.maxP
 let pendingImport=null,pendingPdfChoice=null;
 const THOMAS_STATE={meta:{firstName:'Thomas',lastName:'De Angelis',teacher:'THOMAS DE ANGELIS',teaching:'Laboratorio di servizi enogastronomici – settore cucina',subject:'B020',school:'Istituto Omnicomprensivo Ancel Keys',validFrom:'11/09/2026',maxPeriods:6,schoolCode:'',schoolRole:'teacher'},slots:{'0-0':['5° BE','08:25 – 09:26'],'2-0':['2° B','08:25 – 09:26'],'3-0':['5° BE','08:25 – 09:26'],'4-0':['5° BE','08:24 – 09:15'],'2-1':['2° B','09:26 – 10:27'],'3-1':['5° BE','09:26 – 10:27'],'4-1':['D','09:15 – 10:06'],'1-2':['5° BE','10:06 – 10:57'],'2-2':['2° B','10:27 – 11:28'],'3-2':['5° BE','10:27 – 11:28'],'4-2':['D','10:06 – 10:57'],'1-3':['D','10:57 – 11:48'],'2-3':['2° B','11:28 – 12:29'],'3-3':['D','11:28 – 12:29'],'1-4':['2° B','11:48 – 12:39'],'3-4':['5° BS','12:29 – 13:30'],'1-5':['5° BE','12:39 – 13:30'],'4-5':['2° B','12:39 – 13:30']}};
 const EMPTY_STATE={meta:{firstName:'',lastName:'',teacher:'',teaching:'',subject:'',school:'',validFrom:'',maxPeriods:6,schoolCode:'',schoolRole:'teacher',schoolTeacherName:''},slots:{}};
-let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false,schoolCloudError='';
+let state=clone(EMPTY_STATE),currentUser=null,activeKey=null,saveTimer=null,hasCloudState=false,schoolCloudReady=false,schoolCloudVerified=false,schoolAuditStatus='unknown',schoolCloudError='';
 let personalMobileMode='complete',personalMobileDay=null;
 function emptySchoolData(){return{source:'',loadedAt:'',teachers:[],entries:[],classCells:[],periodTimes:clone(SCHOOL_DEFAULT_TIMES),breaks:{0:[],1:[],2:[],3:[],4:[],5:[]},maxPeriods:6}}
 let schoolData=emptySchoolData(),activeMyClass='',schoolMode='class',schoolDirectory=[],pendingSchoolChange=null;
@@ -417,8 +417,10 @@ async function loadSchoolCloud({showError=false}={}){
       state.meta.schoolCode=m.code||sc.code||'';
       state.meta.schoolRole=m.role||'teacher';
       if(data.schedule&&Array.isArray(data.schedule.entries)){
+        schoolCloudVerified=true;schoolAuditStatus='present';
         schoolData=data.schedule;saveSchoolLocal();
       }else{
+        schoolCloudVerified=false;schoolAuditStatus='missing';
         // La scuola può essere collegata anche se l'amministratore non ha ancora pubblicato l'orario.
         // In questo caso non è un errore cloud: mostriamo semplicemente lo stato 'non pubblicato'.
         // Never erase an existing device copy merely because a remote schedule is missing.
@@ -437,6 +439,7 @@ async function loadSchoolCloud({showError=false}={}){
     }
   }
   schoolCloudReady=false;
+  schoolCloudVerified=false;schoolAuditStatus='unknown';
   const msg=String(lastError?.message||'Errore nel caricamento della scuola');
   schoolCloudError=msg;
   if(!/non collegato|not found|404/i.test(msg))console.warn('Cloud scuola:',msg);
@@ -447,7 +450,10 @@ async function loadSchoolCloud({showError=false}={}){
 async function saveSchoolCloud(){
   if(!currentUser||!['admin','coordinator'].includes(state.meta.schoolRole||''))return false;
   const data=await apiCall('save-school-schedule',{method:'POST',body:JSON.stringify({schedule:schoolData,publish:schoolData.pendingPublication===true,validFrom:schoolData.validFrom||''})});
+  if(!data.ok||data.schoolCode!==state.meta.schoolCode||data.entries!==schoolData.entries.length||data.teachers!==schoolData.teachers.length)
+    throw new Error('L’orario non è stato verificato nello storage della scuola.');
   schoolCloudReady=true;
+  schoolCloudVerified=false;
   schoolData.cloudUpdatedAt=data.updatedAt||schoolData.cloudUpdatedAt;
   schoolData.version=data.version||schoolData.version;
   schoolData.validFrom=data.validFrom||schoolData.validFrom;
@@ -778,7 +784,7 @@ function renderSchoolPersonalImport(){
   if(!box||!select||!text)return;
 
   const teachers=schoolTeacherNames().slice().sort((a,b)=>a.localeCompare(b,'it'));
-  const available=teachers.length>0;
+  const available=schoolCloudVerified&&teachers.length>0;
   box.classList.toggle('hidden',!available);
   if(!available)return;
 
@@ -800,6 +806,7 @@ function renderSchoolPersonalImport(){
   importMySchoolScheduleBtn.disabled=!teachers.length;
 }
 async function importMySchoolSchedule(){
+  if(!schoolCloudVerified){alert('L’orario condiviso della scuola non è verificato nel cloud. Riprova la sincronizzazione.');return}
   const select=document.getElementById('schoolOfficialTeacherSelect');
   const teacher=cleanCell((select&&select.value)||schoolTeacherMatch());
   if(!teacher){
@@ -862,7 +869,7 @@ function renderSchoolUpdateNotice(){
  pendingSchoolChange=null;
  const teacher=cleanCell(state.meta.schoolTeacherName||schoolTeacherMatch());
  const version=Number(schoolData.version)|| (schoolData.entries?.length?1:0);
- if(!schoolCloudReady||!state.meta.schoolCode||!teacher||!version){box.classList.add('hidden');return}
+ if(!schoolCloudVerified||!state.meta.schoolCode||!teacher||!version){box.classList.add('hidden');return}
  const latest=schoolTeacherEntries(teacher);
  if(!state.meta.schoolScheduleVersion){
    if(state.meta.schoolTeacherName){state.meta.schoolScheduleVersion=version;state.meta.schoolScheduleEntries=clone(latest);state.meta.schoolScheduleFingerprint=window.OrarioSchoolUpdate.fingerprint(latest);scheduleCloudSave()}
@@ -875,7 +882,7 @@ function renderSchoolUpdateNotice(){
  box.classList.remove('hidden');
 }
 function renderMyClasses(){const classes=myClasses();if(!activeMyClass||!classes.some(c=>sameClass(c,activeMyClass)))activeMyClass=classes[0]||'';myClassChips.innerHTML=classes.map(c=>`<button class="classchip ${sameClass(c,activeMyClass)?'active':''}" data-myclass="${esc(c)}">${esc(c)}</button>`).join('');myClassChips.querySelectorAll('[data-myclass]').forEach(b=>b.onclick=()=>{activeMyClass=b.dataset.myclass;renderMyClasses()});renderClassSchedule(myClassSchedule,activeMyClass);myClassesEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
-function renderSchool(){refreshSchoolFilters();linkedSchoolName.value=state.meta.school||'';schoolCodeInput.value=state.meta.schoolCode||'';schoolRoleInput.value=state.meta.schoolRole||'teacher';const roleNames={teacher:'Docente',coordinator:'Referente orario',admin:'Amministratore scuola'};schoolRoleBadge.textContent=roleNames[state.meta.schoolRole||'teacher'];schoolConnectionInfo.innerHTML=state.meta.schoolCode?`Collegato a <strong>${esc(state.meta.school||'scuola')}</strong> · codice <span class="school-code">${esc(state.meta.schoolCode)}</span>`:'Nessuna scuola collegata tramite codice.';schoolTeachersCount.textContent=schoolData.teachers.length;schoolClassesCount.textContent=schoolClasses().length;schoolEntriesCount.textContent=schoolData.entries.length;schoolSourceInfo.textContent=schoolCloudError?'Sincronizzazione cloud non riuscita: '+schoolCloudError:schoolData.source?`Orario condiviso: ${schoolData.source} · ${schoolData.loadedAt}${schoolData.cloudUpdatedAt?' · cloud '+new Date(schoolData.cloudUpdatedAt).toLocaleString('it-IT'):''}`:(schoolCloudReady?'Scuola collegata, ma nessun orario generale è attualmente pubblicato. L’amministratore della scuola deve caricare e pubblicare l’Excel ufficiale.':'Nessun orario scuola caricato.');schoolRoleInput.disabled=true;const linked=!!(schoolCloudReady&&state.meta.schoolCode);connectSchoolBtn.disabled=linked;connectSchoolBtn.textContent=linked?'✓ Scuola collegata':'Collega scuola';linkedSchoolName.readOnly=linked;schoolCodeInput.readOnly=linked;schoolUploadBtn.disabled=!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole);schoolHoursBtn.disabled=!(linked&&['admin','coordinator'].includes(state.meta.schoolRole||''));renderSchoolPersonalImport();renderSchoolUpdateNotice();const q=normText(schoolSearch.value),tf=schoolTeacherFilter.value,cf=schoolClassFilter.value,df=schoolDayFilter.value;schoolModeClass.classList.toggle('active',schoolMode==='class');schoolModeTeacher.classList.toggle('active',schoolMode==='teacher');schoolClassScheduleWrap.classList.toggle('hidden',schoolMode!=='class'||!cf);const table=schoolTableBody.closest('.scroll');table.classList.toggle('hidden',schoolMode==='class'&&!!cf);if(schoolMode==='class'&&cf){renderClassSchedule(schoolClassSchedule,cf)}else{let rows=schoolData.entries.filter(e=>(!tf||e.teacher===tf)&&(!cf||sameClass(e.activity,cf))&&(!df||dayLabel(e.day)===df)&&(!q||normText(e.teacher+' '+e.subject+' '+e.activity).includes(q)));rows.sort((a,b)=>a.day-b.day||a.period-b.period||a.teacher.localeCompare(b.teacher,'it'));schoolTableBody.innerHTML=rows.slice(0,1000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${e.period}ª<br><small>${esc(schoolTime(e.day,e.period-1))}</small></td><td><strong>${esc(e.teacher)}</strong></td><td>${esc(e.subject||'—')}</td><td><span class="chip">${esc(e.activity)}</span></td></tr>`).join('');if(schoolData.entries.length&&!rows.length)schoolTableBody.innerHTML='<tr><td colspan="5" class="school-empty">Nessun risultato con questi filtri.</td></tr>'}schoolEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
+function renderSchool(){refreshSchoolFilters();linkedSchoolName.value=state.meta.school||'';schoolCodeInput.value=state.meta.schoolCode||'';schoolRoleInput.value=state.meta.schoolRole||'teacher';const roleNames={teacher:'Docente',coordinator:'Referente orario',admin:'Amministratore scuola'};schoolRoleBadge.textContent=roleNames[state.meta.schoolRole||'teacher'];schoolConnectionInfo.innerHTML=state.meta.schoolCode?`Collegato a <strong>${esc(state.meta.school||'scuola')}</strong> · codice <span class="school-code">${esc(state.meta.schoolCode)}</span>`:'Nessuna scuola collegata tramite codice.';schoolTeachersCount.textContent=schoolData.teachers.length;schoolClassesCount.textContent=schoolClasses().length;schoolEntriesCount.textContent=schoolData.entries.length;schoolSourceInfo.textContent=schoolCloudError?'Sincronizzazione cloud non riuscita: '+schoolCloudError:!schoolCloudVerified&&schoolData.entries.length?'Copia locale non verificata nello storage della scuola. Non usarla come orario ufficiale.':schoolData.source?`Orario condiviso: ${schoolData.source} · ${schoolData.loadedAt}${schoolData.cloudUpdatedAt?' · cloud '+new Date(schoolData.cloudUpdatedAt).toLocaleString('it-IT'):''}`:(schoolCloudReady?'Scuola collegata, ma nessun orario generale è attualmente pubblicato. L’amministratore della scuola deve caricare e pubblicare l’Excel ufficiale.':'Nessun orario scuola caricato.');schoolRoleInput.disabled=true;const linked=!!(schoolCloudReady&&state.meta.schoolCode);connectSchoolBtn.disabled=linked;connectSchoolBtn.textContent=linked?'✓ Scuola collegata':'Collega scuola';linkedSchoolName.readOnly=linked;schoolCodeInput.readOnly=linked;schoolUploadBtn.disabled=!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole);schoolHoursBtn.disabled=!(linked&&['admin','coordinator'].includes(state.meta.schoolRole||''));renderSchoolPersonalImport();renderSchoolUpdateNotice();const q=normText(schoolSearch.value),tf=schoolTeacherFilter.value,cf=schoolClassFilter.value,df=schoolDayFilter.value;schoolModeClass.classList.toggle('active',schoolMode==='class');schoolModeTeacher.classList.toggle('active',schoolMode==='teacher');schoolClassScheduleWrap.classList.toggle('hidden',schoolMode!=='class'||!cf);const table=schoolTableBody.closest('.scroll');table.classList.toggle('hidden',schoolMode==='class'&&!!cf);if(schoolMode==='class'&&cf){renderClassSchedule(schoolClassSchedule,cf)}else{let rows=schoolData.entries.filter(e=>(!tf||e.teacher===tf)&&(!cf||sameClass(e.activity,cf))&&(!df||dayLabel(e.day)===df)&&(!q||normText(e.teacher+' '+e.subject+' '+e.activity).includes(q)));rows.sort((a,b)=>a.day-b.day||a.period-b.period||a.teacher.localeCompare(b.teacher,'it'));schoolTableBody.innerHTML=rows.slice(0,1000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${e.period}ª<br><small>${esc(schoolTime(e.day,e.period-1))}</small></td><td><strong>${esc(e.teacher)}</strong></td><td>${esc(e.subject||'—')}</td><td><span class="chip">${esc(e.activity)}</span></td></tr>`).join('');if(schoolData.entries.length&&!rows.length)schoolTableBody.innerHTML='<tr><td colspan="5" class="school-empty">Nessun risultato con questi filtri.</td></tr>'}schoolEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
 function renderSchoolManagementUI(){
  const authorized=window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole);
  schoolPortalBtn.classList.toggle('hidden',!authorized);
@@ -890,13 +897,14 @@ function renderSchoolManagementUI(){
   schoolManagementTitle.textContent='Amministrazione scuola – '+(state.meta.school||'Istituto');
   schoolManagementCode.textContent=state.meta.schoolCode||'';
   schoolPortalCloudStatus.textContent=schoolCloudError?'Sincronizzazione cloud non riuscita: '+schoolCloudError+' · Le copie locali non sono state cancellate. Riprova dopo aver risolto il problema cloud.':'';
-  schoolManagementMeta.textContent=schoolData.entries.length?`${schoolCloudError?'Copia locale (cloud da verificare)':'Orario pubblicato'} · versione ${schoolData.version||1} · In vigore dal ${schoolData.validFrom||'non indicato'} · ${schoolData.teachers.length} docenti · ${schoolClasses().length} classi`:(schoolCloudError?'Orario cloud non verificabile. Non caricare una sostituzione finché la sincronizzazione non riesce.':'Nessun orario pubblicato. Puoi caricare il primo orario completo.');
-  schoolPortalTeachers.textContent='Docenti: '+(schoolData.teachers.join(', ')||'nessuno');
+  schoolManagementMeta.textContent=schoolData.entries.length?`${schoolCloudVerified?'Orario pubblicato':'Copia locale non verificata nel cloud'} · versione ${schoolData.version||1} · In vigore dal ${schoolData.validFrom||'non indicato'} · ${schoolData.teachers.length} docenti · ${schoolClasses().length} classi`:(schoolCloudError?'Orario cloud non verificabile. Verifica lo storage prima di caricare.':'Nessun orario pubblicato. Puoi caricare il primo orario completo.');
+  schoolStorageAuditInfo.textContent=schoolAuditStatus==='present'?`Orario presente nello storage della scuola ${state.meta.schoolCode}.`:schoolAuditStatus==='missing'?`Nessun orario trovato nello storage della scuola ${state.meta.schoolCode}.`:'Storage non ancora verificato.';
+  schoolPortalTeachers.textContent='Docenti: '+((schoolData.teachers||[]).map(t=>typeof t==='string'?t:t.name||'').filter(Boolean).join(', ')||'nessuno');
   schoolPortalClasses.textContent='Classi / attività: '+(schoolClasses().join(', ')||'nessuna');
   schoolPortalEntries.innerHTML=(schoolData.entries||[]).slice(0,5000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${esc(e.period)}ª</td><td>${esc(e.teacher)}</td><td>${esc(e.subject||'—')}</td><td>${esc(e.activity)}</td></tr>`).join('')||'<tr><td colspan="5">Nessun orario completo disponibile.</td></tr>';
-  schoolUploadBtn.textContent=schoolData.entries.length?'📊 Carica nuovo orario':'📊 Carica orario completo';
+  schoolUploadBtn.textContent=schoolAuditStatus==='present'?'📊 Carica nuovo orario':'📊 Carica orario completo';
   schoolValidFrom.value=/^\d{4}-\d\d-\d\d$/.test(schoolData.validFrom||'')?schoolData.validFrom:'';
- }else if(state.meta.schoolCode){
+ }else if(state.meta.schoolCode&&!schoolCloudError){
   schoolSourceInfo.textContent=schoolData.entries.length?`Orario scuola: versione ${schoolData.version||1} · In vigore dal ${schoolData.validFrom||'non indicato'}`:'La scuola non ha ancora pubblicato un orario.';
  }
 }
@@ -942,7 +950,7 @@ schoolHoursBtn.onclick=openSchoolHours;
 schoolMaxPeriodsInput.onchange=()=>{readHoursIntoSchoolData();schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);renderSchoolHoursEditor()};
 copyHoursAllBtn.onclick=()=>{readHoursIntoSchoolData();const src=Number(copyHoursFrom.value);const vals=(schoolData.periodTimes[src]||[]).slice(),br=clone(ensureSchoolBreaks()[src]||[]);for(let d=0;d<6;d++){schoolData.periodTimes[d]=vals.slice();schoolData.breaks[d]=clone(br)}renderSchoolHoursEditor();toast('Orari e pause copiati su tutti i giorni')};
 resetSchoolHoursBtn.onclick=()=>{schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);schoolData.breaks={0:[],1:[],2:[],3:[],4:[],5:[]};renderSchoolHoursEditor();toast('Ripristinati gli orari iniziali e rimosse le pause')};
-saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor();for(let d=0;d<6;d++)schoolData.periodTimes[d]=applyBreaksToTimes(schoolData.periodTimes[d],schoolData.breaks[d]);(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();try{await saveSchoolCloud()}catch(e){alert('Salvato sul dispositivo, ma non nel cloud: '+e.message)}renderSchool();renderMyClasses();closeModal('schoolHoursModal');toast('Orari e pause scuola salvati')};
+saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor();for(let d=0;d<6;d++)schoolData.periodTimes[d]=applyBreaksToTimes(schoolData.periodTimes[d],schoolData.breaks[d]);(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();try{await saveSchoolCloud();if(!await loadSchoolCloud())throw new Error('Orario salvato ma non rileggibile dal cloud')}catch(e){alert('Salvato sul dispositivo, ma non nel cloud: '+e.message)}renderSchool();renderMyClasses();closeModal('schoolHoursModal');toast('Orari e pause scuola salvati')};
 connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const already=String(state.meta.schoolCode||'').trim().toUpperCase()===code;if(already){const ok=await loadSchoolCloud({showError:true});if(ok){render();toast(schoolData.entries.length?'Dati scuola aggiornati':'Scuola collegata: nessun orario pubblicato')}return}const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;const ok=await loadSchoolCloud({showError:true});if(!ok)return;render();cloudSave();toast(schoolData.entries.length?'Account collegato alla scuola':'Scuola collegata: nessun orario pubblicato')}catch(e){alert(e.message)}finally{renderSchool()}};
 schoolPortalBtn.onclick=()=>switchView('schoolPortalView');
 schoolDirectorySearchBtn.onclick=searchAccreditedSchools;
@@ -954,11 +962,43 @@ requestSchoolLinkBtn.onclick=async()=>{
  try{const data=await apiCall('school-link-request',{method:'POST',body:JSON.stringify({schoolId,displayName:fullName()})});schoolLinkRequestStatus.textContent=`Richiesta inviata a ${data.request.schoolName}. Il referente dovrà approvarla.`}
  catch(e){alert(e.message)}finally{requestSchoolLinkBtn.disabled=false}
 };
-schoolUploadBtn.onclick=async()=>{if(!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole)){alert('Solo il referente o amministratore collegato può pubblicare l’orario generale.');return}if(!schoolCloudReady){const ready=await loadSchoolCloud({showError:true});if(!ready)return}schoolFile.click()};
+async function auditSchoolStorage(){
+  let audited=false;
+  try{
+    schoolStorageAuditInfo.textContent='Verifica storage scuola…';
+    const data=await apiCall('school-storage-audit');
+    if(data.storageScope!=='site'||!data.schoolCode||!['admin','coordinator'].includes(data.role))throw new Error('Risposta storage non valida.');
+    state.meta.schoolCode=data.schoolCode;state.meta.school=data.schoolName;state.meta.schoolRole=data.role;
+    schoolAuditStatus=data.status;
+    audited=true;
+    schoolCloudReady=true;
+    if(data.status==='present'){
+      schoolStorageAuditInfo.textContent=`Orario già presente per ${data.schoolCode}: versione ${data.summary.version}, ${data.summary.teachers} docenti, ${data.summary.entries} impegni. Recupero il dataset completo…`;
+      if(!await loadSchoolCloud())throw new Error('Orario trovato nello storage, ma la lettura completa non è riuscita. Non sovrascriverlo.');
+    }else if(data.status==='missing'){
+      schoolCloudVerified=false;schoolCloudError='';
+      schoolStorageAuditInfo.textContent=`Nessun orario presente nello storage del sito per ${data.schoolCode}. Puoi caricare il primo orario.`;
+      await loadSchoolManagement();
+    }else throw new Error('Stato dello storage non riconosciuto.');
+    renderSchool();return data;
+  }catch(e){
+    if(!audited)schoolAuditStatus='unknown';schoolCloudVerified=false;
+    schoolCloudError=e.message;
+    schoolStorageAuditInfo.textContent='Verifica impossibile: '+e.message;
+    renderSchool();throw e;
+  }
+}
+auditSchoolStorageBtn.onclick=async()=>{try{await auditSchoolStorage()}catch(e){alert(e.message)}};
+schoolUploadBtn.onclick=async()=>{
+ if(!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole)){alert('Solo il referente o amministratore collegato può pubblicare l’orario generale.');return}
+ try{const audit=await auditSchoolStorage();if(audit.status==='present'&&!schoolCloudVerified)throw new Error('Orario già esistente non recuperato: caricamento bloccato per evitare la perdita dei dati.');schoolFile.click()}
+ catch(e){alert('Caricamento bloccato: '+e.message)}
+};
 schoolFile.onchange=async event=>{
  const selectedFile=event.target.files[0];if(!selectedFile)return;
  schoolUploadBtn.disabled=true;schoolUploadBtn.textContent='Analisi e sincronizzazione…';
  const previous=clone(schoolData);
+ let savedToCloud=false;
  try{
   const keepTimes=clone(schoolPeriodTimes()),keepBreaks=clone(ensureSchoolBreaks()),keepMax=schoolMaxPeriods();
   schoolData=await dispatchSchoolScheduleFile(selectedFile);
@@ -969,9 +1009,11 @@ schoolFile.onchange=async event=>{
   (schoolData.entries||[]).forEach(entry=>entry.time=schoolTime(entry.day,entry.period-1));
   (schoolData.classCells||[]).forEach(cell=>cell.time=schoolTime(cell.day,cell.period-1));
   if(!await saveSchoolCloud())throw new Error('Pubblicazione nel cloud non riuscita');
-  saveSchoolLocal();renderSchool();renderMyClasses();await loadSchoolManagement();
+  savedToCloud=true;
+  if(!await loadSchoolCloud())throw new Error('Scrittura verificata, ma la rilettura dell’orario condiviso non è riuscita. Non considerarlo pubblicato finché il cloud non risponde.');
+  renderSchool();renderMyClasses();await loadSchoolManagement();
   toast(`Orario scuola versione ${schoolData.version}: ${schoolData.teachers.length} docenti`);
- }catch(err){schoolData=previous;renderSchool();alert(err.message||'Errore durante l’importazione')}
+ }catch(err){if(!savedToCloud)schoolData=previous;else{schoolCloudVerified=false;schoolCloudError=err.message||'Rilettura cloud non disponibile'}renderSchool();alert(err.message||'Errore durante l’importazione')}
  finally{schoolUploadBtn.disabled=false;renderSchoolManagementUI();schoolFile.value=''}
 };
 document.getElementById('importMySchoolScheduleBtn').onclick=importMySchoolSchedule;
@@ -1179,7 +1221,7 @@ if(IS_DEPLOY_PREVIEW){
 }
 window.addEventListener('orario-auth-ready',event=>handleUser(event.detail));
 window.addEventListener('orario-login',event=>handleUser(event.detail));
-window.addEventListener('orario-logout',()=>{resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();schoolCloudReady=false;schoolPortalBtn.classList.add('hidden');showAuth()});
+window.addEventListener('orario-logout',()=>{resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);toast('Accesso non disponibile: riprova più tardi')});
