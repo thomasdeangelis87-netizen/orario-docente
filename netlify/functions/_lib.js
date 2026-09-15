@@ -53,7 +53,17 @@ async function getMembership(identity){
   if(typeof identity==='string')return await getJSON(`members-by-email/${emailKey(identity)}`);
   if(!identity?.id)return null;
   const bound=await getJSON(memberIdKey(identity.id));
-  if(bound)return bound.status==='active'&&normalizeEmail(bound.email)===identity.email?bound:null;
+  if(bound){
+    if(bound.status==='active'&&normalizeEmail(bound.email)!==identity.email){
+      const change=await getJSON(`identity-email-changes/${encodeURIComponent(identity.id)}`);
+      if(change?.status==='requested'&&change.userId===identity.id&&
+          normalizeEmail(change.newEmail)===identity.email&&normalizeCode(change.code)===normalizeCode(bound.code)){
+        const {finishEmailChange}=await import('./_school_email_change.js');
+        return await finishEmailChange(change,{getJSON,setJSON});
+      }
+    }
+    return bound.status==='active'&&normalizeEmail(bound.email)===identity.email?bound:null;
+  }
   const legacy=await getMembership(identity.email);
   if(!mayClaimLegacy(identity,legacy))return null;
   // Fail closed on an account recreated with an old email. Invitation-only

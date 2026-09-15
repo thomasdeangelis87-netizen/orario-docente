@@ -42,7 +42,8 @@ test('ultimo amministratore non revocabile; cambio amministratore mantiene codic
 
 test('Portale scuola e pannello piattaforma non eliminano orari esistenti per revocare un ruolo',()=>{
   const handlers=['platform-schools.js','school-members.js','join-school.js'].map(name=>fs.readFileSync(new URL('../netlify/functions/'+name,import.meta.url),'utf8'));
-  assert.match(handlers[0],/if\(schedule\|\|members\.length/);
+  assert.doesNotMatch(handlers[0],/action==='delete-school'/);
+  assert.match(handlers[0],/revoke-accreditation/);
   assert.match(handlers[1],/mayRevoke\(list,email\)/);
   assert.match(handlers[2],/prior\?\.status==='revoked'/);
   assert.match(handlers[2],/invitation\.userId===user\.id/);

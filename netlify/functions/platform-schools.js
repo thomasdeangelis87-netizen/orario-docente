@@ -1,5 +1,8 @@
-import {json,getJSON,setJSON,deleteJSON,listKeys,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
+import {json,getJSON,setJSON,listKeys,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
 import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
+import {changeManagerLogin} from './_school_email_change.js';
+import {sendSchoolApprovalEmail} from './_brevo.js';
+import {changeAccreditation} from './_accreditation_status.js';
 
 function authorized(req){
   let secret='';try{secret=Netlify.env.get('PLATFORM_ADMIN_KEY')||''}catch{}
@@ -35,24 +38,27 @@ export default async req=>{
     if(!data)return json(404,{error:'Scuola non trovata'});
     const {school,members}=data, action=String(body.action||'');
     if(['suspend','reactivate','revoke-accreditation'].includes(action)){
-      const status={suspend:'suspended',reactivate:'active','revoke-accreditation':'revoked'}[action];
-      const updated={...school,status,statusChangedAt:new Date().toISOString()};
-      await setJSON(`schools/${code}`,updated);
-      return json(200,{ok:true,school:updated});
+      const outcome=await changeAccreditation({school,code,action,confirmation:body.confirmation,write:setJSON});
+      const {status,...result}=outcome;
+      return json(status,result);
     }
-    if(action==='delete-school'){
-      if(body.confirmation!==`ELIMINA DEFINITIVAMENTE ${code}`)
-        return json(400,{error:`Conferma obbligatoria: ELIMINA DEFINITIVAMENTE ${code}`});
-      if(school.status!=='revoked')return json(409,{error:'Revoca prima l’accreditamento.'});
-      // Do not destroy a school's schedule or membership. A full erasure needs
-      // an independent, verified data-retention workflow; never erase Falcone.
-      const schedule=await getJSON(`schedules/${code}`);
-      const requests=await getJSON(`school-link-requests/${code}`);
-      if(schedule||members.length||requests?.length)return json(409,{error:'Eliminazione protetta: scuola con orari, associazioni o richieste. I dati restano intatti; è richiesta una procedura di cancellazione separata.'});
-      await deleteJSON(`schools/${code}`);
-      const directory=(await getJSON('schools-index'))||[];
-      await setJSON('schools-index',directory.filter(item=>item!==code));
-      return json(200,{ok:true,deletedCode:code});
+    if(action==='change-manager-email'){
+      const oldEmail=normalizeEmail(body.email);
+      const manager=members.find(m=>m.status==='active'&&['admin','coordinator'].includes(m.role)&&m.email===oldEmail);
+      if(!manager)return json(404,{error:'Account gestore attivo non trovato'});
+      const {admin}=await import('@netlify/identity');
+      const outcome=await changeManagerLogin({code,membership:manager,newEmail:body.newEmail,
+        read:getJSON,write:setJSON,identityAdmin:admin,findByEmail:lookupIdentityAccount});
+      const {status,...result}=outcome;
+      return json(status,result);
+    }
+    if(action==='resend-approval-email'){
+      if(school.status!=='active')return json(409,{error:'Riattiva l’accreditamento prima di inviare l’email.'});
+      const manager=members.find(m=>m.role==='admin'&&m.status==='active');
+      if(!manager)return json(409,{error:'Nessun amministratore attivo a cui inviare il codice.'});
+      const result=await sendSchoolApprovalEmail({to:manager.email,schoolName:school.name,
+        schoolCode:code,contactName:manager.displayName||''});
+      return json(200,{ok:true,emailSent:true,messageId:result.messageId||''});
     }
     if(!['assign-manager','revoke-manager'].includes(action))return json(400,{error:'Azione non riconosciuta'});
     const email=normalizeEmail(body.email);
