@@ -1,5 +1,6 @@
 import {json,getJSON,setJSON,setMembership,normalizeEmail,normalizeCode} from './_lib.js';
 import { sendSchoolApprovalEmail } from './_brevo.js';
+import {lookupIdentityAccount} from './_member_ops.js';
 
 function env(name){
   try { return Netlify.env.get(name) || ''; }
@@ -35,7 +36,8 @@ export default async (req)=>{
     let directory=await getJSON('schools-index');
     if(!Array.isArray(directory))directory=[];
     await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
-    const membership={email:adminEmail,code,role:'admin',status:'active',joinedAt:now,assignedBy:'platform-admin',displayName:String(body.adminName||'').trim()};
+    const account=await lookupIdentityAccount(adminEmail);
+    const membership={userId:account?.confirmedAt?account.id:'',email:adminEmail,code,role:'admin',status:account?.confirmedAt?'active':'pending',joinedAt:now,assignedBy:'platform-admin',displayName:String(body.adminName||'').trim()};
     await setMembership(adminEmail,membership);
     await setJSON(`school-members/${code}`,[membership]);
 

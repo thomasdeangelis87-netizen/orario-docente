@@ -1,4 +1,4 @@
-import { json, currentUser, emailKey, getJSON, setJSON } from './_lib.js';
+import { json, currentUser, getJSON, setJSON } from './_lib.js';
 
 function validState(x){
   return !!(x && x.meta && x.slots && typeof x.slots === 'object');
@@ -9,7 +9,8 @@ export default async (req) => {
     const user=await currentUser();
     if(!user) return json(401,{error:'Accesso richiesto'});
 
-    const key=`profiles/${emailKey(user.email)}`;
+    if(!user.id)return json(403,{error:'ID account non disponibile'});
+    const key=`profiles-by-user/${encodeURIComponent(user.id)}`;
 
     if(req.method==='GET'){
       const profile=await getJSON(key);
@@ -30,7 +31,8 @@ export default async (req) => {
         state:body.state,
         profileCompleted:body.profileCompleted===true,
         fullName:String(body.fullName||'').slice(0,200),
-        updatedAt:new Date().toISOString()
+        updatedAt:new Date().toISOString(),
+        userId:user.id
       };
 
       await setJSON(key,profile);

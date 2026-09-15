@@ -1,4 +1,5 @@
 import {json,currentUser,getJSON,setJSON,setMembership,normalizeEmail,normalizeCode} from './_lib.js';
+import {lookupIdentityAccount} from './_member_ops.js';
 
 function makeCode(mech='SCUOLA'){
   const root=normalizeCode(mech).replace(/[^A-Z]/g,'').slice(0,4)||'SCU';
@@ -43,8 +44,9 @@ export default async (req) => {
     if(!Array.isArray(directory))directory=[];
     await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
 
+    const account=await lookupIdentityAccount(adminEmail);
     const membership={
-      email:adminEmail,code,role:'admin',status:'active',
+      userId:account?.confirmedAt?account.id:'',email:adminEmail,code,role:'admin',status:account?.confirmedAt?'active':'pending',
       joinedAt:now,assignedBy:user.email,displayName:String(body.adminName||'')
     };
     await setMembership(adminEmail,membership);

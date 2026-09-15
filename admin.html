@@ -56,6 +56,10 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
     <button class="btn primary" id="createBtn">Attiva scuola e genera codice</button>
     <div id="msg" style="margin-top:14px"></div>
   </div>
+  <div class="card">
+    <div class="toolbar" style="justify-content:space-between"><div><h2>Scuole accreditate</h2><p class="meta">Le scuole rimangono indipendenti dai loro amministratori e dagli orari pubblicati.</p></div><button id="schoolsRefresh" class="btn primary">Aggiorna scuole</button></div>
+    <div id="schoolsMsg" class="meta"></div><div id="accreditedSchools"></div>
+  </div>
 </div>
 </div>
 
@@ -144,6 +148,37 @@ async function refresh(){
   try{const items=await loadRequests();render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e caricate.`;}
   catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
 }
+async function schoolsRefresh(){
+ const box=$('accreditedSchools');$('schoolsMsg').textContent='Caricamento scuole…';
+ try{
+  const data=await api('/.netlify/functions/platform-schools');
+  const schools=data.schools||[];
+  box.innerHTML=schools.map(({school:s,managers})=>`<div class="req"><strong>${esc(s.name)}</strong> <span class="pill">${esc(s.status||'active')}</span><div class="meta">Codice ${esc(s.code)} · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}<br>Amministratori/referenti: ${managers.length?managers.map(m=>esc(m.email)+' ('+esc(m.role)+')').join(', '):'Nessuno attivo'}</div><button class="btn" data-manage-code="${esc(s.code)}">Visualizza / Gestisci</button></div>`).join('')||'<p class="meta">Nessuna scuola registrata.</p>';
+  box.querySelectorAll('[data-manage-code]').forEach(btn=>btn.onclick=()=>schoolDetails(btn.dataset.manageCode));
+  $('schoolsMsg').textContent=`${schools.length} scuole registrate.`;
+ }catch(e){$('schoolsMsg').textContent=e.message}
+}
+async function schoolDetails(code){
+ const data=await api('/.netlify/functions/platform-schools?code='+encodeURIComponent(code));
+ const {school:s,members}=data;
+ const box=$('accreditedSchools');
+ let panel=$('schoolDetailsPanel');if(!panel){panel=document.createElement('div');panel.id='schoolDetailsPanel';panel.className='req';box.prepend(panel)}
+ panel.innerHTML=`<h3>${esc(s.name)} · ${esc(code)}</h3><p class="meta">Stato ${esc(s.status)} · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}</p><div class="row"><button class="btn" data-status="suspend">Sospendi accreditamento</button><button class="btn" data-status="reactivate">Riattiva</button><button class="btn danger" data-status="revoke-accreditation">Revoca accreditamento</button><button class="btn danger" data-status="delete-school">Elimina definitivamente (protetto)</button></div><h4>Account associati</h4>${members.map(m=>`<div class="req">${esc(m.email)} · ${esc(m.role)} · ${esc(m.status)} ${['admin','coordinator'].includes(m.role)?`<button class="btn danger" data-revoke="${esc(m.email)}">Revoca gestore</button>`:''}</div>`).join('')||'<p class="meta">Nessun account associato.</p>'}<h4>Assegna nuovo gestore</h4><div class="row"><input id="platformManagerEmail" type="email" placeholder="Email account"><select id="platformManagerRole"><option value="admin">Amministratore scuola</option><option value="coordinator">Referente orario</option></select><button class="btn primary" id="platformManagerAssign">Assegna</button></div><p class="meta" id="schoolActionMsg"></p>`;
+ panel.querySelectorAll('[data-status]').forEach(btn=>btn.onclick=async()=>{
+  const action=btn.dataset.status;
+  const confirmation=action==='delete-school'?prompt(`Eliminazione irreversibile. Non è consentita se esistono orari o associazioni. Digita ELIMINA DEFINITIVAMENTE ${code}`):'';
+  if(action==='delete-school'&&confirmation!==`ELIMINA DEFINITIVAMENTE ${code}`)return;
+  if(action!=='delete-school'&&!confirm(`${btn.textContent} per ${s.name}? Gli orari non saranno eliminati.`))return;
+  try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,code,confirmation})});await schoolsRefresh();await schoolDetails(code)}catch(e){$('schoolActionMsg').textContent=e.message}
+ });
+ panel.querySelectorAll('[data-revoke]').forEach(btn=>btn.onclick=async()=>{
+  if(!confirm(`Revocare ${btn.dataset.revoke} senza eliminare la scuola?`))return;
+  try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'revoke-manager',code,email:btn.dataset.revoke})});await schoolsRefresh();await schoolDetails(code)}catch(e){$('schoolActionMsg').textContent=e.message}
+ });
+ $('platformManagerAssign').onclick=async()=>{
+  try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'assign-manager',code,email:$('platformManagerEmail').value,role:$('platformManagerRole').value})});await schoolsRefresh();await schoolDetails(code)}catch(e){$('schoolActionMsg').textContent=e.message}
+ };
+}
 
 $('adminLoginBtn').onclick=async()=>{
   const k=$('adminKey').value.trim();
@@ -155,6 +190,7 @@ $('adminLoginBtn').onclick=async()=>{
     $('loginPanel').classList.add('hidden');
     $('dashboard').classList.remove('hidden');
     await refresh();
+    await schoolsRefresh();
   }catch(e){
     adminKey='';
     $('loginMsg').textContent='⚠️ '+(e?.message||e);
@@ -169,6 +205,7 @@ $('logoutBtn').onclick=()=>{
 };
 
 $('refreshBtn').onclick=refresh;
+$('schoolsRefresh').onclick=schoolsRefresh;
 
 $('createBtn').onclick=async()=>{
   const m=$('msg');m.className='note';m.textContent='Attivazione…';

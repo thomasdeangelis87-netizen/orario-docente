@@ -1,4 +1,4 @@
-import {json,currentUser,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,emailKey} from './_lib.js';
+import {json,currentUser,getMembership,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,memberIdKey} from './_lib.js';
 
 export default async (req) => {
   try{
@@ -14,7 +14,10 @@ export default async (req) => {
     const school=await getJSON(`schools/${code}`);
     if(!school||school.status!=='active') return json(404,{error:'Codice scuola non valido o scuola non ancora attiva'});
 
-    const current=await getJSON(`members-by-email/${emailKey(user.email)}`);
+    if(!user.id)return json(403,{error:'ID account non disponibile'});
+    const prior=await getJSON(memberIdKey(user.id));
+    if(prior?.status==='revoked')return json(403,{error:'Accesso revocato: contatta un amministratore della scuola per ripristinarlo.'});
+    const current=await getMembership(user);
     if(current && current.code!==code)
       return json(409,{error:'Questo account è già collegato a un’altra scuola. Scollegalo prima di cambiare istituto.'});
 
@@ -22,12 +25,15 @@ export default async (req) => {
       return json(200,{ok:true,school,membership:current,alreadyConnected:true});
     }
 
+    const invitation=await getMembership(user.email);
+    const invited=invitation?.code===code&&invitation.status==='pending'&&!!invitation.assignedBy&&(!invitation.userId||invitation.userId===user.id);
     const membership={
-      email:user.email,code,role:(current&&current.role)||'teacher',status:'active',
+      userId:user.id,email:user.email,code,role:(current&&current.role)||(invited&&invitation.role)||'teacher',status:'active',
       joinedAt:new Date().toISOString(),displayName:String(body.displayName||'').slice(0,120)
     };
     await setMembership(user.email,membership);
-    const oldRequest=await getJSON(`link-requests-by-email/${emailKey(user.email)}`);
+    const requestKey=`link-requests-by-user/${encodeURIComponent(user.id)}`;
+    const oldRequest=await getJSON(requestKey);
     if(oldRequest?.status==='pending'){
       const requestCode=normalizeCode(oldRequest.code);
       const requests=(await getJSON(`school-link-requests/${requestCode}`))||[];
@@ -35,7 +41,7 @@ export default async (req) => {
       oldRequest.status=requestCode===code?'approved':'cancelled';
       oldRequest.decidedAt=new Date().toISOString();oldRequest.decidedBy='school-code';
       if(requestIx>=0){requests[requestIx]=oldRequest;await setJSON(`school-link-requests/${requestCode}`,requests)}
-      await setJSON(`link-requests-by-email/${emailKey(user.email)}`,oldRequest);
+      await setJSON(requestKey,oldRequest);
     }
 
     const list=(await getJSON(`school-members/${code}`))||[];

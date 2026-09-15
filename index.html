@@ -52,7 +52,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #3 · v16.10.3</div>
+<div id="buildVersion" class="build-version">PR #3 · v16.10.4</div>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -204,6 +204,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <div class="card" style="padding:18px">
       <div id="schoolManagement" class="school-management"><h2 id="schoolManagementTitle">Amministrazione scuola</h2><div id="schoolManagementMeta" class="admin-note"></div><div id="schoolPortalCloudStatus" class="admin-note"></div><div class="auth-note">La Deploy Preview usa l’archivio condiviso della scuola: un nuovo caricamento sostituisce l’orario visibile ai docenti collegati, anche sul sito di produzione. Verifica prima l’orario esistente.</div><div class="school-file-row"><button class="btn soft" id="auditSchoolStorageBtn">🔎 Verifica orario nello storage scuola</button><span id="schoolStorageAuditInfo" class="admin-note"></span></div><div class="school-date"><label for="schoolValidFrom">In vigore dal</label><input id="schoolValidFrom" type="date"></div><div class="school-file-row"><button class="btn primary" id="schoolUploadBtn">📊 Carica orario completo</button><button class="btn" id="schoolHoursBtn">🕒 Impostazioni orari</button><input id="schoolFile" type="file" accept=".xlsx,.xls,.pdf"></div><h3>Docenti e classi nell'orario pubblicato</h3><div id="schoolPortalTeachers" class="school-list"></div><div id="schoolPortalClasses" class="school-list"></div><h3>Orario completo pubblicato</h3><div class="scroll"><table class="school-table"><thead><tr><th>Giorno</th><th>Ora</th><th>Docente</th><th>Materia</th><th>Classe / attività</th></tr></thead><tbody id="schoolPortalEntries"></tbody></table></div><h3>Docenti collegati</h3><div id="schoolMembersList" class="school-list"></div><h3>Richieste di collegamento</h3><div id="schoolRequestsList" class="school-list"></div><p class="admin-note">Codice rapido dell'istituto: <strong id="schoolManagementCode"></strong></p></div>
     </div>
+    <div id="schoolAccessPanel" class="card"><h3>Gestione accessi</h3><p class="admin-note">Invita un account registrato, aggiorna il ruolo o revoca l'accesso senza eliminare la scuola.</p><div class="school-file-row"><input id="schoolAccessEmail" type="email" placeholder="Email account"><select id="schoolAccessRole"><option value="teacher">Docente</option><option value="coordinator">Referente orario</option><option value="admin">Amministratore scuola</option></select><button id="schoolAccessAssign" class="btn soft">Aggiungi / aggiorna</button></div><div id="schoolAccessStatus" class="admin-note"></div></div>
   </section>
   <div id="schoolUpdateNotice" class="school-change hidden">🔔 <strong>Nuovo orario disponibile – La tua scuola ha pubblicato un nuovo orario.</strong><div id="schoolChangesPreview" class="admin-note hidden"></div><button class="btn" id="seeSchoolChangesBtn">Vedi modifiche</button><button class="btn primary" id="updateMySchoolScheduleBtn">Aggiorna il mio orario</button></div>
 
@@ -537,8 +538,10 @@ async function persistProfileNow(){
 
 async function handleUser(user){
  resetImportUi();
+ clearTimeout(saveTimer);saveTimer=null;
+ const loginId=String(user?.id||'');
  currentUser=user;
- if(!user){showAuth();return}
+ if(!user?.id){showAuth();return}
 
  // Never expose the previous account while the new account profile is loading.
  state=clone(EMPTY_STATE);
@@ -551,9 +554,9 @@ async function handleUser(user){
  const email=(user.email||'').trim().toLowerCase();
  const isThomas=email==='thomasdeangelisconsulting@gmail.com';
 
- // NEW: first try our persistent profile, keyed by email.
- // This works even when Google does not retain Netlify Identity user_metadata as expected.
+ // The server profile and Identity metadata belong only to this Identity ID.
  const persistent=await loadPersistentProfile();
+ if(String(currentUser?.id||'')!==loginId)return;
  let cloud=(persistent&&validState(persistent.state)) ? persistent.state : meta.orarioDocente;
  hasCloudState=validState(cloud);
 
@@ -579,6 +582,8 @@ async function handleUser(user){
    const parts=full.split(/\s+/).filter(Boolean);
    if(parts.length>=2){state.meta.firstName=parts.shift();state.meta.lastName=parts.join(' ')}
  }
+ // School permissions are never restored from cached profile metadata.
+ state.meta.schoolRole='teacher';
  migrationBox.classList.add('hidden');
 
  accountName.textContent=fullName()!=='Il mio orario'
@@ -588,6 +593,7 @@ async function handleUser(user){
  showApp();
  render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
  await loadSchoolCloud();
+ if(String(currentUser?.id||'')!==loginId)return;
  if(!schoolCloudReady){await searchAccreditedSchools();await loadLinkRequestStatus()}
 
  const profileDone =
@@ -608,9 +614,9 @@ function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView
 
 function switchView(id){if(id==='schoolPortalView'&&!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole))return;document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView'||id==='schoolPortalView')renderSchool();if(id==='schoolPortalView')loadSchoolManagement();if(id==='myClassesView')renderMyClasses()}
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
-function schoolStorageKey(){return 'orarioDocenteSchoolV2:'+((currentUser&&currentUser.email)||'guest').toLowerCase()}
-function loadSchoolLocal(){try{const raw=localStorage.getItem(schoolStorageKey());if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.entries)){schoolData=x;if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);ensureSchoolBreaks();schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,Math.min(MAX_PERIODS,Math.max(6,...(schoolData.entries||[]).map(e=>Number(e.period)||0),...(schoolData.classCells||[]).map(e=>Number(e.period)||0))))}}}catch(e){console.error(e)}}
-function saveSchoolLocal(){try{localStorage.setItem(schoolStorageKey(),JSON.stringify(schoolData))}catch(e){console.error(e)}}
+function schoolStorageKey(){return currentUser?.id?'orarioDocenteSchoolV2:'+currentUser.id:''}
+function loadSchoolLocal(){try{const key=schoolStorageKey();if(!key)return;const raw=localStorage.getItem(key);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.entries)){schoolData=x;if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);ensureSchoolBreaks();schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,Math.min(MAX_PERIODS,Math.max(6,...(schoolData.entries||[]).map(e=>Number(e.period)||0),...(schoolData.classCells||[]).map(e=>Number(e.period)||0))))}}}catch(e){console.error(e)}}
+function saveSchoolLocal(){try{const key=schoolStorageKey();if(key)localStorage.setItem(key,JSON.stringify(schoolData))}catch(e){console.error(e)}}
 function cleanCell(v){return String(v??'').replace(/\s+/g,' ').trim()}
 function dayLabel(i){return DAYS[i]?.name||''}
 function canonicalActivity(v){return cleanCell(v).replace(/\^/g,'°').replace(/\s*°\s*/g,'°').toUpperCase()}
@@ -915,7 +921,13 @@ async function loadSchoolManagement(){
  if(!schoolCloudReady||!['admin','coordinator'].includes(state.meta.schoolRole||''))return;
  try{
   const data=await apiCall('school-members');
-  schoolMembersList.innerHTML=(data.members||[]).map(m=>`<div><strong>${esc(m.displayName||m.email)}</strong><small> ${esc(m.email)} · ${esc(m.role)}</small></div>`).join('')||'<div>Nessun docente collegato.</div>';
+  schoolMembersList.innerHTML=(data.members||[]).map(m=>`<div><strong>${esc(m.displayName||m.email)}</strong><small> ${esc(m.email)} · ${esc(({admin:'Amministratore scuola',coordinator:'Referente orario',teacher:'Docente'})[m.role]||m.role)} · ${esc(m.status)}</small>${state.meta.schoolRole==='admin'&&m.status==='active'?` <button class="btn danger" data-revoke-email="${esc(m.email)}">Revoca accesso</button>`:''}</div>`).join('')||'<div>Nessun docente collegato.</div>';
+  schoolAccessPanel.classList.toggle('hidden',state.meta.schoolRole!=='admin');
+  schoolMembersList.querySelectorAll('[data-revoke-email]').forEach(button=>button.onclick=async()=>{
+    if(!confirm('Revocare l’accesso di '+button.dataset.revokeEmail+'? La scuola e l’orario resteranno invariati.'))return;
+    try{await apiCall('school-members',{method:'POST',body:JSON.stringify({action:'revoke',email:button.dataset.revokeEmail})});await loadSchoolManagement();toast('Accesso revocato')}
+    catch(e){alert(e.message)}
+  });
   schoolRequestsList.innerHTML=(data.requests||[]).map(r=>`<div><strong>${esc(r.displayName||r.email)}</strong><small> ${esc(r.email)}</small> <button class="btn soft" data-request-action="approve-request" data-request-email="${esc(r.email)}">Approva</button> <button class="btn danger" data-request-action="reject-request" data-request-email="${esc(r.email)}">Rifiuta</button></div>`).join('')||'<div>Nessuna richiesta in attesa.</div>';
   schoolRequestsList.querySelectorAll('[data-request-action]').forEach(button=>button.onclick=async()=>{
    try{await apiCall('school-members',{method:'POST',body:JSON.stringify({action:button.dataset.requestAction,email:button.dataset.requestEmail})});await loadSchoolManagement();toast(button.dataset.requestAction==='approve-request'?'Docente collegato':'Richiesta rifiutata')}
@@ -923,6 +935,14 @@ async function loadSchoolManagement(){
   });
  }catch(e){schoolRequestsList.textContent='Impossibile caricare le richieste: '+e.message}
 }
+schoolAccessAssign.onclick=async()=>{
+ const email=schoolAccessEmail.value.trim(),role=schoolAccessRole.value;
+ if(!email){schoolAccessStatus.textContent='Inserisci l’email dell’account.';return}
+ schoolAccessAssign.disabled=true;
+ try{const data=await apiCall('school-members',{method:'POST',body:JSON.stringify({action:'assign',email,role})});schoolAccessStatus.textContent=data.membership.status==='pending'?'Invito in attesa: l’account dovrà accedere e inserire il codice scuola.':'Ruolo aggiornato per l’account autenticato.';schoolAccessEmail.value='';await loadSchoolManagement()}
+ catch(e){schoolAccessStatus.textContent=e.message}
+ finally{schoolAccessAssign.disabled=false}
+};
 async function searchAccreditedSchools(){
  try{
   const query=schoolDirectorySearch.value.trim();
@@ -1222,7 +1242,7 @@ if(IS_DEPLOY_PREVIEW){
 }
 window.addEventListener('orario-auth-ready',event=>handleUser(event.detail));
 window.addEventListener('orario-login',event=>handleUser(event.detail));
-window.addEventListener('orario-logout',()=>{resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
+window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);toast('Accesso non disponibile: riprova più tardi')});

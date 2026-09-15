@@ -64,7 +64,7 @@ export default async (req) => {
 
       if(action==='submit'){
         const user=await currentUser();
-        if(!user) return json(401,{error:'Prima devi accedere al tuo account Orario Docente.'});
+        if(!user?.id) return json(401,{error:'Prima devi accedere a un account Identity valido.'});
 
         const schoolName=String(body.schoolName||'').trim();
         const mechanicalCode=String(body.mechanicalCode||'').trim().toUpperCase();
@@ -75,7 +75,7 @@ export default async (req) => {
         const now=new Date().toISOString();
         const request={
           id,status:'pending',createdAt:now,
-          accountEmail:normalizeEmail(user.email),
+          accountEmail:normalizeEmail(user.email),accountUserId:user.id||'',
           schoolName,mechanicalCode,
           schoolType:String(body.schoolType||'').trim(),
           city:String(body.city||'').trim(),
@@ -138,7 +138,7 @@ export default async (req) => {
 
         const displayName=[request.contactFirstName,request.contactLastName].filter(Boolean).join(' ').trim();
         const membership={
-          email:adminEmail,code,role:'admin',status:'active',
+          userId:request.accountUserId||'',email:adminEmail,code,role:'admin',status:request.accountUserId?'active':'pending',
           joinedAt:now,assignedBy:'platform-admin',displayName
         };
         await setMembership(adminEmail,membership);

@@ -4,7 +4,7 @@
   }
 
   function personalStorageKey(user){
-    const identity=normalizeIdentity(user&&(user.id||user.email));
+    const identity=normalizeIdentity(user&&user.id);
     return identity?`orarioDocenteStateV6:${identity}`:'';
   }
 

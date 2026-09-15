@@ -11,8 +11,8 @@ test('isola la copia locale personale per id account',()=>{
   assert.notEqual(personalStorageKey({id:'teacher-1'}),personalStorageKey({id:'school-admin'}));
 });
 
-test('usa la email normalizzata solo come fallback e non crea una chiave guest condivisa',()=>{
-  assert.equal(personalStorageKey({email:' Michelangelo.Raiola@Example.it '}),'orarioDocenteStateV6:michelangelo.raiola@example.it');
+test('non usa email riciclata o chiavi guest per salvare dati personali',()=>{
+  assert.equal(personalStorageKey({email:' Michelangelo.Raiola@Example.it '}),'');
   assert.equal(personalStorageKey(null),'');
 });
 
