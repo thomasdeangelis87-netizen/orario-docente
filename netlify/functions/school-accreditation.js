@@ -113,6 +113,7 @@ export default async (req) => {
             emailSent:request.approvalEmail?.status==='sent'
           });
         }
+        if(request.status!=='pending')return json(409,{error:'Puoi approvare solo una richiesta in attesa.'});
 
         const adminEmail=normalizeEmail(request.accountEmail);
         if(!adminEmail) return json(400,{error:'La richiesta non contiene un account referente valido.'});
@@ -170,6 +171,19 @@ export default async (req) => {
         return json(200,{ok:true,emailSent:true,messageId:email.messageId||''});
       }
 
+      if(action==='reject'){
+        const auth=requirePlatformAdmin(req);
+        if(auth.error)return auth.error;
+        const id=String(body.id||'').trim();
+        if(!id)return json(400,{error:'ID richiesta mancante'});
+        const request=await getJSON(`accreditations/${id}`);
+        if(!request)return json(404,{error:'Richiesta non trovata'});
+        if(request.status!=='pending')return json(409,{error:'Una scuola già approvata non può essere rifiutata come richiesta.'});
+        const rejected={...request,status:'rejected',rejectedAt:new Date().toISOString(),rejectedBy:'platform-admin'};
+        await setJSON(`accreditations/${id}`,rejected);
+        return json(200,{ok:true,request:rejected});
+      }
+
       return json(400,{error:'Azione non riconosciuta'});
     }
 
@@ -182,7 +196,7 @@ export default async (req) => {
       const items=[];
       for(const id of index.slice(0,200)){
         const r=await getJSON(`accreditations/${id}`);
-        if(r) items.push(r);
+        if(r?.status==='pending') items.push(r);
       }
       return json(200,{ok:true,items});
     }

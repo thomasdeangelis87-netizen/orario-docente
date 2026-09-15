@@ -1,40 +1,29 @@
-import {json,getJSON,setJSON,listKeys,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
+import {json,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
 import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
 import {changeManagerLogin} from './_school_email_change.js';
 import {sendSchoolApprovalEmail} from './_brevo.js';
 import {changeAccreditation} from './_accreditation_status.js';
+import {accreditedCatalog} from './_accredited_catalog.js';
 
 function authorized(req){
   let secret='';try{secret=Netlify.env.get('PLATFORM_ADMIN_KEY')||''}catch{}
   return !!secret && req.headers.get('x-platform-admin-key')===secret;
 }
-async function codes(){
-  const result=new Set((await getJSON('schools-index'))||[]);
-  for(const key of await listKeys('schools/'))result.add(key.slice(8));
-  return [...result].filter(Boolean).slice(0,2000);
-}
-async function snapshot(code){
-  const school=await getJSON(`schools/${code}`);
-  if(!school)return null;
-  const members=(await getJSON(`school-members/${code}`))||[];
-  return {school,members,managers:members.filter(m=>['admin','coordinator'].includes(m.role)&&m.status==='active')};
-}
-export default async req=>{
+export default async (req,context={})=>{
+  let stage='authorization';
   try{
     if(!authorized(req))return json(403,{error:'Accesso piattaforma non autorizzato'});
     if(req.method==='GET'){
+      stage='catalog';
       const code=normalizeCode(new URL(req.url).searchParams.get('code'));
-      if(code){const data=await snapshot(code);return data?json(200,data):json(404,{error:'Scuola non trovata'});}
-      const schools=[];
-      for(const id of await codes()){
-        const data=await snapshot(normalizeCode(id));
-        if(data)schools.push({school:data.school,managers:data.managers});
-      }
+      const schools=await accreditedCatalog({read:getJSON},code);
+      if(code)return schools[0]?json(200,schools[0]):json(404,{error:'Scuola non trovata'});
       return json(200,{schools});
     }
     if(req.method!=='POST')return json(405,{error:'Metodo non consentito'});
     let body;try{body=await req.json()}catch{return json(400,{error:'Dati non validi'});}
-    const code=normalizeCode(body.code), data=await snapshot(code);
+    stage='school-lookup';
+    const code=normalizeCode(body.code), data=(await accreditedCatalog({read:getJSON,write:setJSON},code))[0];
     if(!data)return json(404,{error:'Scuola non trovata'});
     const {school,members}=data, action=String(body.action||'');
     if(['suspend','reactivate','revoke-accreditation'].includes(action)){
@@ -83,5 +72,9 @@ export default async req=>{
     }
     await setJSON(`school-members/${code}`,members);
     return json(200,{ok:true,school,members});
-  }catch(error){console.error('platform-schools failure',error);return json(500,{error:'Gestione scuole non disponibile'});}
+  }catch(error){
+    console.error('platform-schools failure',{requestId:context.requestId||'',stage,name:error?.name,
+      code:error?.code,message:String(error?.message||error).slice(0,300)});
+    return json(500,{error:'Gestione scuole non disponibile',requestId:context.requestId||'',stage});
+  }
 };
