@@ -20,5 +20,5 @@ test('azzera anteprima personale a ogni cambio account e apertura importazione',
   const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
   assert.match(html,/async function handleUser\(user\)\{\s*resetImportUi\(\)/);
   assert.match(html,/importBtn\.onclick=\(\)=>\{resetImportUi\(\);openModal\('importModal'\)\}/);
-  assert.match(html,/logoutBtn\.onclick=\(\)=>\{resetImportUi\(\);netlifyIdentity\.logout\(\)\}/);
+  assert.match(html,/logoutBtn\.onclick=async\(\)=>\{resetImportUi\(\);try\{await window\.OrarioIdentity\.logout\(\)/);
 });

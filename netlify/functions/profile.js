@@ -1,9 +1,4 @@
-import { getStore } from '@netlify/blobs';
-import { json, currentUser, emailKey } from './_lib.js';
-
-function store(){
-  return getStore({name:'orario-docente-cloud',consistency:'strong'});
-}
+import { json, currentUser, emailKey, getJSON, setJSON } from './_lib.js';
 
 function validState(x){
   return !!(x && x.meta && x.slots && typeof x.slots === 'object');
@@ -17,7 +12,7 @@ export default async (req) => {
     const key=`profiles/${emailKey(user.email)}`;
 
     if(req.method==='GET'){
-      const profile=await store().get(key,{type:'json'});
+      const profile=await getJSON(key);
       return json(200,{profile:profile||null});
     }
 
@@ -38,7 +33,7 @@ export default async (req) => {
         updatedAt:new Date().toISOString()
       };
 
-      await store().setJSON(key,profile);
+      await setJSON(key,profile);
       return json(200,{ok:true,profile});
     }
 

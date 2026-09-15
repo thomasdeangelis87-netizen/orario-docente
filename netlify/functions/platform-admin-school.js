@@ -32,6 +32,9 @@ export default async (req)=>{
     const now=new Date().toISOString();
     const school={code,name,mechanicalCode,city:String(body.city||'').trim(),province:String(body.province||'').trim().toUpperCase(),status:'active',createdAt:now,createdBy:'platform-admin',inviteCode:code};
     await setJSON(`schools/${code}`,school);
+    let directory=await getJSON('schools-index');
+    if(!Array.isArray(directory))directory=[];
+    await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
     const membership={email:adminEmail,code,role:'admin',status:'active',joinedAt:now,assignedBy:'platform-admin',displayName:String(body.adminName||'').trim()};
     await setMembership(adminEmail,membership);
     await setJSON(`school-members/${code}`,[membership]);

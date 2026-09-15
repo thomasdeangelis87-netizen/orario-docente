@@ -39,6 +39,9 @@ export default async (req) => {
       status:'active',createdAt:now,createdBy:user.email,inviteCode:code
     };
     await setJSON(`schools/${code}`,school);
+    let directory=await getJSON('schools-index');
+    if(!Array.isArray(directory))directory=[];
+    await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
 
     const membership={
       email:adminEmail,code,role:'admin',status:'active',
