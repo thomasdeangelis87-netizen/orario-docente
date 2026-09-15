@@ -132,6 +132,9 @@ export default async (req) => {
           inviteCode:code,accreditationId:id
         };
         await setJSON(`schools/${code}`,school);
+        let directory=await getJSON('schools-index');
+        if(!Array.isArray(directory))directory=[];
+        await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
 
         const displayName=[request.contactFirstName,request.contactLastName].filter(Boolean).join(' ').trim();
         const membership={

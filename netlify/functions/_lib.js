@@ -36,6 +36,10 @@ async function getJSON(key){
 async function setJSON(key,value){
   return await store().setJSON(key,value);
 }
+async function listKeys(prefix){
+  const result=await store().list({prefix});
+  return (result.blobs||[]).map(item=>item.key);
+}
 async function getMembership(email){
   return await getJSON(`members-by-email/${emailKey(email)}`);
 }
@@ -51,4 +55,4 @@ async function requireMember(user, roles=[]){
   return {membership,school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,currentUser,getJSON,setJSON,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,currentUser,getJSON,setJSON,listKeys,getMembership,setMembership,requireMember};

@@ -27,6 +27,16 @@ export default async (req) => {
       joinedAt:new Date().toISOString(),displayName:String(body.displayName||'').slice(0,120)
     };
     await setMembership(user.email,membership);
+    const oldRequest=await getJSON(`link-requests-by-email/${emailKey(user.email)}`);
+    if(oldRequest?.status==='pending'){
+      const requestCode=normalizeCode(oldRequest.code);
+      const requests=(await getJSON(`school-link-requests/${requestCode}`))||[];
+      const requestIx=requests.findIndex(x=>normalizeEmail(x.email)===user.email);
+      oldRequest.status=requestCode===code?'approved':'cancelled';
+      oldRequest.decidedAt=new Date().toISOString();oldRequest.decidedBy='school-code';
+      if(requestIx>=0){requests[requestIx]=oldRequest;await setJSON(`school-link-requests/${requestCode}`,requests)}
+      await setJSON(`link-requests-by-email/${emailKey(user.email)}`,oldRequest);
+    }
 
     const list=(await getJSON(`school-members/${code}`))||[];
     const ix=list.findIndex(x=>normalizeEmail(x.email)===user.email);
