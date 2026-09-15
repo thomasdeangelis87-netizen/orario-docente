@@ -1,4 +1,5 @@
-import { json, currentUser, getJSON, setJSON } from './_lib.js';
+import { json, currentUser, getJSON, setJSON, emailKey } from './_lib.js';
+import {canMigrateLegacyProfile} from './_profile_migration.js';
 
 function validState(x){
   return !!(x && x.meta && x.slots && typeof x.slots === 'object');
@@ -13,7 +14,14 @@ export default async (req) => {
     const key=`profiles-by-user/${encodeURIComponent(user.id)}`;
 
     if(req.method==='GET'){
-      const profile=await getJSON(key);
+      let profile=await getJSON(key);
+      if(!profile){
+        const legacy=await getJSON(`profiles/${emailKey(user.email)}`);
+        if(canMigrateLegacyProfile(user,legacy)){
+          profile={...legacy,userId:user.id,migratedFrom:'legacy-email'};
+          await setJSON(key,profile);
+        }
+      }
       return json(200,{profile:profile||null});
     }
 

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {mayClaimLegacy,mayRevoke,activeAdministrators} from '../netlify/functions/_member_ops.js';
+import {canMigrateLegacyProfile} from '../netlify/functions/_profile_migration.js';
 import {scheduleKey,publishOfficialSchedule,getOfficialSchedule} from '../netlify/functions/_school_schedule_core.js';
 import '../account-storage.js';
 
@@ -12,10 +13,13 @@ test('nuovo account che riutilizza una email non riceve né profilo né ruolo le
   assert.equal(mayClaimLegacy(old,legacy),true);
   assert.equal(mayClaimLegacy(replacement,legacy),false);
   assert.equal(mayClaimLegacy(replacement,{...legacy,userId:old.id}),false);
+  const saved={state:{meta:{firstName:'Mario',lastName:'Rossi'},slots:{}},fullName:'Mario Rossi',updatedAt:'2026-04-01T00:00:00Z'};
+  assert.equal(canMigrateLegacyProfile({...old,metadata:{full_name:'Mario Rossi'}},saved),true);
+  assert.equal(canMigrateLegacyProfile({...replacement,metadata:{full_name:'Lucia Bianchi'}},saved),false);
   assert.notEqual(globalThis.OrarioAccountStorage.personalStorageKey(old),globalThis.OrarioAccountStorage.personalStorageKey(replacement));
   const backend=fs.readFileSync(new URL('../netlify/functions/profile.js',import.meta.url),'utf8');
   assert.match(backend,/profiles-by-user\/.*user\.id/);
-  assert.doesNotMatch(backend,/profiles\/.*emailKey/);
+  assert.match(backend,/canMigrateLegacyProfile\(user,legacy\)/);
 });
 
 test('ultimo amministratore non revocabile; cambio amministratore mantiene codice e orario',async()=>{
