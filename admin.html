@@ -15,7 +15,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 </style>
 </head>
 <body><div class="wrap">
-<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">PR #3 · v16.10.8</span></p>
+<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">PR #3 · v16.10.9</span></p>
 
 <div id="loginPanel" class="hero">
   <h1>Amministratore sistema</h1>
@@ -48,6 +48,12 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
   <div class="card">
     <div class="toolbar" style="justify-content:space-between"><div><h2>Scuole accreditate</h2><p class="meta">Istituti già approvati, indipendenti dai singoli amministratori.</p></div><button id="schoolsRefresh" class="btn primary">Aggiorna scuole</button></div>
     <div id="schoolsMsg" class="meta"></div><div id="accreditedSchools"></div>
+  </div>
+
+  <div class="card">
+    <h2>Richieste cambio account scuola</h2>
+    <p class="meta">Il codice scuola resta invariato. Approvando si collega il nuovo ID Identity come docente; il vecchio profilo e l’orario personale non vengono trasferiti.</p>
+    <div id="accountChangeRequests"></div>
   </div>
 
   <div class="card">
@@ -141,6 +147,15 @@ async function schoolsRefresh(){
  try{
   const data=await api('/.netlify/functions/platform-schools');
   const schools=data.schools||[];
+  const changes=$('accountChangeRequests');
+  changes.innerHTML=schools.flatMap(({school,accountChangeRequests=[]})=>accountChangeRequests.map(r=>`<div class="req"><strong>${esc(school.name)}</strong> · ${esc(school.code)}<div class="meta">Account richiedente: ${esc(r.email)} · richiesta ${esc(r.requestedAt)}</div><div class="row"><button class="btn primary" data-account-approve="${esc(r.id)}" data-change-code="${esc(school.code)}">Approva cambio account</button><button class="btn danger" data-account-reject="${esc(r.id)}" data-change-code="${esc(school.code)}">Rifiuta</button></div></div>`)).join('')||'<p class="meta">Nessuna richiesta in attesa.</p>';
+  for(const btn of changes.querySelectorAll('[data-account-approve],[data-account-reject]'))btn.onclick=async()=>{
+   const approve=!!btn.dataset.accountApprove,id=btn.dataset.accountApprove||btn.dataset.accountReject;
+   if(!confirm(approve?'Collegare il nuovo account come docente, revocando il precedente collegamento? Scuola e orario rimarranno invariati.':'Rifiutare questa richiesta di cambio account?'))return;
+   btn.disabled=true;
+   try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:approve?'approve-account-change':'reject-account-change',code:btn.dataset.changeCode,requestId:id})});await schoolsRefresh();$('schoolsMsg').textContent=approve?'Cambio account approvato. Il docente può aggiornare Orario scuola.':'Richiesta rifiutata.'}
+   catch(e){$('schoolsMsg').textContent='⚠️ '+e.message;btn.disabled=false}
+  };
   box.innerHTML=schools.map(({school:s,managers,administrativeEmail,emailChanges=[]})=>`<div class="req" data-school-code="${esc(s.code)}"><strong>${esc(s.name)}</strong> <span class="pill ${s.status==='active'?'approved':'pending'}">${s.status==='active'?'Accreditata':s.status==='revoked'?'Accredito revocato':esc(s.status||'non attiva')}</span><div class="meta">Codice meccanografico: <strong>${esc(s.mechanicalCode||'non indicato')}</strong><br>Codice scuola: <strong>${esc(s.code)}</strong> · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}<br>Account amministrativo: <strong>${esc(administrativeEmail||'non associato')}</strong><br>Amministratori/referenti: ${managers.length?managers.map(m=>esc(m.email)+' ('+esc(m.role)+')').join(', '):'Nessuno attivo'}</div>${emailChanges.filter(c=>c.status!=='complete').map(c=>`<p class="note">${c.status==='verification-error'?'⚠️ Impossibile verificare Identity: la vecchia email resta mostrata finché non viene confermata.':'⏳ Cambio email in attesa per '+esc(c.newEmail||'account')+'. '+(c.confirmationRequired?'Conferma il link ricevuto sul nuovo indirizzo.':'Identity non ha ancora confermato il nuovo login.')+' Fino ad allora resta attiva la vecchia email.'}</p>`).join('')}<div class="row" style="margin-top:10px"><button class="btn" data-copy-code="${esc(s.code)}">Copia codice</button><button class="btn" data-resend-code="${esc(s.code)}" ${s.status==='active'?'':'disabled'}>Reinvia email</button><button class="btn" data-edit-code="${esc(s.code)}">Modifica email account</button><button class="btn ${s.status==='active'?'danger':'primary'}" data-accreditation-code="${esc(s.code)}" data-accreditation-action="${s.status==='revoked'?'reactivate':'revoke-accreditation'}">${s.status==='revoked'?'Riattiva accredito':'Revoca accredito'}</button></div><p class="meta"><a href="#schoolDetailsPanel" data-manage-code="${esc(s.code)}">Gestione accessi e account associati</a></p></div>`).join('')||'<p class="meta">Nessuna scuola accreditata trovata. Controlla la sincronizzazione dei dati approvati.</p>';
   box.querySelectorAll('[data-manage-code]').forEach(btn=>btn.onclick=()=>schoolDetails(btn.dataset.manageCode));
   box.querySelectorAll('[data-copy-code]').forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(btn.dataset.copyCode);$('schoolsMsg').textContent='Codice copiato.'}catch(e){$('schoolsMsg').textContent='Copia non disponibile: '+e.message}});

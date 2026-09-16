@@ -4,6 +4,7 @@ import {changeManagerLogin,changeKey,reconcileEmailChange} from './_school_email
 import {sendSchoolApprovalEmail} from './_brevo.js';
 import {changeAccreditation} from './_accreditation_status.js';
 import {accreditedCatalog,requestedSchoolCode} from './_accredited_catalog.js';
+import {decideAccountChange} from './_account_change.js';
 
 function authorized(req){
   let secret='';try{secret=Netlify.env.get('PLATFORM_ADMIN_KEY')||''}catch{}
@@ -17,6 +18,8 @@ export default async (req,context={})=>{
       stage='catalog';
       const code=requestedSchoolCode(req.url);
       const schools=await accreditedCatalog({read:getJSON},code);
+      for(const data of schools)data.accountChangeRequests=((await getJSON(`school-account-change-requests/${data.school.code}`))||[])
+        .filter(item=>item.status==='pending');
       stage='email-change-status';
       for(const data of schools){
         data.emailChanges=[];
@@ -49,6 +52,13 @@ export default async (req,context={})=>{
     const code=normalizeCode(body.code), data=(await accreditedCatalog({read:getJSON,write:setJSON},code))[0];
     if(!data)return json(404,{error:'Scuola non trovata'});
     const {school,members}=data, action=String(body.action||'');
+    if(['approve-account-change','reject-account-change'].includes(action)){
+      const {admin}=await import('@netlify/identity');
+      const outcome=await decideAccountChange({code,id:String(body.requestId||''),action,
+        read:getJSON,write:setJSON,getIdentityUser:id=>admin.getUser(id)});
+      const {status,...result}=outcome;
+      return json(status,result);
+    }
     if(['suspend','reactivate','revoke-accreditation'].includes(action)){
       const outcome=await changeAccreditation({school,code,action,confirmation:body.confirmation,write:setJSON});
       const {status,...result}=outcome;

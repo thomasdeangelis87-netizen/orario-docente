@@ -1,5 +1,6 @@
 import {json,currentUser,getMembership,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,memberIdKey} from './_lib.js';
 import {inspectPreviousOwners,replaceOrphanedEmailRows} from './_join_school_core.js';
+import {requestAccountChange} from './_account_change.js';
 
 export default async (req,context={}) => {
   let stage='identity';
@@ -37,10 +38,9 @@ export default async (req,context={}) => {
       getIdentityUser:id=>admin.getUser(id)});
     if(!ownership.allowed){
       console.warn('join-school previous owner blocked',{requestId:context.requestId||'',code,reason:ownership.reason});
-      return json(409,{error:ownership.reason==='identity-active'?
-        'Il precedente account Identity risulta ancora attivo. Il gestore deve revocarne il collegamento.':
-        'Collegamento legacy senza ID Identity verificabile: non posso riassegnarlo automaticamente. Contatta il gestore.',
-        reason:ownership.reason,requestId:context.requestId||''});
+      const request=await requestAccountChange({user,code,school,read:getJSON,write:setJSON});
+      return json(202,{ok:true,pending:true,request,
+        message:'Richiesta di cambio account inviata al pannello amministrativo. Dopo l’approvazione potrai accedere all’orario della scuola.'});
     }
     const invited=invitation?.code===code&&invitation.status==='pending'&&!!invitation.assignedBy&&invitation.userId===user.id;
     const membership={
