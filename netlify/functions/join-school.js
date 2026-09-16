@@ -32,10 +32,19 @@ export default async (req,context={}) => {
 
     const invitation=await getMembership(user.email);
     const list=(await getJSON(`school-members/${code}`))||[];
-    const {admin}=await import('@netlify/identity');
     stage='previous-identity';
-    const ownership=await inspectPreviousOwners({email:user.email,currentId:user.id,invitation,list,
-      getIdentityUser:id=>admin.getUser(id)});
+    let ownership;
+    try{
+      const {admin}=await import('@netlify/identity');
+      ownership=await inspectPreviousOwners({email:user.email,currentId:user.id,invitation,list,
+        getIdentityUser:id=>admin.getUser(id)});
+    }catch(error){
+      console.warn('join-school previous Identity lookup unavailable',{
+        requestId:context.requestId||'',code,status:error?.status,name:error?.name});
+      // A code holder can still request an explicit platform review. The
+      // old membership is never transferred by an unverified lookup.
+      ownership={allowed:false,reason:'identity-check-unavailable'};
+    }
     if(!ownership.allowed){
       console.warn('join-school previous owner blocked',{requestId:context.requestId||'',code,reason:ownership.reason});
       const request=await requestAccountChange({user,code,school,read:getJSON,write:setJSON});

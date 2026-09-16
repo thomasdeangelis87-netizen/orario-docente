@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {requestAccountChange,decideAccountChange} from '../netlify/functions/_account_change.js';
 import {emailKey,memberIdKey} from '../netlify/functions/_lib.js';
 
@@ -49,4 +50,16 @@ test('cambio account non può revocare l’ultimo amministratore',async()=>{
   getIdentityUser:async()=>({id:'new-id',email})});
  assert.equal(outcome.status,409);assert.equal(f.store.get(memberIdKey('old-id')).status,'active');
  assert.equal(f.store.get(`schedules/${code}`),f.schedule);
+});
+
+test('UI docente gestisce la richiesta in attesa e il pannello mostra approva/rifiuta',()=>{
+ const app=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const admin=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+ const join=fs.readFileSync(new URL('../netlify/functions/join-school.js',import.meta.url),'utf8');
+ assert.match(app,/if\(data\.pending\)\{schoolLinkRequestStatus\.textContent=data\.message/);
+ assert.match(admin,/Richieste cambio account scuola/);
+ assert.match(admin,/data-account-approve/);
+ assert.match(admin,/data-account-reject/);
+ assert.match(join,/identity-check-unavailable/);
+ assert.match(join,/requestAccountChange\(/);
 });
