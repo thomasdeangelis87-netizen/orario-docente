@@ -64,7 +64,7 @@ export default async (req) => {
 
       if(action==='submit'){
         const user=await currentUser();
-        if(!user) return json(401,{error:'Prima devi accedere al tuo account Orario Docente.'});
+        if(!user?.id) return json(401,{error:'Prima devi accedere a un account Identity valido.'});
 
         const schoolName=String(body.schoolName||'').trim();
         const mechanicalCode=String(body.mechanicalCode||'').trim().toUpperCase();
@@ -75,7 +75,7 @@ export default async (req) => {
         const now=new Date().toISOString();
         const request={
           id,status:'pending',createdAt:now,
-          accountEmail:normalizeEmail(user.email),
+          accountEmail:normalizeEmail(user.email),accountUserId:user.id||'',
           schoolName,mechanicalCode,
           schoolType:String(body.schoolType||'').trim(),
           city:String(body.city||'').trim(),
@@ -113,6 +113,7 @@ export default async (req) => {
             emailSent:request.approvalEmail?.status==='sent'
           });
         }
+        if(request.status!=='pending')return json(409,{error:'Puoi approvare solo una richiesta in attesa.'});
 
         const adminEmail=normalizeEmail(request.accountEmail);
         if(!adminEmail) return json(400,{error:'La richiesta non contiene un account referente valido.'});
@@ -132,10 +133,13 @@ export default async (req) => {
           inviteCode:code,accreditationId:id
         };
         await setJSON(`schools/${code}`,school);
+        let directory=await getJSON('schools-index');
+        if(!Array.isArray(directory))directory=[];
+        await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
 
         const displayName=[request.contactFirstName,request.contactLastName].filter(Boolean).join(' ').trim();
         const membership={
-          email:adminEmail,code,role:'admin',status:'active',
+          userId:request.accountUserId||'',email:adminEmail,code,role:'admin',status:request.accountUserId?'active':'pending',
           joinedAt:now,assignedBy:'platform-admin',displayName
         };
         await setMembership(adminEmail,membership);
@@ -167,6 +171,19 @@ export default async (req) => {
         return json(200,{ok:true,emailSent:true,messageId:email.messageId||''});
       }
 
+      if(action==='reject'){
+        const auth=requirePlatformAdmin(req);
+        if(auth.error)return auth.error;
+        const id=String(body.id||'').trim();
+        if(!id)return json(400,{error:'ID richiesta mancante'});
+        const request=await getJSON(`accreditations/${id}`);
+        if(!request)return json(404,{error:'Richiesta non trovata'});
+        if(request.status!=='pending')return json(409,{error:'Una scuola già approvata non può essere rifiutata come richiesta.'});
+        const rejected={...request,status:'rejected',rejectedAt:new Date().toISOString(),rejectedBy:'platform-admin'};
+        await setJSON(`accreditations/${id}`,rejected);
+        return json(200,{ok:true,request:rejected});
+      }
+
       return json(400,{error:'Azione non riconosciuta'});
     }
 
@@ -179,7 +196,7 @@ export default async (req) => {
       const items=[];
       for(const id of index.slice(0,200)){
         const r=await getJSON(`accreditations/${id}`);
-        if(r) items.push(r);
+        if(r?.status==='pending') items.push(r);
       }
       return json(200,{ok:true,items});
     }

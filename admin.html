@@ -15,7 +15,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 </style>
 </head>
 <body><div class="wrap">
-<p><a href="/">← Orario Docente</a></p>
+<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">PR #3 · v16.10.9</span></p>
 
 <div id="loginPanel" class="hero">
   <h1>Amministratore sistema</h1>
@@ -38,11 +38,22 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 
   <div class="card">
     <div class="toolbar" style="justify-content:space-between">
-      <div><h2 style="margin:0">Richieste scuole</h2><p class="meta">Approva le richieste e genera il codice scuola.</p></div>
+      <div><h2 style="margin:0">Richieste di accreditamento</h2><p class="meta">Solo nuove richieste in attesa: approva o rifiuta.</p></div>
       <button class="btn primary" id="refreshBtn">Aggiorna richieste</button>
     </div>
     <div id="reqMsg" style="margin-top:12px"></div>
     <div id="requests"></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar" style="justify-content:space-between"><div><h2>Scuole accreditate</h2><p class="meta">Istituti già approvati, indipendenti dai singoli amministratori.</p></div><button id="schoolsRefresh" class="btn primary">Aggiorna scuole</button></div>
+    <div id="schoolsMsg" class="meta"></div><div id="accreditedSchools"></div>
+  </div>
+
+  <div class="card">
+    <h2>Richieste cambio account scuola</h2>
+    <p class="meta">Il codice scuola resta invariato. Approvando si collega il nuovo ID Identity come docente; il vecchio profilo e l’orario personale non vengono trasferiti.</p>
+    <div id="accountChangeRequests"></div>
   </div>
 
   <div class="card">
@@ -80,13 +91,13 @@ async function loadRequests(){
 
 function render(items){
   const box=$('requests');
-  if(!items.length){box.innerHTML='<p class="meta">Nessuna richiesta registrata.</p>';return;}
-  box.innerHTML=items.map(r=>{
-    const approved=r.status==='approved';
+  const pending=items.filter(r=>r.status==='pending');
+  if(!pending.length){box.innerHTML='<p class="meta">Nessuna richiesta in attesa.</p>';return;}
+  box.innerHTML=pending.map(r=>{
     return `<div class="req">
       <div class="row" style="justify-content:space-between;align-items:center">
         <strong>${esc(r.schoolName||'Scuola')}</strong>
-        <span class="pill ${approved?'approved':'pending'}">${approved?'APPROVATA':'IN ATTESA'}</span>
+        <span class="pill pending">IN ATTESA</span>
       </div>
       <div class="meta">
         Codice meccanografico: <strong>${esc(r.mechanicalCode||'')}</strong><br>
@@ -94,14 +105,10 @@ function render(items){
         Referente: ${esc([r.contactFirstName,r.contactLastName].filter(Boolean).join(' '))} · ${esc(r.contactRole||'')}<br>
         Account: <strong>${esc(r.accountEmail||'')}</strong><br>
         Richiesta: ${esc(r.createdAt||'')}
-        ${approved?`<br>Codice scuola: <strong>${esc(r.schoolCode||'')}</strong>
-          <br>Email approvazione: <strong>${r.approvalEmail?.status==='sent'?'✅ inviata':'⚠️ non inviata'}</strong>
-          ${r.approvalEmail?.sentAt?` · ${esc(r.approvalEmail.sentAt)}`:''}`:''}
       </div>
       <div class="row" style="margin-top:12px">
-        ${approved?`<button class="btn" onclick="navigator.clipboard.writeText('${esc(r.schoolCode||'')}')">Copia codice</button>
-          <button class="btn" data-resend="${esc(r.id)}">Reinvia email</button>`:
-        `<button class="btn primary" data-approve="${esc(r.id)}">Approva, genera codice e invia email</button>`}
+        <button class="btn primary" data-approve="${esc(r.id)}">Approva, genera codice e invia email</button>
+        <button class="btn danger" data-reject="${esc(r.id)}">Rifiuta richiesta</button>
       </div>
     </div>`;
   }).join('');
@@ -118,31 +125,86 @@ function render(items){
         'Scuola approvata. Codice scuola: '+d.school.code+
         (d.emailSent?'\nEmail di approvazione inviata automaticamente.':'\nATTENZIONE: scuola approvata, ma email non inviata. Puoi usare “Reinvia email”.')
       );
-      await refresh();
+      await refresh();await schoolsRefresh();
     }catch(e){alert('Errore: '+(e?.message||e));b.disabled=false;b.textContent='Approva e genera codice scuola';}
   });
 
-  box.querySelectorAll('[data-resend]').forEach(b=>b.onclick=async()=>{
-    b.disabled=true;b.textContent='Invio…';
-    try{
-      await api('/.netlify/functions/school-accreditation',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({action:'resend-email',id:b.dataset.resend})
-      });
-      alert('Email di approvazione inviata.');
-      await refresh();
-    }catch(e){
-      alert('Invio email non riuscito: '+(e?.message||e));
-      b.disabled=false;b.textContent='Reinvia email';
-    }
+  box.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Rifiutare questa richiesta di accreditamento? Non verrà creata una scuola.'))return;
+    b.disabled=true;
+    try{await api('/.netlify/functions/school-accreditation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reject',id:b.dataset.reject})});await refresh()}
+    catch(e){$('reqMsg').textContent='⚠️ '+e.message;b.disabled=false}
   });
 }
 
 async function refresh(){
   const m=$('reqMsg');m.className='note';m.textContent='Caricamento richieste…';
-  try{const items=await loadRequests();render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e caricate.`;}
+  try{const items=(await loadRequests()).filter(r=>r.status==='pending');render(items);m.className='note ok';m.textContent=`✅ ${items.length} richiesta/e in attesa.`;}
   catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
+}
+async function schoolsRefresh(){
+ const box=$('accreditedSchools');$('schoolsMsg').textContent='Caricamento scuole…';
+ try{
+  const data=await api('/.netlify/functions/platform-schools');
+  const schools=data.schools||[];
+  const changes=$('accountChangeRequests');
+  changes.innerHTML=schools.flatMap(({school,accountChangeRequests=[]})=>accountChangeRequests.map(r=>`<div class="req"><strong>${esc(school.name)}</strong> · ${esc(school.code)}<div class="meta">Account richiedente: ${esc(r.email)} · richiesta ${esc(r.requestedAt)}</div><div class="row"><button class="btn primary" data-account-approve="${esc(r.id)}" data-change-code="${esc(school.code)}">Approva cambio account</button><button class="btn danger" data-account-reject="${esc(r.id)}" data-change-code="${esc(school.code)}">Rifiuta</button></div></div>`)).join('')||'<p class="meta">Nessuna richiesta in attesa.</p>';
+  for(const btn of changes.querySelectorAll('[data-account-approve],[data-account-reject]'))btn.onclick=async()=>{
+   const approve=!!btn.dataset.accountApprove,id=btn.dataset.accountApprove||btn.dataset.accountReject;
+   if(!confirm(approve?'Collegare il nuovo account come docente, revocando il precedente collegamento? Scuola e orario rimarranno invariati.':'Rifiutare questa richiesta di cambio account?'))return;
+   btn.disabled=true;
+   try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:approve?'approve-account-change':'reject-account-change',code:btn.dataset.changeCode,requestId:id})});await schoolsRefresh();$('schoolsMsg').textContent=approve?'Cambio account approvato. Il docente può aggiornare Orario scuola.':'Richiesta rifiutata.'}
+   catch(e){$('schoolsMsg').textContent='⚠️ '+e.message;btn.disabled=false}
+  };
+  box.innerHTML=schools.map(({school:s,managers,administrativeEmail,emailChanges=[]})=>`<div class="req" data-school-code="${esc(s.code)}"><strong>${esc(s.name)}</strong> <span class="pill ${s.status==='active'?'approved':'pending'}">${s.status==='active'?'Accreditata':s.status==='revoked'?'Accredito revocato':esc(s.status||'non attiva')}</span><div class="meta">Codice meccanografico: <strong>${esc(s.mechanicalCode||'non indicato')}</strong><br>Codice scuola: <strong>${esc(s.code)}</strong> · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}<br>Account amministrativo: <strong>${esc(administrativeEmail||'non associato')}</strong><br>Amministratori/referenti: ${managers.length?managers.map(m=>esc(m.email)+' ('+esc(m.role)+')').join(', '):'Nessuno attivo'}</div>${emailChanges.filter(c=>c.status!=='complete').map(c=>`<p class="note">${c.status==='verification-error'?'⚠️ Impossibile verificare Identity: la vecchia email resta mostrata finché non viene confermata.':'⏳ Cambio email in attesa per '+esc(c.newEmail||'account')+'. '+(c.confirmationRequired?'Conferma il link ricevuto sul nuovo indirizzo.':'Identity non ha ancora confermato il nuovo login.')+' Fino ad allora resta attiva la vecchia email.'}</p>`).join('')}<div class="row" style="margin-top:10px"><button class="btn" data-copy-code="${esc(s.code)}">Copia codice</button><button class="btn" data-resend-code="${esc(s.code)}" ${s.status==='active'?'':'disabled'}>Reinvia email</button><button class="btn" data-edit-code="${esc(s.code)}">Modifica email account</button><button class="btn ${s.status==='active'?'danger':'primary'}" data-accreditation-code="${esc(s.code)}" data-accreditation-action="${s.status==='revoked'?'reactivate':'revoke-accreditation'}">${s.status==='revoked'?'Riattiva accredito':'Revoca accredito'}</button></div><p class="meta"><a href="#schoolDetailsPanel" data-manage-code="${esc(s.code)}">Gestione accessi e account associati</a></p></div>`).join('')||'<p class="meta">Nessuna scuola accreditata trovata. Controlla la sincronizzazione dei dati approvati.</p>';
+  box.querySelectorAll('[data-manage-code]').forEach(btn=>btn.onclick=()=>schoolDetails(btn.dataset.manageCode));
+  box.querySelectorAll('[data-copy-code]').forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(btn.dataset.copyCode);$('schoolsMsg').textContent='Codice copiato.'}catch(e){$('schoolsMsg').textContent='Copia non disponibile: '+e.message}});
+  box.querySelectorAll('[data-resend-code]').forEach(btn=>btn.onclick=async()=>{
+   btn.disabled=true;
+   try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'resend-approval-email',code:btn.dataset.resendCode})});$('schoolsMsg').textContent='Email con codice inviata al gestore della scuola.'}
+   catch(e){$('schoolsMsg').textContent=e.message}finally{btn.disabled=false}
+  });
+  box.querySelectorAll('[data-edit-code]').forEach(btn=>btn.onclick=async()=>{
+   const code=btn.dataset.editCode;
+   try{
+    const details=await api('/.netlify/functions/platform-schools?code='+encodeURIComponent(code));
+    const admins=details.members.filter(m=>m.role==='admin'&&m.status==='active');
+    if(!admins.length)throw new Error('Nessun account amministrativo attivo: assegna prima un gestore dalla sezione Gestione accessi.');
+    const oldEmail=admins.length===1?admins[0].email:prompt('Scegli l’email dell’amministratore da modificare:\n'+admins.map(m=>m.email).join('\n'));
+    if(!oldEmail)return;
+    if(!admins.some(m=>m.email===oldEmail))throw new Error('L’email scelta non è un amministratore attivo della scuola.');
+    const newEmail=prompt('Nuova email di login per lo stesso account Identity ('+oldEmail+'):');
+    if(!newEmail)return;
+    if(!confirm(`Modificare l’email di login dell’account ${oldEmail} in ${newEmail}? Il codice ${code} e l’orario della scuola resteranno invariati.`))return;
+    const result=await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'change-manager-email',code,email:oldEmail,newEmail})});
+    await schoolsRefresh();await schoolDetails(code);
+    $('schoolsMsg').textContent=result.pending?result.message:'Email Identity aggiornata senza cambiare ID account, scuola o orario.';
+   }catch(e){$('schoolsMsg').textContent=e.message}
+  });
+  box.querySelectorAll('[data-accreditation-code]').forEach(btn=>btn.onclick=async()=>{
+   const code=btn.dataset.accreditationCode,action=btn.dataset.accreditationAction;
+   const confirmation=action==='revoke-accreditation'?prompt(`La revoca blocca gli accessi alla scuola, ma NON elimina codice, orario o collegamenti. Per confermare digita REVOCA ACCREDITO ${code}`):'';
+   if(action==='revoke-accreditation'&&confirmation!==`REVOCA ACCREDITO ${code}`)return;
+   if(action==='reactivate'&&!confirm(`Riattivare l’accreditamento di ${code} e i collegamenti esistenti?`))return;
+   try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,code,confirmation})});await schoolsRefresh();$('schoolsMsg').textContent=action==='reactivate'?'Accreditamento riattivato.':'Accredito revocato; dati e orario conservati.'}
+   catch(e){$('schoolsMsg').textContent=e.message}
+  });
+  $('schoolsMsg').textContent=`${schools.length} scuole registrate.`;
+ }catch(e){$('schoolsMsg').textContent=e.message}
+}
+async function schoolDetails(code){
+ const data=await api('/.netlify/functions/platform-schools?code='+encodeURIComponent(code));
+ const {school:s,members}=data;
+ const box=$('accreditedSchools');
+ let panel=$('schoolDetailsPanel');if(!panel){panel=document.createElement('div');panel.id='schoolDetailsPanel';panel.className='req';box.prepend(panel)}
+ panel.innerHTML=`<h3>Gestione accessi · ${esc(s.name)} · ${esc(code)}</h3><p class="meta">${s.status==='revoked'?'Accredito revocato':'Accreditata'} · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}</p><h4>Account associati</h4>${members.map(m=>`<div class="req">${esc(m.email)} · ${esc(m.role)} · ${esc(m.status)} ${['admin','coordinator'].includes(m.role)?`<button class="btn danger" data-revoke="${esc(m.email)}">Revoca gestore</button>`:''}</div>`).join('')||'<p class="meta">Nessun account associato.</p>'}<h4>Assegna nuovo gestore</h4><div class="row"><input id="platformManagerEmail" type="email" placeholder="Email account"><select id="platformManagerRole"><option value="admin">Amministratore scuola</option><option value="coordinator">Referente orario</option></select><button class="btn primary" id="platformManagerAssign">Assegna</button></div><p class="meta" id="schoolActionMsg"></p>`;
+ panel.querySelectorAll('[data-revoke]').forEach(btn=>btn.onclick=async()=>{
+  if(!confirm(`Revocare ${btn.dataset.revoke} senza eliminare la scuola?`))return;
+  try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'revoke-manager',code,email:btn.dataset.revoke})});await schoolsRefresh();await schoolDetails(code)}catch(e){$('schoolActionMsg').textContent=e.message}
+ });
+ $('platformManagerAssign').onclick=async()=>{
+  try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'assign-manager',code,email:$('platformManagerEmail').value,role:$('platformManagerRole').value})});await schoolsRefresh();await schoolDetails(code)}catch(e){$('schoolActionMsg').textContent=e.message}
+ };
 }
 
 $('adminLoginBtn').onclick=async()=>{
@@ -155,6 +217,7 @@ $('adminLoginBtn').onclick=async()=>{
     $('loginPanel').classList.add('hidden');
     $('dashboard').classList.remove('hidden');
     await refresh();
+    await schoolsRefresh();
   }catch(e){
     adminKey='';
     $('loginMsg').textContent='⚠️ '+(e?.message||e);
@@ -169,6 +232,7 @@ $('logoutBtn').onclick=()=>{
 };
 
 $('refreshBtn').onclick=refresh;
+$('schoolsRefresh').onclick=schoolsRefresh;
 
 $('createBtn').onclick=async()=>{
   const m=$('msg');m.className='note';m.textContent='Attivazione…';

@@ -1,6 +1,9 @@
-import {json,currentUser,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,emailKey} from './_lib.js';
+import {json,currentUser,getMembership,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,memberIdKey} from './_lib.js';
+import {inspectPreviousOwners,replaceOrphanedEmailRows} from './_join_school_core.js';
+import {requestAccountChange} from './_account_change.js';
 
-export default async (req) => {
+export default async (req,context={}) => {
+  let stage='identity';
   try{
     if(req.method!=='POST') return json(405,{error:'Metodo non consentito'});
     const user=await currentUser();
@@ -11,10 +14,15 @@ export default async (req) => {
     const code=normalizeCode(body.code);
     if(!code) return json(400,{error:'Inserisci il codice scuola'});
 
+    stage='school';
     const school=await getJSON(`schools/${code}`);
     if(!school||school.status!=='active') return json(404,{error:'Codice scuola non valido o scuola non ancora attiva'});
 
-    const current=await getJSON(`members-by-email/${emailKey(user.email)}`);
+    if(!user.id)return json(403,{error:'ID account non disponibile'});
+    stage='membership';
+    const prior=await getJSON(memberIdKey(user.id));
+    if(prior?.status==='revoked')return json(403,{error:'Accesso revocato: contatta un amministratore della scuola per ripristinarlo.'});
+    const current=await getMembership(user);
     if(current && current.code!==code)
       return json(409,{error:'Questo account è già collegato a un’altra scuola. Scollegalo prima di cambiare istituto.'});
 
@@ -22,20 +30,53 @@ export default async (req) => {
       return json(200,{ok:true,school,membership:current,alreadyConnected:true});
     }
 
+    const invitation=await getMembership(user.email);
+    const list=(await getJSON(`school-members/${code}`))||[];
+    stage='previous-identity';
+    let ownership;
+    try{
+      const {admin}=await import('@netlify/identity');
+      ownership=await inspectPreviousOwners({email:user.email,currentId:user.id,invitation,list,
+        getIdentityUser:id=>admin.getUser(id)});
+    }catch(error){
+      console.warn('join-school previous Identity lookup unavailable',{
+        requestId:context.requestId||'',code,status:error?.status,name:error?.name});
+      // A code holder can still request an explicit platform review. The
+      // old membership is never transferred by an unverified lookup.
+      ownership={allowed:false,reason:'identity-check-unavailable'};
+    }
+    if(!ownership.allowed){
+      console.warn('join-school previous owner blocked',{requestId:context.requestId||'',code,reason:ownership.reason});
+      const request=await requestAccountChange({user,code,school,read:getJSON,write:setJSON});
+      return json(202,{ok:true,pending:true,request,
+        message:'Richiesta di cambio account inviata al pannello amministrativo. Dopo l’approvazione potrai accedere all’orario della scuola.'});
+    }
+    const invited=invitation?.code===code&&invitation.status==='pending'&&!!invitation.assignedBy&&invitation.userId===user.id;
     const membership={
-      email:user.email,code,role:(current&&current.role)||'teacher',status:'active',
+      userId:user.id,email:user.email,code,role:(current&&current.role)||(invited&&invitation.role)||'teacher',status:'active',
       joinedAt:new Date().toISOString(),displayName:String(body.displayName||'').slice(0,120)
     };
+    stage='write-membership';
     await setMembership(user.email,membership);
+    const requestKey=`link-requests-by-user/${encodeURIComponent(user.id)}`;
+    const oldRequest=await getJSON(requestKey);
+    if(oldRequest?.status==='pending'){
+      const requestCode=normalizeCode(oldRequest.code);
+      const requests=(await getJSON(`school-link-requests/${requestCode}`))||[];
+      const requestIx=requests.findIndex(x=>normalizeEmail(x.email)===user.email);
+      oldRequest.status=requestCode===code?'approved':'cancelled';
+      oldRequest.decidedAt=new Date().toISOString();oldRequest.decidedBy='school-code';
+      if(requestIx>=0){requests[requestIx]=oldRequest;await setJSON(`school-link-requests/${requestCode}`,requests)}
+      await setJSON(requestKey,oldRequest);
+    }
 
-    const list=(await getJSON(`school-members/${code}`))||[];
-    const ix=list.findIndex(x=>normalizeEmail(x.email)===user.email);
-    if(ix>=0) list[ix]={...list[ix],...membership}; else list.push(membership);
-    await setJSON(`school-members/${code}`,list.slice(0,1500));
+    stage='write-roster';
+    await setJSON(`school-members/${code}`,replaceOrphanedEmailRows(list,user.email,membership).slice(0,1500));
 
     return json(200,{ok:true,school,membership});
   }catch(e){
-    console.error('join-school error',e);
-    return json(500,{error:'Errore backend nel collegamento alla scuola',detail:String(e?.message||e)});
+    console.error('join-school error',{requestId:context.requestId||'',stage,name:e?.name,status:e?.status,
+      message:String(e?.message||e).slice(0,240)});
+    return json(500,{error:'Errore backend nel collegamento alla scuola',stage,requestId:context.requestId||''});
   }
 };
