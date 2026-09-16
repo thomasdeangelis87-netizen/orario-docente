@@ -3,6 +3,17 @@ import {mayClaimLegacy} from './_member_ops.js';
 
 export const changeKey=id=>`identity-email-changes/${encodeURIComponent(String(id))}`;
 
+export async function reconcileEmailChange(change,{read,write,identityAdmin}){
+  const account=await identityAdmin.getUser(change.userId);
+  if(account.id!==change.userId)throw new Error('Identity ID unexpectedly changed');
+  if(normalizeEmail(account.email)===normalizeEmail(change.newEmail)){
+    await finishEmailChange(change,{getJSON:read,setJSON:write});
+    return {status:'complete',email:normalizeEmail(change.newEmail)};
+  }
+  return {status:'pending',email:normalizeEmail(account.email),newEmail:normalizeEmail(change.newEmail),
+    confirmationRequired:normalizeEmail(account.pendingEmail)===normalizeEmail(change.newEmail)};
+}
+
 export async function finishEmailChange(change,{getJSON,setJSON}){
   const {userId,code,oldEmail,newEmail}=change;
   const record=await getJSON(memberIdKey(userId));
@@ -71,9 +82,13 @@ export async function changeManagerLogin({code,membership,newEmail,read,write,id
   const updated=normalizeEmail(account.email)===destination||normalizeEmail(account.pendingEmail)===destination?
     account:await identityAdmin.updateUser(account.id,{email:destination});
   if(updated.id!==account.id)throw new Error('Identity ID unexpectedly changed');
-  if(normalizeEmail(updated.email)!==destination)
+  // The PUT response can describe a requested change. Read Identity again:
+  // only its authoritative login email is allowed to update school records.
+  const verified=await reconcileEmailChange(change,{read,write,identityAdmin});
+  if(verified.status==='pending')
     return {status:202,ok:true,pending:true,userId:account.id,
-      message:'Cambio email avviato su Identity: attendi la conferma email, poi aggiorna la pagina. Scuola e accessi non sono stati modificati.'};
-  await finishEmailChange(change,{getJSON:read,setJSON:write});
+      message:verified.confirmationRequired?
+        'Cambio email in attesa: conferma il link inviato al nuovo indirizzo, poi aggiorna la pagina. Fino alla conferma il login usa la vecchia email.':
+        'Identity non ha ancora confermato la nuova email di login. Verifica le impostazioni email di Identity; il vecchio login rimane attivo.'};
   return {status:200,ok:true,pending:false,userId:account.id,email:destination};
 }

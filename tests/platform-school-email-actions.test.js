@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {emailKey,memberIdKey} from '../netlify/functions/_lib.js';
-import {changeManagerLogin,finishEmailChange,changeKey} from '../netlify/functions/_school_email_change.js';
+import {changeManagerLogin,finishEmailChange,changeKey,reconcileEmailChange} from '../netlify/functions/_school_email_change.js';
 import {changeAccreditation} from '../netlify/functions/_accreditation_status.js';
 
 const code='VAIS-32128',oldEmail='school-admin@example.it',newEmail='school-admin-new@example.it';
@@ -22,8 +22,9 @@ function fixture(){
 
 test('Identity cambia email dello stesso ID e i riferimenti scuola; orario e profilo non vengono toccati',async()=>{
  const f=fixture(),calls=[];
- const admin={getUser:async id=>({id,email:oldEmail,confirmedAt:'2026-01-01'}),updateUser:async(id,changes)=>{
-  calls.push([id,changes]);return {id,email:changes.email};
+ let actualEmail=oldEmail;
+ const admin={getUser:async id=>({id,email:actualEmail,confirmedAt:'2026-01-01'}),updateUser:async(id,changes)=>{
+  calls.push([id,changes]);actualEmail=changes.email;return {id,email:changes.email};
  }};
  const result=await changeManagerLogin({code,membership:f.manager,newEmail,read:f.read,write:f.write,
   identityAdmin:admin,findByEmail:async()=>null});
@@ -71,6 +72,28 @@ test('un cambio email ancora in attesa non può essere sostituito con un’altra
   identityAdmin:{getUser:async()=>({id:'stable-id',email:oldEmail,pendingEmail:newEmail}),updateUser:async()=>{calls++}},findByEmail:async()=>null});
  assert.equal(result.status,409);assert.equal(calls,0);
  assert.equal(f.store.get(changeKey('stable-id')).newEmail,newEmail);
+});
+
+test('risposta PUT Identity ottimistica non cambia catalogo se GET mantiene vecchio login',async()=>{
+ const f=fixture();let calls=0;
+ const result=await changeManagerLogin({code,membership:f.manager,newEmail,read:f.read,write:f.write,
+  identityAdmin:{getUser:async()=>({id:'stable-id',email:oldEmail,pendingEmail:newEmail}),
+   updateUser:async()=>{calls++;return {id:'stable-id',email:newEmail}}},findByEmail:async()=>null});
+ assert.equal(result.status,202);assert.equal(result.pending,true);
+ assert.equal(calls,0); // Identity has already reported a pending email.
+ assert.equal(f.store.get(memberIdKey('stable-id')).email,oldEmail);
+ assert.equal(f.store.get(`schedules/${code}`),f.schedule);
+});
+
+test('la conferma Identity riallinea la stessa utenza al refresh del catalogo',async()=>{
+ const f=fixture(),change={userId:'stable-id',code,oldEmail,newEmail,status:'requested'};
+ f.store.set(changeKey('stable-id'),change);
+ const result=await reconcileEmailChange(change,{read:f.read,write:f.write,
+  identityAdmin:{getUser:async()=>({id:'stable-id',email:newEmail})}});
+ assert.equal(result.status,'complete');
+ assert.equal(f.store.get(`school-members/${code}`)[0].userId,'stable-id');
+ assert.equal(f.store.get(`school-members/${code}`)[0].email,newEmail);
+ assert.equal(f.store.get(`schedules/${code}`),f.schedule);
 });
 
 test('pannello mostra solo azioni non distruttive e richiede conferma esplicita per revoca',()=>{

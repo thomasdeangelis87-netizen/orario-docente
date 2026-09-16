@@ -1,4 +1,5 @@
 import {json,currentUser,getMembership,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail,memberIdKey} from './_lib.js';
+import {checkPreviousOwners,replaceOrphanedEmailRows} from './_join_school_core.js';
 
 export default async (req) => {
   try{
@@ -26,13 +27,12 @@ export default async (req) => {
     }
 
     const invitation=await getMembership(user.email);
-    if(invitation?.status==='active' && invitation.userId!==user.id)
-      return json(409,{error:'Email ancora associata a un altro account: chiedi al gestore di revocare il vecchio collegamento.'});
-    const invited=invitation?.code===code&&invitation.status==='pending'&&!!invitation.assignedBy&&invitation.userId===user.id;
     const list=(await getJSON(`school-members/${code}`))||[];
-    const ix=list.findIndex(x=>normalizeEmail(x.email)===user.email);
-    if(ix>=0 && list[ix].status==='active' && list[ix].userId!==user.id)
-      return json(409,{error:'Collegamento di un account precedente: intervento della scuola o della piattaforma necessario.'});
+    const {admin}=await import('@netlify/identity');
+    if(!await checkPreviousOwners({email:user.email,currentId:user.id,invitation,list,
+      getIdentityUser:id=>admin.getUser(id)}))
+      return json(409,{error:'Email ancora associata ad altro account Identity attivo: chiedi al gestore di revocare il vecchio collegamento.'});
+    const invited=invitation?.code===code&&invitation.status==='pending'&&!!invitation.assignedBy&&invitation.userId===user.id;
     const membership={
       userId:user.id,email:user.email,code,role:(current&&current.role)||(invited&&invitation.role)||'teacher',status:'active',
       joinedAt:new Date().toISOString(),displayName:String(body.displayName||'').slice(0,120)
@@ -50,8 +50,7 @@ export default async (req) => {
       await setJSON(requestKey,oldRequest);
     }
 
-    if(ix>=0) list[ix]={...list[ix],...membership}; else list.push(membership);
-    await setJSON(`school-members/${code}`,list.slice(0,1500));
+    await setJSON(`school-members/${code}`,replaceOrphanedEmailRows(list,user.email,membership).slice(0,1500));
 
     return json(200,{ok:true,school,membership});
   }catch(e){

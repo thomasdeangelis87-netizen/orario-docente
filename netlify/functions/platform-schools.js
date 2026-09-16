@@ -1,6 +1,6 @@
 import {json,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
 import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
-import {changeManagerLogin} from './_school_email_change.js';
+import {changeManagerLogin,changeKey,reconcileEmailChange} from './_school_email_change.js';
 import {sendSchoolApprovalEmail} from './_brevo.js';
 import {changeAccreditation} from './_accreditation_status.js';
 import {accreditedCatalog,requestedSchoolCode} from './_accredited_catalog.js';
@@ -17,6 +17,29 @@ export default async (req,context={})=>{
       stage='catalog';
       const code=requestedSchoolCode(req.url);
       const schools=await accreditedCatalog({read:getJSON},code);
+      stage='email-change-status';
+      for(const data of schools){
+        data.emailChanges=[];
+        for(const manager of data.managers){
+          if(!manager.userId)continue;
+          const change=await getJSON(changeKey(manager.userId));
+          if(change?.status!=='requested'||change.code!==data.school.code)continue;
+          try{
+            const {admin}=await import('@netlify/identity');
+            const status=await reconcileEmailChange(change,{read:getJSON,write:setJSON,identityAdmin:admin});
+            data.emailChanges.push(status);
+            if(status.status==='complete'){
+              const refreshed=(await accreditedCatalog({read:getJSON},data.school.code))[0];
+              Object.assign(data,refreshed);
+            }
+          }catch(error){
+            console.error('platform-schools email verification failure',{
+              requestId:context.requestId||'',code:data.school.code,
+              name:error?.name,status:error?.status,message:String(error?.message||error).slice(0,200)});
+            data.emailChanges.push({status:'verification-error'});
+          }
+        }
+      }
       if(code)return schools[0]?json(200,schools[0]):json(404,{error:'Scuola non trovata'});
       return json(200,{schools});
     }
