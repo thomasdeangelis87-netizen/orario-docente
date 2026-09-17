@@ -5,7 +5,7 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
 
-// node_modules/gotrue-js/lib/index.js
+// ../node_modules/gotrue-js/lib/index.js
 var HTTPError = class extends Error {
   constructor(response) {
     super(response.statusText);
@@ -450,7 +450,7 @@ if (typeof window !== "undefined") {
   window.GoTrue = GoTrue;
 }
 
-// node_modules/@netlify/identity/dist/main.js
+// ../node_modules/@netlify/identity/dist/main.js
 var __require2 = /* @__PURE__ */ ((x) => typeof __require !== "undefined" ? __require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof __require !== "undefined" ? __require : a)[b]
 }) : x)(function(x) {
@@ -1176,12 +1176,29 @@ var updateUser = async (updates) => {
   }
 };
 
+// src/auth-event-bridge.js
+function createAuthEventBridge(getUser2, notify) {
+  let generation = 0;
+  return async (event, user) => {
+    const pending = ++generation;
+    if (event !== "login" && event !== "logout") return;
+    try {
+      const session = await getUser2();
+      if (pending !== generation) return;
+      if (session?.id) notify("login", session);
+      else notify("logout", null);
+    } catch (error) {
+      console.error("Identity session check failed", error);
+    }
+  };
+}
+
 // src/identity-client.js
 window.OrarioIdentity = { getUser, getSettings, login, signup, logout, oauthLogin, requestPasswordRecovery, updateUser };
-onAuthChange((event, user) => {
+onAuthChange(createAuthEventBridge(getUser, (event, user) => {
   if (event === "login") window.dispatchEvent(new CustomEvent("orario-login", { detail: user }));
   if (event === "logout") window.dispatchEvent(new Event("orario-logout"));
-});
+}));
 try {
   const callback = await handleAuthCallback();
   if (callback?.type === "recovery") window.dispatchEvent(new Event("orario-recovery"));
