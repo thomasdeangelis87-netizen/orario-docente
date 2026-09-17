@@ -15,7 +15,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 </style>
 </head>
 <body><div class="wrap">
-<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">PR #3 · v16.10.9</span></p>
+<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">v16.10.11</span></p>
 
 <div id="loginPanel" class="hero">
   <h1>Amministratore sistema</h1>
@@ -25,6 +25,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
     <input id="adminKey" type="password" autocomplete="off" placeholder="Inserisci la chiave segreta">
   </div>
   <button id="adminLoginBtn" class="btn primary">ACCEDI</button>
+  <p class="meta">Questo pannello usa la chiave amministratore della piattaforma. Per amministrare la tua scuola, accedi all'app e apri «Portale scuola».</p>
   <div id="loginMsg" style="margin-top:12px"></div>
 </div>
 
@@ -213,11 +214,10 @@ $('adminLoginBtn').onclick=async()=>{
   adminKey=k;
   $('adminLoginBtn').disabled=true;$('adminLoginBtn').textContent='Accesso…';
   try{
-    await loadRequests();
+    await api('/.netlify/functions/school-accreditation?verify-key');
     $('loginPanel').classList.add('hidden');
     $('dashboard').classList.remove('hidden');
-    await refresh();
-    await schoolsRefresh();
+    await Promise.all([refresh(),schoolsRefresh()]);
   }catch(e){
     adminKey='';
     $('loginMsg').textContent='⚠️ '+(e?.message||e);

@@ -190,6 +190,9 @@ export default async (req) => {
     if(req.method==='GET'){
       const auth=requirePlatformAdmin(req);
       if(auth.error) return auth.error;
+      // The sign-in check must not depend on the school records being readable.
+      // The dashboard reports storage failures separately after authentication.
+      if(new URL(req.url).searchParams.has('verify-key'))return json(200,{ok:true});
 
       let index=await getJSON('accreditations-index');
       if(!Array.isArray(index)) index=[];
