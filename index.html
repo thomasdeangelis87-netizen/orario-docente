@@ -52,7 +52,10 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #3 · v16.10.9</div>
+<div id="buildVersion" class="build-version">v16.10.10</div>
+<section id="bootView" class="auth-shell" role="status" aria-live="polite">
+  <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
+</section>
 <section id="authView" class="auth-shell hidden">
   <div class="auth-card">
     <div class="brand"><div class="brandmark">📅</div><div><strong>ORARIO DOCENTE</strong><div style="color:#607089;font-size:13px">Il tuo orario, sempre con te</div></div></div>
@@ -499,8 +502,9 @@ async function cloudSave(){
 }
 function scheduleCloudSave(){clearTimeout(saveTimer);saveTimer=setTimeout(cloudSave,900)}
 function openSlot(key){activeKey=key;const period=Number(key.split('-')[1]),v=state.slots[key]||['',(state.meta.periodTimes&&state.meta.periodTimes[period])||''];slotSubject.value=v[0]||'';slotTime.value=v[1]||'';openModal('slotModal')}
-function showAuth(){authView.classList.remove('hidden');appView.classList.add('hidden')}
-function showApp(){authView.classList.add('hidden');appView.classList.remove('hidden')}
+function showAuth(){bootView.classList.add('hidden');authView.classList.remove('hidden');appView.classList.add('hidden')}
+function showApp(){bootView.classList.add('hidden');authView.classList.add('hidden');appView.classList.remove('hidden')}
+function showLoading(){bootView.classList.remove('hidden');authView.classList.add('hidden');appView.classList.add('hidden')}
 function getLegacy(){try{const raw=localStorage.getItem('orarioDocenteStateV3');if(!raw)return null;const x=JSON.parse(raw);if(!validState(x))return null;return x}catch(e){return null}}
 function normalizeLegacy(x){const out=clone(x);if(out.meta.teacher&&!out.meta.firstName){const t=(out.meta.teacher||'').trim();if(/DE ANGELIS THOMAS/i.test(t)){out.meta.firstName='Thomas';out.meta.lastName='De Angelis'}else{const parts=t.split(/\s+/);out.meta.firstName=parts.shift()||'';out.meta.lastName=parts.join(' ')||''}}return out}
 
@@ -550,7 +554,7 @@ async function handleUser(user){
  // Never expose the previous account while the new account profile is loading.
  state=clone(EMPTY_STATE);
  schoolData=emptySchoolData();
- showAuth();
+ showLoading();
  accountEmail.textContent=user.email||'';
  loadSchoolLocal();
 
@@ -1244,14 +1248,20 @@ if(IS_DEPLOY_PREVIEW){
 }else if('serviceWorker'in navigator){
  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
-window.addEventListener('orario-auth-ready',event=>handleUser(event.detail));
-window.addEventListener('orario-login',event=>handleUser(event.detail));
+function acceptAuthenticatedUser(user){
+ if(user?.id && String(user.id)===String(currentUser?.id||'')){
+  currentUser={...currentUser,...user};
+  return;
+ }
+ handleUser(user);
+}
+window.addEventListener('orario-auth-ready',event=>acceptAuthenticatedUser(event.detail));
+window.addEventListener('orario-login',event=>acceptAuthenticatedUser(event.detail));
 window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
-window.addEventListener('orario-auth-error',event=>{console.error(event.detail);toast('Accesso non disponibile: riprova più tardi')});
-showAuth();
+window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast('Accesso non disponibile: riprova più tardi')});
 </script>
-<script type="module" src="/identity-client.js?v=16.10.0"></script>
+<script type="module" src="/identity-client.js?v=16.10.10"></script>
 </body>
 </html>
