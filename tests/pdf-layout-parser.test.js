@@ -36,3 +36,16 @@ test('modalita scuola completa importa tutte le pagine docente',()=>{
  assert.deepEqual(result.classCells.map(e=>e.className),['3°A','3°A']);
  assert.equal(result.pagesAnalyzed,2);
 });
+
+test('riconosce export Index Education con solo cognome e suffisso EDT numerico',()=>{
+ const p=page(1,'RAIOLA - EDT 2','SCIENZE ALIMENTARI');
+ // Alcuni export duplicano lo stesso text item nell'intestazione.
+ const header=p.items.find(i=>i.str==='RAIOLA - EDT 2');
+ p.items.push({...header});
+ const teachers=listDetectedTeachers([p]);
+ assert.equal(teachers.length,1);
+ assert.equal(teachers[0].name,'RAIOLA');
+ const result=parseIndexEducationSchoolPages([p],{maxPeriods:10});
+ assert.equal(result.teachers[0].name,'RAIOLA');
+ assert.ok(result.entries.length>0);
+});
