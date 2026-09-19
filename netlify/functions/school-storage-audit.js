@@ -8,7 +8,7 @@ export default async (req, context) => {
   try{
     if(req.method!=='GET')return json(405,{error:'Metodo non consentito'});
     stage='identity';
-    const user=await currentUser(req);
+    const user=await currentUser(req,context);
     if(!user)return json(401,{error:'Accesso richiesto'});
     stage='membership';
     const r=await requireMember(user,['admin','coordinator']);

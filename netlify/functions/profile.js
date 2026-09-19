@@ -5,9 +5,9 @@ function validState(x){
   return !!(x && x.meta && x.slots && typeof x.slots === 'object');
 }
 
-export default async (req) => {
+export default async (req,context) => {
   try{
-    const user=await currentUser(req);
+    const user=await currentUser(req,context);
     if(!user) return json(401,{error:'Accesso richiesto'});
 
     if(!user.id)return json(403,{error:'ID account non disponibile'});

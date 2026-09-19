@@ -1,8 +1,8 @@
 import {json,currentUser,getMembership,getJSON,setJSON,normalizeCode,normalizeEmail,emailKey} from './_lib.js';
 
-export default async(req)=>{
+export default async(req,context)=>{
  try{
-  const user=await currentUser(req);if(!user)return json(401,{error:'Accesso richiesto'});
+  const user=await currentUser(req,context);if(!user)return json(401,{error:'Accesso richiesto'});
   if(!user.id)return json(403,{error:'ID account non disponibile'});
   const requestKey=`link-requests-by-user/${encodeURIComponent(user.id)}`;
   if(req.method==='GET'){

@@ -27,7 +27,16 @@ function cookieValue(header,name){
   return '';
 }
 
-async function currentUser(req,{fetchImpl=fetch}={}){
+function normalizedUser(u){
+  if(!u?.email)return null;
+  return {id:u.id||u.sub||'',email:normalizeEmail(u.email),
+    createdAt:u.createdAt||u.created_at||'',metadata:u.userMetadata||u.user_metadata||{}};
+}
+
+async function currentUser(req,context={},options={}){
+  const {fetchImpl=fetch,identityOrigin=process.env.URL||''}=options;
+  const runtimeUser=normalizedUser(context?.clientContext?.user);
+  if(runtimeUser?.id)return runtimeUser;
   // @netlify/identity's browser client stores the signed session in nf_jwt.
   // Validate that token with the site's Identity endpoint instead of trusting
   // decoded claims. This also avoids a Deploy Preview runtime crash observed
@@ -35,20 +44,16 @@ async function currentUser(req,{fetchImpl=fetch}={}){
   const auth=String(req?.headers?.get?.('authorization')||'');
   const token=auth.match(/^Bearer\s+(.+)$/i)?.[1]||cookieValue(req?.headers?.get?.('cookie'),'nf_jwt');
   if(!token)return null;
-  let origin='';
-  try{origin=new URL(req.url).origin}catch{return null}
+  let requestOrigin='';
+  try{requestOrigin=new URL(req.url).origin}catch{return null}
+  // Identity is site-wide. Using Netlify's canonical URL avoids re-entering
+  // the Deploy Preview gateway from inside its own Function invocation.
+  const origin=String(identityOrigin||requestOrigin).replace(/\/$/,'');
   const response=await fetchImpl(`${origin}/.netlify/identity/user`,{
     headers:{authorization:`Bearer ${token}`}
   });
   if(!response.ok)return null;
-  const u=await response.json();
-  if(!u || !u.email) return null;
-  return {
-    id: u.id || u.sub || '',
-    email: normalizeEmail(u.email),
-    createdAt: u.createdAt || u.created_at || '',
-    metadata: u.userMetadata || u.user_metadata || {}
-  };
+  return normalizedUser(await response.json());
 }
 
 async function store(){
@@ -111,4 +116,4 @@ async function requireMember(user, roles=[]){
   return {membership:{...membership,code:normalizeCode(membership.code)},school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,normalizedUser,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};
