@@ -7,7 +7,7 @@ function validState(x){
 
 export default async (req) => {
   try{
-    const user=await currentUser();
+    const user=await currentUser(req);
     if(!user) return json(401,{error:'Accesso richiesto'});
 
     if(!user.id)return json(403,{error:'ID account non disponibile'});

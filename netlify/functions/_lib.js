@@ -16,10 +16,32 @@ const emailKey = email => crypto.createHash('sha256').update(normalizeEmail(emai
 // A single site-scoped document per accredited school, never per user or deploy.
 const schoolScheduleKey = code => `schedules/${normalizeCode(code)}`;
 
-async function currentUser(){
-  // Load platform SDKs only after the Function request context is active.
-  const {getUser}=await import('@netlify/identity');
-  const u = await getUser();
+function cookieValue(header,name){
+  for(const part of String(header||'').split(';')){
+    const index=part.indexOf('=');
+    if(index<0)continue;
+    if(part.slice(0,index).trim()===name){
+      try{return decodeURIComponent(part.slice(index+1).trim())}catch{return part.slice(index+1).trim()}
+    }
+  }
+  return '';
+}
+
+async function currentUser(req,{fetchImpl=fetch}={}){
+  // @netlify/identity's browser client stores the signed session in nf_jwt.
+  // Validate that token with the site's Identity endpoint instead of trusting
+  // decoded claims. This also avoids a Deploy Preview runtime crash observed
+  // before the Function handler could emit logs.
+  const auth=String(req?.headers?.get?.('authorization')||'');
+  const token=auth.match(/^Bearer\s+(.+)$/i)?.[1]||cookieValue(req?.headers?.get?.('cookie'),'nf_jwt');
+  if(!token)return null;
+  let origin='';
+  try{origin=new URL(req.url).origin}catch{return null}
+  const response=await fetchImpl(`${origin}/.netlify/identity/user`,{
+    headers:{authorization:`Bearer ${token}`}
+  });
+  if(!response.ok)return null;
+  const u=await response.json();
   if(!u || !u.email) return null;
   return {
     id: u.id || u.sub || '',
@@ -89,4 +111,4 @@ async function requireMember(user, roles=[]){
   return {membership:{...membership,code:normalizeCode(membership.code)},school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};

@@ -3,7 +3,7 @@ import {json,currentUser,getJSON,listKeys} from './_lib.js';
 export default async (req)=>{
  try{
   if(req.method!=='GET')return json(405,{error:'Metodo non consentito'});
-  if(!await currentUser())return json(401,{error:'Accesso richiesto'});
+  if(!await currentUser(req))return json(401,{error:'Accesso richiesto'});
   const query=String(new URL(req.url).searchParams.get('q')||'').trim().toLocaleLowerCase('it');
   const index=await getJSON('schools-index');
   const codes=Array.isArray(index)?index.slice():[];

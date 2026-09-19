@@ -63,7 +63,7 @@ export default async (req) => {
       const action=String(body.action||'submit');
 
       if(action==='submit'){
-        const user=await currentUser();
+        const user=await currentUser(req);
         if(!user?.id) return json(401,{error:'Prima devi accedere a un account Identity valido.'});
 
         const schoolName=String(body.schoolName||'').trim();

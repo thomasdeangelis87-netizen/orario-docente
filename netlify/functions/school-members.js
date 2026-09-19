@@ -3,7 +3,7 @@ import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
 
 export default async (req) => {
   try{
-    const user=await currentUser();
+    const user=await currentUser(req);
     if(!user) return json(401,{error:'Accesso richiesto'});
     const r=await requireMember(user,['admin','coordinator']);
     if(r.error) return r.error;

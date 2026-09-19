@@ -9,7 +9,7 @@ function makeCode(mech='SCUOLA'){
 export default async (req) => {
   try{
     if(req.method!=='POST') return json(405,{error:'Metodo non consentito'});
-    const user=await currentUser();
+    const user=await currentUser(req);
     if(!user) return json(401,{error:'Accesso richiesto'});
 
     const key=req.headers.get('x-platform-admin-key') || '';

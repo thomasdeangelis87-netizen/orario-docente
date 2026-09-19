@@ -9,7 +9,7 @@ export function makeSchoolScheduleHandler(deps={currentUser,requireMember,getJSO
     try{
       if(!['GET','POST'].includes(req.method))return json(405,{error:'Metodo non consentito'});
       stage='identity';
-      const user=await deps.currentUser();
+      const user=await deps.currentUser(req);
       if(!user)return json(401,{error:'Accesso richiesto'});
       stage='membership';
       const access=await deps.requireMember(user,req.method==='POST'?['admin','coordinator']:[]);
