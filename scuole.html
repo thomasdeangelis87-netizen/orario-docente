@@ -87,7 +87,7 @@ a{color:inherit}.wrap{max-width:1080px;margin:auto;padding:20px}.top{display:fle
         <div class="field">
           <label>Carica il file dell'orario completo</label>
           <input type="file" name="orario_completo" accept=".xlsx,.xls,.pdf">
-          <div class="small">Preferito: Excel (.xlsx/.xls). Puoi inviare anche PDF per la fase di verifica. Il file verrà controllato prima dell'attivazione dello spazio scuola.</div>
+          <div class="small">Excel e PDF sono supportati. Il file resta associato alla richiesta e, dopo l'approvazione, il referente potrà recuperarlo dal Portale scuola e pubblicarlo come orario ufficiale.</div>
         </div>
         <div class="field" style="margin-top:12px"><label>Note</label><textarea name="note" placeholder="Indica eventuali particolarità dell'orario, plessi, turnazioni o referenti aggiuntivi."></textarea></div>
 
@@ -200,7 +200,16 @@ if(schoolForm){
     const oldText=submitBtn?.textContent;
     if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Invio richiesta…';}
     try{
-      await registerPendingAccreditation(user);
+      const registration=await registerPendingAccreditation(user);
+      const scheduleInput=schoolForm.elements.namedItem('orario_completo');
+      const scheduleFile=scheduleInput?.files?.[0];
+      if(scheduleFile){
+        const token=await user.jwt();
+        const upload=await fetch('/.netlify/functions/school-accreditation-schedule?requestId='+encodeURIComponent(registration.request.id),{
+          method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':scheduleFile.type||'application/octet-stream','X-File-Name':encodeURIComponent(scheduleFile.name)},body:scheduleFile
+        });
+        if(!upload.ok){let detail='';try{detail=(await upload.json()).error||''}catch{}throw new Error(detail||'Non è stato possibile conservare il file dell’orario.')}
+      }
       schoolForm.submit();
     }catch(err){
       alert('Non è stato possibile registrare la richiesta di accreditamento: '+(err?.message||String(err)));

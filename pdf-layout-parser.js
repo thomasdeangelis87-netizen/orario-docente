@@ -53,4 +53,46 @@ export function parseIndexEducationSchoolPages(pages,options={}){
  return{teachers,entries,classCells,maxPeriods:Math.max(1,schoolPeriods||Math.max(...entries.map(e=>e.period))),periodTimes,failures,pagesAnalyzed:headers.length};
 }
 
+// Timetables exported as one wide matrix: teachers on rows and one column for
+// each period (typically 5 days x 5 periods). This is deliberately separate
+// from the Index Education page-per-teacher parser above.
+export function parseTeacherMatrixSchoolPages(pages,options={}){
+ if(!Array.isArray(pages)||!pages.length)throw new Error('Il PDF non contiene pagine leggibili.');
+ const maxPeriods=Math.max(1,Number(options.maxPeriods)||10),teachersMap=new Map(),entries=[],classCells=[];
+ for(const page of pages){
+  const lines=groupLines(page.items,2.5),docHeader=page.items.find(i=>norm(i.str)==='DOCENTE'&&i.x<page.width*.12);
+  if(!docHeader)continue;
+  const dayHeaders=page.items.map(i=>({item:i,day:DAY_NAMES.findIndex(d=>norm(i.str).replace(/ /g,'').startsWith(d))})).filter(x=>x.day>=0);
+  if(dayHeaders.length<5)continue;
+  const headerBottom=Math.max(docHeader.y,...dayHeaders.map(x=>x.item.y))+18;
+  const hourItems=page.items.filter(i=>i.y<=headerBottom&&i.x>page.width*.055&&/^\s*\d{1,2}\s*[ªºa]?\s*$/i.test(i.str)).sort((a,b)=>a.x-b.x);
+  const centers=[];for(const item of hourItems){const x=item.x+(item.width||0)/2;if(!centers.some(v=>Math.abs(v-x)<3))centers.push(x)}
+  if(centers.length<10||centers.length%dayHeaders.length!==0)continue;
+  const periodsPerDay=Math.min(maxPeriods,Math.round(centers.length/dayHeaders.length));
+  const usedCenters=centers.slice(0,periodsPerDay*dayHeaders.length),first=usedCenters[0],step=median(usedCenters.slice(1).map((x,i)=>x-usedCenters[i]));
+  const gutterRight=first-step*.52;
+  const teacherLines=lines.filter(l=>l.y>headerBottom&&l.items.some(i=>i.x<gutterRight)).map(l=>({y:l.y,name:l.items.filter(i=>i.x<gutterRight).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim()})).filter(x=>x.name&&/[A-ZÀ-ÖØ-Ý]/i.test(x.name));
+  for(let r=0;r<teacherLines.length;r++){
+   const row=teacherLines[r],top=r?((teacherLines[r-1].y+row.y)/2):headerBottom,bottom=r<teacherLines.length-1?((row.y+teacherLines[r+1].y)/2):Math.min(page.height,row.y+(row.y-(teacherLines[r-1]?.y||headerBottom))/2);
+   const key=norm(row.name);if(!teachersMap.has(key))teachersMap.set(key,{name:row.name,subject:''});
+   for(let c=0;c<usedCenters.length;c++){
+    const cx=usedCenters[c],left=c?((usedCenters[c-1]+cx)/2):cx-step/2,right=c<usedCenters.length-1?((cx+usedCenters[c+1])/2):cx+step/2;
+    const cellLines=groupLines(page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=left&&x<right&&y>top&&y<bottom}),2.5).map(l=>l.text.trim()).filter(Boolean);
+    if(!cellLines.length)continue;
+    const classLine=cellLines.find(v=>/^\s*[1-5]\s*[A-Z]{1,4}(?:\s+[A-Z]{1,3})?\s*$/i.test(v));
+    const className=classLine?classLine.replace(/\s+/g,'').toUpperCase():'';
+    const nonClass=cellLines.filter(v=>v!==classLine),raw=nonClass.join(' · ').trim();
+    if(!raw&&!className)continue;
+    const availability=/\bDISP(?:ONIBILITA)?\.?\b/i.test(raw),activity=className||(availability?'DISPOSIZIONE':raw),subject=availability?'DISPOSIZIONE':raw;
+    const day=Math.floor(c/periodsPerDay),period=c%periodsPerDay+1;
+    entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:[]});
+    if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:''});
+   }
+  }
+ }
+ if(!entries.length)throw new Error('Il PDF è stato letto, ma non riconosco lezioni nella matrice docenti.');
+ for(const teacher of teachersMap.values())teacher.subject=[...new Set(entries.filter(e=>norm(e.teacher)===norm(teacher.name)).map(e=>e.subject).filter(Boolean))].join(' / ');
+ return{teachers:[...teachersMap.values()],entries,classCells,maxPeriods:Math.max(...entries.map(e=>e.period)),periodTimes:{},failures:[],pagesAnalyzed:pages.length,matrixFormat:true};
+}
+
 export const _test={norm,minutes,timeStrings,groupLines,detectTeacherHeader,headerScore,selectTeacherPage,findDayColumns,findTimeRows,detectedSchoolPeriods,parseClass,parseRoom};
