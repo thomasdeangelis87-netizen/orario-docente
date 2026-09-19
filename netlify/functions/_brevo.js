@@ -91,3 +91,40 @@ export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, conta
   }
   return data;
 }
+
+export async function sendSchoolScheduleUpdateEmail({to, schoolName, validFrom='', contactName=''}) {
+  const apiKey=env('BREVO_API_KEY');
+  if(!apiKey) throw new SchoolEmailError('email_provider_not_configured','Servizio email non configurato su Netlify');
+  if(!String(to||'').includes('@'))throw new SchoolEmailError('invalid_recipient','Indirizzo email destinatario non valido');
+
+  const {senderEmail,senderName}=schoolEmailConfiguration();
+  const safeSchool=escapeHtml(schoolName||'La tua scuola');
+  const safeName=escapeHtml(contactName||'');
+  const safeDate=escapeHtml(validFrom||'');
+  const greeting=safeName?`Ciao ${safeName},`:'Buongiorno,';
+  const dateLine=safeDate?`<p>Il nuovo orario è indicato come in vigore dal <strong>${safeDate}</strong>.</p>`:'';
+  const htmlContent=`<!doctype html><html lang="it"><body style="margin:0;background:#f4f8fc;font-family:Arial,sans-serif;color:#10233f">
+    <div style="max-width:640px;margin:0 auto;padding:28px 18px">
+      <div style="background:#0b2a5b;color:#fff;border-radius:18px 18px 0 0;padding:24px"><h1 style="margin:0;font-size:24px">Orario Docente</h1><p style="margin:8px 0 0">Nuovo orario disponibile</p></div>
+      <div style="background:#fff;border:1px solid #dfe7f0;border-top:0;border-radius:0 0 18px 18px;padding:26px">
+        <p>${greeting}</p><p><strong>${safeSchool}</strong> ha pubblicato un nuovo orario e gli impegni associati al tuo docente risultano modificati.</p>${dateLine}
+        <p>Il tuo orario personale <strong>non è stato sostituito automaticamente</strong>. Accedi all’app, controlla le modifiche e premi “Aggiorna il mio orario” soltanto quando vuoi applicarle.</p>
+        <p style="margin:26px 0"><a href="https://orariodocente.it/" style="display:inline-block;background:#0b2a5b;color:#fff;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:10px">Apri Orario Docente</a></p>
+        <p>Cordiali saluti,<br><strong>Orario Docente</strong></p>
+      </div>
+    </div></body></html>`;
+
+  let response;
+  try{response=await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',headers:{accept:'application/json','content-type':'application/json','api-key':apiKey},
+    body:JSON.stringify({sender:{name:senderName,email:senderEmail},to:[{email:to,name:contactName||undefined}],replyTo:{email:senderEmail,name:senderName},subject:`Nuovo orario disponibile – ${schoolName||'Orario Docente'}`,htmlContent})
+  })}catch(error){
+    throw new SchoolEmailError('email_provider_unreachable','Servizio email temporaneamente non raggiungibile',{status:0,cause:error});
+  }
+  const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+  if(!response.ok){
+    console.error('Brevo schedule update rejected',{status:response.status,code:data.code||'',message:String(data.message||'').slice(0,160)});
+    throw new SchoolEmailError('email_provider_rejected',data.message||`Invio email rifiutato dal provider (HTTP ${response.status})`,{status:response.status});
+  }
+  return data;
+}

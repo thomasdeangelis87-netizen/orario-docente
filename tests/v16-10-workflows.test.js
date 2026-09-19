@@ -82,7 +82,8 @@ test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce autom
  assert.equal(globalThis.OrarioSchoolUpdate.changes(old,changed).added.length,1);
  assert.match(html,/version<=Number\(state\.meta\.schoolScheduleVersion\)/);
  assert.match(html,/fingerprint===state\.meta\.schoolScheduleFingerprint/);
- assert.match(html,/updateMySchoolScheduleBtn\.onclick=async/);
+ assert.match(html,/updateMySchoolScheduleBtn\.onclick=applyPendingSchoolSchedule/);
+ assert.match(html,/homeUpdateMySchoolScheduleBtn\.onclick=applyPendingSchoolSchedule/);
  assert.match(html,/confirm\(`Trovati \$\{entries\.length\} impegni/);
 });
 
