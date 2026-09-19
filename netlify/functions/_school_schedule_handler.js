@@ -1,7 +1,9 @@
 import {json,currentUser,requireMember,getJSON,setJSON} from './_lib.js';
 import {getOfficialSchedule,publishOfficialSchedule} from './_school_schedule_core.js';
+import {notifyChangedTeachers} from './_school_schedule_notifications.js';
 
-export function makeSchoolScheduleHandler(deps={currentUser,requireMember,getJSON,setJSON}){
+export function makeSchoolScheduleHandler(overrides={}){
+  const deps={currentUser,requireMember,getJSON,setJSON,notifyChangedTeachers,...overrides};
   return async (req,context={})=>{
     const requestId=context.requestId||'';
     let stage='request';
@@ -29,6 +31,16 @@ export function makeSchoolScheduleHandler(deps={currentUser,requireMember,getJSO
       const outcome=await publishOfficialSchedule({code,body,read:deps.getJSON,write:deps.setJSON});
       console.info('school-schedule publish',{requestId,status:outcome.status,version:outcome.version||null});
       const {status,...result}=outcome;
+      if(status===200&&body.publish===true){
+        const schedule={...body.schedule,schoolCode:code,version:outcome.version,validFrom:outcome.validFrom,publishedAt:outcome.publishedAt,cloudUpdatedAt:outcome.updatedAt};
+        const notificationTask=Promise.resolve(deps.notifyChangedTeachers({code,school:access.school,schedule,read:deps.getJSON,write:deps.setJSON})).catch(error=>{
+          console.error('school-schedule notification dispatch failed',{requestId,schoolCode:code,version:outcome.version,code:error?.code||'',message:String(error?.message||error).slice(0,200)});
+        });
+        // Netlify keeps this work alive after returning the successful publish response.
+        // Email provider failures are deliberately isolated from schedule persistence.
+        if(typeof context.waitUntil==='function')context.waitUntil(notificationTask);
+        else await notificationTask;
+      }
       return json(status,result);
     }catch(error){
       console.error('school-schedule failure',{requestId,stage,name:error?.name,code:error?.code,message:String(error?.message||error).slice(0,300)});

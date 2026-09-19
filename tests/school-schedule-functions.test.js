@@ -48,6 +48,39 @@ test('se la lettura pre-pubblicazione fallisce, il dato preesistente non viene t
   assert.equal(f.docs.get(scheduleKey(code)).version,7);
 });
 
+test('un errore email non annulla mai la pubblicazione dell’orario scuola',async()=>{
+  let notificationCalled=0;
+  const f=fixture('admin',{...schedule,version:2});
+  f.handler=makeSchoolScheduleHandler({
+    currentUser:async()=>({id:'admin-1',email:'admin@example.test'}),
+    requireMember:async()=>({membership:{code,role:'admin'},school:{code,name:'Falcone'}}),
+    getJSON:async key=>f.docs.get(key)||null,
+    setJSON:async(key,value)=>f.docs.set(key,value),
+    notifyChangedTeachers:async()=>{notificationCalled++;throw new Error('Brevo offline')}
+  });
+  const response=await f.handler(new Request('https://preview.test/.netlify/functions/school-schedule',{method:'POST',body:JSON.stringify({schedule,publish:true})}),{requestId:'mail-test'});
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).version,3);
+  assert.equal(notificationCalled,1);
+  assert.equal(f.docs.get(scheduleKey(code)).version,3);
+});
+
+test('con waitUntil la pubblicazione risponde senza dipendere dalla consegna email',async()=>{
+  const f=fixture('admin',{...schedule,version:3});
+  let background;
+  f.handler=makeSchoolScheduleHandler({
+    currentUser:async()=>({id:'admin-1',email:'admin@example.test'}),
+    requireMember:async()=>({membership:{code,role:'admin'},school:{code,name:'Falcone'}}),
+    getJSON:async key=>f.docs.get(key)||null,
+    setJSON:async(key,value)=>f.docs.set(key,value),
+    notifyChangedTeachers:async()=>({sent:1})
+  });
+  const response=await f.handler(new Request('https://preview.test/.netlify/functions/school-schedule',{method:'POST',body:JSON.stringify({schedule,publish:true})}),{waitUntil:promise=>{background=promise}});
+  assert.equal(response.status,200);
+  assert.ok(background instanceof Promise);
+  await background;
+});
+
 test('la lettura Blob forte è una opzione di get, non di getStore',()=>{
   const source=readFileSync(new URL('../netlify/functions/_lib.js',import.meta.url),'utf8');
   assert.match(source,/getStore\('orario-docente-cloud'\)/);
