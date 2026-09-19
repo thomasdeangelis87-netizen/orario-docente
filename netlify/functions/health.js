@@ -7,9 +7,9 @@ export default async (req, context) => {
     // Safe probe: a missing key should simply return null.
     await getJSON('__healthcheck__/probe');
     console.info('health blobs ok',{requestId});
-    return json(200,{ok:true,service:'Orario Docente Cloud',version:'16.10.2',blobs:'ok'});
+    return json(200,{ok:true,service:'Orario Docente Cloud',version:'16.10.13',blobs:'ok',node:process.versions.node});
   }catch(e){
     console.error('health blob probe failure',{requestId,name:e?.name,code:e?.code,message:String(e?.message||e).slice(0,400)});
-    return json(500,{ok:false,service:'Orario Docente Cloud',version:'16.10.2',blobs:'error',requestId});
+    return json(500,{ok:false,service:'Orario Docente Cloud',version:'16.10.13',blobs:'error',requestId,node:process.versions.node});
   }
 };
