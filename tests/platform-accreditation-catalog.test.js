@@ -19,8 +19,25 @@ function storage({school,schoolMembers}={}){
   [`accreditations/${approval.id}`,approval],[`schedules/${CODE}`,schedule]]);
  if(school)data.set(`schools/${CODE}`,school);
  if(schoolMembers)data.set(`school-members/${CODE}`,schoolMembers);
- return {schedule,data,read:async key=>data.get(key)||null,write:async(key,value)=>data.set(key,value)};
+ return {schedule,data,read:async key=>data.get(key)||null,write:async(key,value)=>data.set(key,value),
+  list:async prefix=>[...data.keys()].filter(key=>key.startsWith(prefix))};
 }
+
+test('una scuola legacy con orario o membri viene resa recuperabile anche fuori dagli indici',async()=>{
+ const code='ANCE-48291',data=new Map([
+  [`schedules/${code}`,{schoolCode:code,schoolName:'Istituto Omnicomprensivo Ancel Keys',version:2,entries:[]}],
+  [`school-members/${code}`,[{userId:'teacher-id',email:'teacher@example.it',code,role:'teacher',status:'active'}]]
+ ]);
+ const read=async key=>data.get(key)||null,list=async prefix=>[...data.keys()].filter(key=>key.startsWith(prefix));
+ const schools=await accreditedCatalog({read,list});
+ assert.equal(schools.length,1);
+ assert.equal(schools[0].school.code,code);
+ assert.equal(schools[0].school.name,'Istituto Omnicomprensivo Ancel Keys');
+ assert.equal(schools[0].school.status,'legacy');
+ assert.equal(schools[0].recoveryNeeded,true);
+ assert.equal(schools[0].hasSchedule,true);
+ assert.equal(schools[0].members[0].userId,'teacher-id');
+});
 
 test('Falcone approvato VAIS-32128 compare nel catalogo anche se schools-index è mancante',async()=>{
  const s=storage({school:{code:CODE,name:approval.schoolName,status:'active',mechanicalCode:'VAIS32128'}});
@@ -73,4 +90,15 @@ test('rendering effettivo admin.html mostra Falcone solo tra accreditate con qua
  for(const action of ['Copia codice','Reinvia email','Modifica email account','Revoca accredito'])assert.ok(accredited.includes(action));
  assert.doesNotMatch(requests,/Falcone|APPROVATA|VAIS-32128/);
  assert.match(requests,/Scuola nuova|IN ATTESA|Rifiuta richiesta/);
+});
+
+test('admin offre creazione manuale e recupero sullo stesso codice senza cancellazioni',()=>{
+ const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+ const server=fs.readFileSync(new URL('../netlify/functions/platform-admin-school.js',import.meta.url),'utf8');
+ assert.match(html,/Nuovo accredito \/ recupero scuola/);
+ assert.match(html,/id="existingCode"/);
+ assert.match(html,/Recupera accredito/);
+ assert.match(server,/previousSchedule=await getJSON\(`schedules\/\$\{code\}`\)/);
+ assert.match(server,/previousMembers=await getJSON\(`school-members\/\$\{code\}`\)/);
+ assert.doesNotMatch(server,/deleteJSON|\.delete\(/);
 });

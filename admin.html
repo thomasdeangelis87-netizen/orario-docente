@@ -15,7 +15,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 </style>
 </head>
 <body><div class="wrap">
-<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">v16.10.11</span></p>
+<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">v16.10.14</span></p>
 
 <div id="loginPanel" class="hero">
   <h1>Amministratore sistema</h1>
@@ -58,14 +58,15 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
   </div>
 
   <div class="card">
-    <h2>Attivazione manuale</h2>
-    <p class="meta">Per casi eccezionali o scuole già verificate fuori dal portale.</p>
+    <h2>Nuovo accredito / recupero scuola</h2>
+    <p class="meta">Lascia vuoto il codice scuola per creare un nuovo accredito. Inserisci un codice già esistente per recuperare una scuola legacy conservando orario e account collegati.</p>
+    <div class="field"><label>Codice scuola esistente (solo recupero)</label><input id="existingCode" placeholder="es. VAIS-32128" style="text-transform:uppercase"></div>
     <div class="field"><label>Denominazione scuola *</label><input id="name"></div>
     <div class="field"><label>Codice meccanografico *</label><input id="mechanical"></div>
     <div class="row"><div class="field" style="flex:1"><label>Comune</label><input id="city"></div><div class="field" style="width:120px"><label>Provincia</label><input id="province" maxlength="2"></div></div>
     <div class="field"><label>Email account primo amministratore scuola *</label><input id="adminEmail" type="email"></div>
     <div class="field"><label>Nome amministratore</label><input id="adminName"></div>
-    <button class="btn primary" id="createBtn">Attiva scuola e genera codice</button>
+    <button class="btn primary" id="createBtn">Crea o recupera accredito</button>
     <div id="msg" style="margin-top:14px"></div>
   </div>
 </div>
@@ -157,7 +158,11 @@ async function schoolsRefresh(){
    try{await api('/.netlify/functions/platform-schools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:approve?'approve-account-change':'reject-account-change',code:btn.dataset.changeCode,requestId:id})});await schoolsRefresh();$('schoolsMsg').textContent=approve?'Cambio account approvato. Il docente può aggiornare Orario scuola.':'Richiesta rifiutata.'}
    catch(e){$('schoolsMsg').textContent='⚠️ '+e.message;btn.disabled=false}
   };
-  box.innerHTML=schools.map(({school:s,managers,administrativeEmail,emailChanges=[]})=>`<div class="req" data-school-code="${esc(s.code)}"><strong>${esc(s.name)}</strong> <span class="pill ${s.status==='active'?'approved':'pending'}">${s.status==='active'?'Accreditata':s.status==='revoked'?'Accredito revocato':esc(s.status||'non attiva')}</span><div class="meta">Codice meccanografico: <strong>${esc(s.mechanicalCode||'non indicato')}</strong><br>Codice scuola: <strong>${esc(s.code)}</strong> · Accreditata ${esc(s.approvedAt||s.createdAt||'non disponibile')}<br>Account amministrativo: <strong>${esc(administrativeEmail||'non associato')}</strong><br>Amministratori/referenti: ${managers.length?managers.map(m=>esc(m.email)+' ('+esc(m.role)+')').join(', '):'Nessuno attivo'}</div>${emailChanges.filter(c=>c.status!=='complete').map(c=>`<p class="note">${c.status==='verification-error'?'⚠️ Impossibile verificare Identity: la vecchia email resta mostrata finché non viene confermata.':'⏳ Cambio email in attesa per '+esc(c.newEmail||'account')+'. '+(c.confirmationRequired?'Conferma il link ricevuto sul nuovo indirizzo.':'Identity non ha ancora confermato il nuovo login.')+' Fino ad allora resta attiva la vecchia email.'}</p>`).join('')}<div class="row" style="margin-top:10px"><button class="btn" data-copy-code="${esc(s.code)}">Copia codice</button><button class="btn" data-resend-code="${esc(s.code)}" ${s.status==='active'?'':'disabled'}>Reinvia email</button><button class="btn" data-edit-code="${esc(s.code)}">Modifica email account</button><button class="btn ${s.status==='active'?'danger':'primary'}" data-accreditation-code="${esc(s.code)}" data-accreditation-action="${s.status==='revoked'?'reactivate':'revoke-accreditation'}">${s.status==='revoked'?'Riattiva accredito':'Revoca accredito'}</button></div><p class="meta"><a href="#schoolDetailsPanel" data-manage-code="${esc(s.code)}">Gestione accessi e account associati</a></p></div>`).join('')||'<p class="meta">Nessuna scuola accreditata trovata. Controlla la sincronizzazione dei dati approvati.</p>';
+  box.innerHTML=schools.map(({school:s,managers,administrativeEmail,emailChanges=[],hasSchedule,recoveryNeeded})=>`<div class="req" data-school-code="${esc(s.code)}"><strong>${esc(s.name)}</strong> <span class="pill ${s.status==='active'?'approved':'pending'}">${s.status==='active'?'Accreditata':s.status==='revoked'?'Accredito revocato':s.status==='legacy'?'Da recuperare':esc(s.status||'non attiva')}</span><div class="meta">Codice meccanografico: <strong>${esc(s.mechanicalCode||'non indicato')}</strong><br>Codice scuola: <strong>${esc(s.code)}</strong> · ${s.approvedAt||s.createdAt?'Accreditata '+esc(s.approvedAt||s.createdAt):'Data non disponibile'}<br>Orario ufficiale: <strong>${hasSchedule?'presente':'non presente'}</strong><br>Account amministrativo: <strong>${esc(administrativeEmail||'non associato')}</strong><br>Amministratori/referenti: ${managers.length?managers.map(m=>esc(m.email)+' ('+esc(m.role)+')').join(', '):'Nessuno attivo'}</div>${recoveryNeeded?'<p class="note">⚠️ Dati legacy trovati fuori dal catalogo. Recupera l’accredito per rendere nuovamente gestibile la scuola senza perdere orario o collegamenti.</p>':''}${emailChanges.filter(c=>c.status!=='complete').map(c=>`<p class="note">${c.status==='verification-error'?'⚠️ Impossibile verificare Identity: la vecchia email resta mostrata finché non viene confermata.':'⏳ Cambio email in attesa per '+esc(c.newEmail||'account')+'. '+(c.confirmationRequired?'Conferma il link ricevuto sul nuovo indirizzo.':'Identity non ha ancora confermato il nuovo login.')+' Fino ad allora resta attiva la vecchia email.'}</p>`).join('')}<div class="row" style="margin-top:10px"><button class="btn" data-copy-code="${esc(s.code)}">Copia codice</button>${recoveryNeeded?`<button class="btn primary" data-recover-code="${esc(s.code)}" data-recover-name="${esc(s.name)}">Recupera accredito</button>`:`<button class="btn" data-resend-code="${esc(s.code)}" ${s.status==='active'?'':'disabled'}>Reinvia email</button><button class="btn" data-edit-code="${esc(s.code)}">Modifica email account</button><button class="btn ${s.status==='active'?'danger':'primary'}" data-accreditation-code="${esc(s.code)}" data-accreditation-action="${s.status==='revoked'?'reactivate':'revoke-accreditation'}">${s.status==='revoked'?'Riattiva accredito':'Revoca accredito'}</button>`}</div><p class="meta"><a href="#schoolDetailsPanel" data-manage-code="${esc(s.code)}">Gestione accessi e account associati</a></p></div>`).join('')||'<p class="meta">Nessuna scuola accreditata trovata.</p>';
+  box.querySelectorAll('[data-recover-code]').forEach(btn=>btn.onclick=()=>{
+    $('existingCode').value=btn.dataset.recoverCode;$('name').value=btn.dataset.recoverName.startsWith('Scuola legacy ')?'':btn.dataset.recoverName;
+    $('existingCode').scrollIntoView({behavior:'smooth',block:'center'});$('msg').textContent='Completa i dati della scuola e indica l’account amministratore, poi premi “Crea o recupera accredito”.';
+  });
   box.querySelectorAll('[data-manage-code]').forEach(btn=>btn.onclick=()=>schoolDetails(btn.dataset.manageCode));
   box.querySelectorAll('[data-copy-code]').forEach(btn=>btn.onclick=async()=>{try{await navigator.clipboard.writeText(btn.dataset.copyCode);$('schoolsMsg').textContent='Codice copiato.'}catch(e){$('schoolsMsg').textContent='Copia non disponibile: '+e.message}});
   box.querySelectorAll('[data-resend-code]').forEach(btn=>btn.onclick=async()=>{
@@ -238,6 +243,7 @@ $('createBtn').onclick=async()=>{
   const m=$('msg');m.className='note';m.textContent='Attivazione…';
   try{
     const payload={
+      existingCode:$('existingCode').value.trim().toUpperCase(),
       name:$('name').value.trim(),mechanicalCode:$('mechanical').value.trim(),
       city:$('city').value.trim(),province:$('province').value.trim(),
       adminEmail:$('adminEmail').value.trim(),adminName:$('adminName').value.trim()
@@ -249,7 +255,8 @@ $('createBtn').onclick=async()=>{
       body:JSON.stringify(payload)
     });
     m.className='note ok';
-    m.innerHTML=`✅ Scuola attivata.<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}<br>${d.emailSent?'✅ Email di approvazione inviata.':'⚠️ Email non inviata: '+esc(d.emailError||'errore sconosciuto')}`;
+    m.innerHTML=`✅ ${d.recovered?'Scuola recuperata senza perdere i dati esistenti.':'Scuola attivata.'}<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}<br>${d.preservedSchedule?'✅ Orario ufficiale conservato.<br>':''}${d.emailSent?'✅ Email di approvazione inviata.':'⚠️ Email non inviata: '+esc(d.emailError||'errore sconosciuto')}`;
+    await schoolsRefresh();
   }catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
 };
 </script>

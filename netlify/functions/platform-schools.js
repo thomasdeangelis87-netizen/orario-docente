@@ -1,4 +1,4 @@
-import {json,getJSON,setJSON,setMembership,normalizeCode,normalizeEmail} from './_lib.js';
+import {json,getJSON,setJSON,setMembership,listKeys,normalizeCode,normalizeEmail} from './_lib.js';
 import {mayRevoke,lookupIdentityAccount} from './_member_ops.js';
 import {changeManagerLogin,changeKey,reconcileEmailChange} from './_school_email_change.js';
 import {sendSchoolApprovalEmail} from './_brevo.js';
@@ -17,7 +17,7 @@ export default async (req,context={})=>{
     if(req.method==='GET'){
       stage='catalog';
       const code=requestedSchoolCode(req.url);
-      const schools=await accreditedCatalog({read:getJSON},code);
+      const schools=await accreditedCatalog({read:getJSON,list:listKeys},code);
       for(const data of schools)data.accountChangeRequests=((await getJSON(`school-account-change-requests/${data.school.code}`))||[])
         .filter(item=>item.status==='pending');
       stage='email-change-status';
@@ -32,7 +32,7 @@ export default async (req,context={})=>{
             const status=await reconcileEmailChange(change,{read:getJSON,write:setJSON,identityAdmin:admin});
             data.emailChanges.push(status);
             if(status.status==='complete'){
-              const refreshed=(await accreditedCatalog({read:getJSON},data.school.code))[0];
+              const refreshed=(await accreditedCatalog({read:getJSON,list:listKeys},data.school.code))[0];
               Object.assign(data,refreshed);
             }
           }catch(error){
@@ -49,7 +49,7 @@ export default async (req,context={})=>{
     if(req.method!=='POST')return json(405,{error:'Metodo non consentito'});
     let body;try{body=await req.json()}catch{return json(400,{error:'Dati non validi'});}
     stage='school-lookup';
-    const code=normalizeCode(body.code), data=(await accreditedCatalog({read:getJSON,write:setJSON},code))[0];
+    const code=normalizeCode(body.code), data=(await accreditedCatalog({read:getJSON,write:setJSON,list:listKeys},code))[0];
     if(!data)return json(404,{error:'Scuola non trovata'});
     const {school,members}=data, action=String(body.action||'');
     if(['approve-account-change','reject-account-change'].includes(action)){

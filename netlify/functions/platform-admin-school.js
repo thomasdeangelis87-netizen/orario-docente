@@ -25,21 +25,35 @@ export default async (req)=>{
     const mechanicalCode=String(body.mechanicalCode||'').trim().toUpperCase();
     const adminEmail=normalizeEmail(body.adminEmail||'');
     if(!name||!mechanicalCode||!adminEmail) return json(400,{error:'Compila denominazione, codice meccanografico ed email amministratore.'});
-    let code=makeCode(mechanicalCode), tries=0;
-    while(await getJSON(`schools/${code}`)){
-      if(++tries>10) return json(409,{error:'Impossibile generare un codice scuola univoco'});
-      code=makeCode(mechanicalCode);
-    }
+    const requestedCode=normalizeCode(body.existingCode||'');
+    let code=requestedCode||makeCode(mechanicalCode), tries=0;
+    if(!requestedCode)while(await getJSON(`schools/${code}`)){
+        if(++tries>10) return json(409,{error:'Impossibile generare un codice scuola univoco'});
+        code=makeCode(mechanicalCode);
+      }
     const now=new Date().toISOString();
-    const school={code,name,mechanicalCode,city:String(body.city||'').trim(),province:String(body.province||'').trim().toUpperCase(),status:'active',createdAt:now,createdBy:'platform-admin',inviteCode:code};
+    const previousSchool=await getJSON(`schools/${code}`);
+    const previousMembers=await getJSON(`school-members/${code}`);
+    const previousSchedule=await getJSON(`schedules/${code}`);
+    if(requestedCode&&!previousSchool&&!Array.isArray(previousMembers)&&!previousSchedule)
+      return json(404,{error:'Nessun dato legacy trovato per questo codice. Lascia vuoto il codice per creare una nuova scuola.'});
+    const school={...(previousSchool||{}),code,name,mechanicalCode,
+      city:String(body.city||previousSchool?.city||'').trim(),
+      province:String(body.province||previousSchool?.province||'').trim().toUpperCase(),
+      status:'active',createdAt:previousSchool?.createdAt||now,
+      createdBy:previousSchool?.createdBy||'platform-admin',inviteCode:code,
+      recoveredAt:requestedCode?now:previousSchool?.recoveredAt||''};
     await setJSON(`schools/${code}`,school);
     let directory=await getJSON('schools-index');
     if(!Array.isArray(directory))directory=[];
     await setJSON('schools-index',[code,...directory.filter(x=>x!==code)].slice(0,2000));
     const account=await lookupIdentityAccount(adminEmail);
-    const membership={userId:account?.confirmedAt?account.id:'',email:adminEmail,code,role:'admin',status:account?.confirmedAt?'active':'pending',joinedAt:now,assignedBy:'platform-admin',displayName:String(body.adminName||'').trim()};
+    const membership={userId:account?.confirmedAt?account.id:'',email:adminEmail,code,role:'admin',status:account?.confirmedAt?'active':'pending',joinedAt:now,assignedBy:requestedCode?'platform-admin-recovery':'platform-admin',displayName:String(body.adminName||'').trim()};
     await setMembership(adminEmail,membership);
-    await setJSON(`school-members/${code}`,[membership]);
+    const members=Array.isArray(previousMembers)?previousMembers.slice():[];
+    const memberIndex=members.findIndex(item=>normalizeEmail(item.email)===adminEmail);
+    if(memberIndex>=0)members[memberIndex]={...members[memberIndex],...membership};else members.push(membership);
+    await setJSON(`school-members/${code}`,members.slice(0,1500));
 
     let emailSent=false, emailError='';
     try{
@@ -55,7 +69,8 @@ export default async (req)=>{
       console.error('manual school approval email error',e);
     }
 
-    return json(200,{ok:true,school,membership,emailSent,emailError});
+    return json(200,{ok:true,school,membership,emailSent,emailError,recovered:!!requestedCode,
+      preservedSchedule:!!previousSchedule,preservedMembers:Array.isArray(previousMembers)?previousMembers.length:0});
   }catch(e){
     console.error('platform-admin-school error',e);
     return json(500,{error:'Errore backend amministrazione piattaforma',detail:String(e?.message||e)});
