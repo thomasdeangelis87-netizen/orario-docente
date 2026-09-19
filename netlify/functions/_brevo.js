@@ -8,12 +8,29 @@ function escapeHtml(value=''){
   }[c]));
 }
 
-export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, contactName=''}) {
-  const apiKey = env('BREVO_API_KEY');
-  if(!apiKey) throw new Error('BREVO_API_KEY non configurata su Netlify');
+export class SchoolEmailError extends Error {
+  constructor(code,message,{status=0}={}){
+    super(message);
+    this.name='SchoolEmailError';
+    this.code=code;
+    this.status=status;
+  }
+}
 
-  const senderEmail = env('BREVO_SENDER_EMAIL') || 'scuole@orariodocente.it';
-  const senderName = env('BREVO_SENDER_NAME') || 'Orario Docente';
+export function schoolEmailConfiguration(){
+  return {
+    configured:!!env('BREVO_API_KEY'),
+    senderEmail:env('BREVO_SENDER_EMAIL') || 'scuole@orariodocente.it',
+    senderName:env('BREVO_SENDER_NAME') || 'Orario Docente'
+  };
+}
+
+export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, contactName='',accountLinked=true}) {
+  const apiKey=env('BREVO_API_KEY');
+  if(!apiKey) throw new SchoolEmailError('email_provider_not_configured','Servizio email non configurato su Netlify');
+  if(!String(to||'').includes('@'))throw new SchoolEmailError('invalid_recipient','Indirizzo email destinatario non valido');
+
+  const {senderEmail,senderName}=schoolEmailConfiguration();
 
   const safeSchool = escapeHtml(schoolName || 'la tua scuola');
   const safeCode = escapeHtml(schoolCode || '');
@@ -30,7 +47,9 @@ export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, conta
       <div style="background:#fff;border:1px solid #dfe7f0;border-top:0;border-radius:0 0 18px 18px;padding:26px">
         <p>${greeting}</p>
         <p>la richiesta di accreditamento per <strong>${safeSchool}</strong> è stata approvata.</p>
-        <p>Il tuo account è già stato associato alla scuola con ruolo di <strong>Amministratore</strong>.</p>
+        <p>${accountLinked
+          ? 'Il tuo account è già stato associato alla scuola con ruolo di <strong>Amministratore</strong>: non devi inserire il codice per amministrarla.'
+          : 'L’accreditamento è attivo. Completa la conferma del tuo account e accedi con questo indirizzo; il codice resta disponibile per il collegamento alla scuola.'}</p>
         <div style="background:#eef4fb;border-radius:14px;padding:18px;margin:22px 0;text-align:center">
           <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:#5d6f86">Codice scuola</div>
           <div style="font-size:30px;font-weight:700;margin-top:7px">${safeCode}</div>
@@ -43,7 +62,8 @@ export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, conta
     </div>
   </body></html>`;
 
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+  let response;
+  try{response=await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
       'accept': 'application/json',
@@ -57,14 +77,17 @@ export async function sendSchoolApprovalEmail({to, schoolName, schoolCode, conta
       subject: 'Orario Docente – Scuola accreditata',
       htmlContent
     })
-  });
+  });}catch(error){
+    throw new SchoolEmailError('email_provider_unreachable','Servizio email temporaneamente non raggiungibile',{status:0,cause:error});
+  }
 
   const raw = await response.text();
   let data = {};
   try { data = raw ? JSON.parse(raw) : {}; } catch {}
 
   if(!response.ok){
-    throw new Error(data.message || raw || `Brevo HTTP ${response.status}`);
+    console.error('Brevo delivery rejected',{status:response.status,code:data.code||'',message:String(data.message||'').slice(0,160)});
+    throw new SchoolEmailError('email_provider_rejected',data.message || `Invio email rifiutato dal provider (HTTP ${response.status})`,{status:response.status});
   }
   return data;
 }
