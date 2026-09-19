@@ -62,6 +62,12 @@ async function store(){
   // Site-scoped store; this is the same document on main and deploy previews.
   return getStore('orario-docente-cloud');
 }
+async function getBlob(key,options={}){
+  return await (await store()).get(key,{...options,consistency:'strong'});
+}
+async function setBlob(key,value,options={}){
+  return await (await store()).set(key,value,options);
+}
 
 async function getJSON(key){
   return await (await store()).get(key,{type:'json',consistency:'strong'});
@@ -117,4 +123,4 @@ async function requireMember(user, roles=[]){
   return {membership:{...membership,code:normalizeCode(membership.code)},school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,normalizedUser,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,normalizedUser,currentUser,getBlob,setBlob,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};

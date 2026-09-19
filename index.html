@@ -52,7 +52,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">v16.10.15</div>
+<div id="buildVersion" class="build-version">PR #9 · v16.10.16</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -662,9 +662,14 @@ function parseClassSheets(wb,fileName){
 }
 async function importWholeSchoolPdf(file){
   const pages=await readIndexEducationPdf(file,text=>{schoolUploadBtn.textContent=text});
-  const {parseIndexEducationSchoolPages}=await import('/pdf-layout-parser.js');
-  const parsed=parseIndexEducationSchoolPages(pages,{maxPeriods:MAX_PERIODS});
-  return{...parsed,importFormat:'pdf',source:`${file.name} · PDF Index Education (${parsed.pagesAnalyzed} docenti analizzati)`,loadedAt:new Date().toLocaleString('it-IT')};
+  const {parseIndexEducationSchoolPages,parseTeacherMatrixSchoolPages}=await import('/pdf-layout-parser.js');
+  let parsed,format='Index Education';
+  try{parsed=parseIndexEducationSchoolPages(pages,{maxPeriods:MAX_PERIODS})}
+  catch(indexError){
+    if(!/intestazioni dei docenti/i.test(String(indexError?.message||'')))throw indexError;
+    parsed=parseTeacherMatrixSchoolPages(pages,{maxPeriods:MAX_PERIODS});format='matrice docenti';
+  }
+  return{...parsed,importFormat:'pdf',source:`${file.name} · PDF ${format} (${parsed.pagesAnalyzed} pagine analizzate)`,loadedAt:new Date().toLocaleString('it-IT')};
 }
 async function importWholeSchoolExcel(file){
  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const paired=parseClassSheets(wb,file.name);if(paired)return paired;let best=null;for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});try{const parsed=parseWholeSchoolRows(rows,file.name+' · '+name);if(!best||parsed.entries.length>best.entries.length)best=parsed}catch(e){}}if(!best)throw new Error('Non riesco a riconoscere l’orario completo in questo Excel.');best.classCells=[];return best
@@ -1018,8 +1023,15 @@ async function auditSchoolStorage(){
       schoolStorageAuditInfo.textContent=`Orario già presente per ${m.code}: versione ${data.schedule.version||1}, ${data.schedule.teachers?.length||0} docenti, ${data.schedule.entries?.length||0} impegni.`;
     }else if(data.scheduleStatus==='missing'){
       schoolCloudVerified=false;schoolCloudError='';
-      schoolStorageAuditInfo.textContent=`Nessun orario presente nello storage del sito per ${m.code}. Puoi caricare il primo orario.`;
-      await loadSchoolManagement();
+      const attached=await downloadAccreditationSchedule();
+      if(attached&&confirm(`Ho trovato “${attached.name}”, allegato durante l’accreditamento. Vuoi analizzarlo e pubblicarlo ora come orario ufficiale di ${m.code}?`)){
+        schoolStorageAuditInfo.textContent='Analisi dell’orario allegato all’accreditamento…';
+        await publishSchoolScheduleFile(attached);
+        schoolStorageAuditInfo.textContent=`Orario recuperato dall’accreditamento e pubblicato per ${m.code}.`;
+      }else{
+        schoolStorageAuditInfo.textContent=`Nessun orario ufficiale presente nello storage del sito per ${m.code}.${attached?' È disponibile l’allegato dell’accreditamento.':' Puoi caricare il primo orario.'}`;
+        await loadSchoolManagement();
+      }
     }else throw new Error('Stato dello storage non riconosciuto.');
     renderSchool();return data;
   }catch(e){
@@ -1029,13 +1041,22 @@ async function auditSchoolStorage(){
     renderSchool();throw e;
   }
 }
+async function downloadAccreditationSchedule(){
+ try{
+  const token=await currentUser.jwt();
+  const response=await fetch('/.netlify/functions/school-accreditation-schedule',{headers:{'Authorization':'Bearer '+token,'X-Orario-Identity':token},cache:'no-store'});
+  if(response.status===404)return null;
+  if(!response.ok)return null;
+  const encoded=response.headers.get('x-file-name')||'orario.pdf';let name='orario.pdf';try{name=decodeURIComponent(encoded)}catch{}
+  return new File([await response.blob()],name,{type:response.headers.get('content-type')||''});
+ }catch(error){console.warn('Recupero allegato accreditamento:',error);return null}
+}
 auditSchoolStorageBtn.onclick=async()=>{try{await auditSchoolStorage()}catch(e){alert(e.message)}};
 schoolUploadBtn.onclick=async()=>{
  if(!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole)){alert('Solo il referente o amministratore collegato può pubblicare l’orario generale.');return}
  schoolFile.click();
 };
-schoolFile.onchange=async event=>{
- const selectedFile=event.target.files[0];if(!selectedFile)return;
+async function publishSchoolScheduleFile(selectedFile){
  schoolUploadBtn.disabled=true;schoolUploadBtn.textContent='Analisi e sincronizzazione…';
  const previous=clone(schoolData);
  let savedToCloud=false;
@@ -1055,7 +1076,8 @@ schoolFile.onchange=async event=>{
   toast(`Orario scuola versione ${schoolData.version}: ${schoolData.teachers.length} docenti`);
  }catch(err){if(!savedToCloud)schoolData=previous;else{schoolCloudVerified=false;schoolCloudError=err.message||'Rilettura cloud non disponibile'}renderSchool();alert(err.message||'Errore durante l’importazione')}
  finally{schoolUploadBtn.disabled=false;renderSchoolManagementUI();schoolFile.value=''}
-};
+}
+schoolFile.onchange=async event=>{const selectedFile=event.target.files[0];if(selectedFile)await publishSchoolScheduleFile(selectedFile)};
 document.getElementById('importMySchoolScheduleBtn').onclick=importMySchoolSchedule;
 document.getElementById('schoolOfficialTeacherSelect').onchange=async e=>{
   state.meta.schoolTeacherName=cleanCell(e.target.value||'');
@@ -1273,6 +1295,6 @@ window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast('Accesso non disponibile: riprova più tardi')});
 </script>
-<script type="module" src="/identity-client.js?v=16.10.15"></script>
+<script type="module" src="/identity-client.js?v=16.10.16"></script>
 </body>
 </html>

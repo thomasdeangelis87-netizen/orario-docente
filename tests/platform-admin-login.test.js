@@ -46,5 +46,5 @@ test('una lettura cloud fallita non impedisce l’accesso e mostra gli errori ne
  assert.match(el('schoolsMsg').textContent,/Storage temporaneamente non disponibile/);
  assert.equal(vm.runInContext('adminKey',ctx),'test-secret');
  assert.equal(calls[0],'/.netlify/functions/school-accreditation?verify-key');
- assert.match(html,/id="adminBuild"[^>]*>v16\.10\.15</);
+ assert.match(html,/id="adminBuild"[^>]*>PR #9 · v16\.10\.16</);
 });
