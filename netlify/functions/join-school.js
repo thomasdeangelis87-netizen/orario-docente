@@ -6,7 +6,7 @@ export default async (req,context={}) => {
   let stage='identity';
   try{
     if(req.method!=='POST') return json(405,{error:'Metodo non consentito'});
-    const user=await currentUser();
+    const user=await currentUser(req,context);
     if(!user) return json(401,{error:'Accesso richiesto'});
 
     let body={};

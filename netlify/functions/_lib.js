@@ -16,17 +16,45 @@ const emailKey = email => crypto.createHash('sha256').update(normalizeEmail(emai
 // A single site-scoped document per accredited school, never per user or deploy.
 const schoolScheduleKey = code => `schedules/${normalizeCode(code)}`;
 
-async function currentUser(){
-  // Load platform SDKs only after the Function request context is active.
-  const {getUser}=await import('@netlify/identity');
-  const u = await getUser();
-  if(!u || !u.email) return null;
-  return {
-    id: u.id || u.sub || '',
-    email: normalizeEmail(u.email),
-    createdAt: u.createdAt || u.created_at || '',
-    metadata: u.userMetadata || u.user_metadata || {}
-  };
+function cookieValue(header,name){
+  for(const part of String(header||'').split(';')){
+    const index=part.indexOf('=');
+    if(index<0)continue;
+    if(part.slice(0,index).trim()===name){
+      try{return decodeURIComponent(part.slice(index+1).trim())}catch{return part.slice(index+1).trim()}
+    }
+  }
+  return '';
+}
+
+function normalizedUser(u){
+  if(!u?.email)return null;
+  return {id:u.id||u.sub||'',email:normalizeEmail(u.email),
+    createdAt:u.createdAt||u.created_at||'',metadata:u.userMetadata||u.user_metadata||{}};
+}
+
+async function currentUser(req,context={},options={}){
+  const {fetchImpl=fetch,identityOrigin=process.env.URL||''}=options;
+  const runtimeUser=normalizedUser(context?.clientContext?.user);
+  if(runtimeUser?.id)return runtimeUser;
+  // @netlify/identity's browser client stores the signed session in nf_jwt.
+  // Validate that token with the site's Identity endpoint instead of trusting
+  // decoded claims. This also avoids a Deploy Preview runtime crash observed
+  // before the Function handler could emit logs.
+  const forwarded=String(req?.headers?.get?.('x-orario-identity')||'');
+  const auth=String(req?.headers?.get?.('authorization')||'');
+  const token=forwarded||auth.match(/^Bearer\s+(.+)$/i)?.[1]||cookieValue(req?.headers?.get?.('cookie'),'nf_jwt');
+  if(!token)return null;
+  let requestOrigin='';
+  try{requestOrigin=new URL(req.url).origin}catch{return null}
+  // Identity is site-wide. Using Netlify's canonical URL avoids re-entering
+  // the Deploy Preview gateway from inside its own Function invocation.
+  const origin=String(identityOrigin||requestOrigin).replace(/\/$/,'');
+  const response=await fetchImpl(`${origin}/.netlify/identity/user`,{
+    headers:{authorization:`Bearer ${token}`}
+  });
+  if(!response.ok)return null;
+  return normalizedUser(await response.json());
 }
 
 async function store(){
@@ -89,4 +117,4 @@ async function requireMember(user, roles=[]){
   return {membership:{...membership,code:normalizeCode(membership.code)},school};
 }
 
-export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};
+export {json,normalizeEmail,normalizeCode,emailKey,memberIdKey,schoolScheduleKey,cookieValue,normalizedUser,currentUser,getJSON,setJSON,deleteJSON,listKeys,getMembership,setMembership,requireMember};

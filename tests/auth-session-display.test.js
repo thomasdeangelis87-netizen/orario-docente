@@ -36,3 +36,17 @@ test('all’avvio il form di accesso resta nascosto fino alla verifica Identity'
  assert.match(html,/String\(user\.id\)===String\(currentUser\?\.id\|\|''\)/);
  assert.doesNotMatch(html,/showAuth\(\);\s*<\/script>/);
 });
+
+test('il caricamento iniziale non viene scambiato per una modifica da salvare',()=>{
+ assert.match(html,/function render\(\{save=true\}=\{\}\)/);
+ assert.match(html,/render\(\{save:false\}\);renderSchool\(\);renderMyClasses\(\)/);
+ assert.match(html,/await loadSchoolCloud\(\{saveProfile:false\}\)/);
+ assert.match(html,/if\(saveProfile\)scheduleCloudSave\(\)/);
+ assert.match(html,/if\(!migrated\)\{setCloudStatus\('Errore salvataggio online',false\);return\}/);
+});
+
+test('le Function ricevono il token senza il cookie che blocca la Preview',()=>{
+ assert.match(html,/jwtCookie=document\.cookie\.split\(';'\)/);
+ assert.match(html,/headers\['X-Orario-Identity'\]/);
+ assert.match(html,/credentials:'omit'/);
+});

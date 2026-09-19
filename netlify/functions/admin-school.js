@@ -6,10 +6,10 @@ function makeCode(mech='SCUOLA'){
   return `${root}-${Math.floor(10000+Math.random()*90000)}`;
 }
 
-export default async (req) => {
+export default async (req,context) => {
   try{
     if(req.method!=='POST') return json(405,{error:'Metodo non consentito'});
-    const user=await currentUser();
+    const user=await currentUser(req,context);
     if(!user) return json(401,{error:'Accesso richiesto'});
 
     const key=req.headers.get('x-platform-admin-key') || '';

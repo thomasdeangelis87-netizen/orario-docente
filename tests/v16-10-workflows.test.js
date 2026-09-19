@@ -40,7 +40,9 @@ test('un dataset unico per scuola indipendente da amministratore, docente, brows
  assert.match(code('_lib.js'),/getStore\('orario-docente-cloud'\)/);
  assert.match(code('_lib.js'),/\.get\(key,\{type:'json',consistency:'strong'\}\)/);
  assert.match(code('_lib.js'),/await import\('@netlify\/blobs'\)/);
- assert.match(code('_lib.js'),/await import\('@netlify\/identity'\)/);
+ assert.match(code('_lib.js'),/\/\.netlify\/identity\/user/);
+ assert.match(code('_lib.js'),/authorization:`Bearer \$\{token\}`/);
+ assert.doesNotMatch(code('_lib.js'),/decodeJwt|JSON\.parse\([^)]*token/);
  assert.doesNotMatch(code('_lib.js'),/^import \{ getStore \} from '@netlify\/blobs'/m);
  assert.doesNotMatch(code('_lib.js'),/getDeployStore\(/);
  assert.match(code('_school_schedule_core.js'),/const previous=await getOfficialSchedule\(code,read\)/);

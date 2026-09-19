@@ -52,7 +52,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">v16.10.10</div>
+<div id="buildVersion" class="build-version">v16.10.13</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -353,7 +353,7 @@ function renderPersonalMobileSchedule(){
  document.querySelectorAll('[data-mobile-schedule-mode]').forEach(button=>button.classList.toggle('active',button.dataset.mobileScheduleMode===personalMobileMode));
  mobile.innerHTML=personalMobileMode==='day'?mobileDayCardHtml(personalMobileDay):DAYS.map((_,day)=>mobileDayCardHtml(day)).join('');
 }
-function render(){
+function render({save=true}={}){
  syncTeacherMeta();
  const first=(state.meta.firstName||'').trim();welcomeTitle.textContent=first?`Ciao ${first} 👋`:'Ciao 👋';
  teacherTitle.textContent=(state.meta.teacher||'IL MIO ORARIO').toUpperCase();
@@ -361,7 +361,7 @@ function render(){
  const sel=document.getElementById('teacherSelect'),mine='me';const existing=sel.value;sel.innerHTML='<option value="all">Tutti i docenti</option><option value="me">'+esc(fullName())+'</option>';sel.value=(existing==='all'?'all':'me');
  const g=timetable,detectedTimes=Array.isArray(state.meta.periodTimes)?state.meta.periodTimes.filter(Boolean):[],detectedRange=detectedTimes.length?`${detectedTimes[0].split(/\s*[–—-]\s*/)[0]} – ${detectedTimes[detectedTimes.length-1].split(/\s*[–—-]\s*/).slice(-1)[0]}`:'';let h='<div class="cell head">ORA</div>';DAYS.forEach(d=>h+=`<div class="cell head">${esc(d.name)}<br><small>(${esc(detectedRange||d.range)})</small></div>`);
  for(let p=0;p<personalMaxPeriods();p++){const detectedTime=state.meta.periodTimes&&state.meta.periodTimes[p]||'';h+=`<div class="cell period"><div>${p+1}ª ora${detectedTime?`<div class="time">${esc(detectedTime)}</div>`:''}</div></div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:null;const co=info&&Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];const mats=info&&Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];const room=info&&info.room?String(info.room):'';const detail=(co.length||mats.length||room)?`<div class="compresenza">${co.length?`<strong>👥 con ${esc(co.join(' + '))}</strong>`:''}${mats.length?`<span class="materia">${esc(mats.join(' · '))}</span>`:''}${room?`<span class="materia">📍 Aula ${esc(room)}</span>`:''}</div>`:'';h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject ${subjectSizeClass(v[0])}">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div>${detail}</div></div>`}else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
- g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));renderPersonalMobileSchedule();localSave();scheduleCloudSave();
+ g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));renderPersonalMobileSchedule();localSave();if(save)scheduleCloudSave();
 ;renderPersonalLegend()}
 function personalStorageKey(user=currentUser){return window.OrarioAccountStorage.personalStorageKey(user)}
 function localSave(){try{const key=personalStorageKey();if(key)localStorage.setItem(key,JSON.stringify(state))}catch(e){}}
@@ -369,8 +369,16 @@ function localSave(){try{const key=personalStorageKey();if(key)localStorage.setI
 async function apiCall(name,options={}){
   if(!currentUser)throw new Error('Accesso richiesto');
   const headers=Object.assign({},options.headers||{});
+  // Avoid Deploy Preview gateway failures while preserving server-side token
+  // verification: forward the signed session without auth cookies. The
+  // Function converts it to Bearer only for the server-to-Identity request.
+  const jwtCookie=document.cookie.split(';').map(part=>part.trim()).find(part=>part.startsWith('nf_jwt='));
+  if(jwtCookie&&!headers['X-Orario-Identity']){
+    try{headers['X-Orario-Identity']=decodeURIComponent(jwtCookie.slice('nf_jwt='.length))}
+    catch{headers['X-Orario-Identity']=jwtCookie.slice('nf_jwt='.length)}
+  }
   if(options.body && !headers['Content-Type'])headers['Content-Type']='application/json';
-  const res=await fetch('/.netlify/functions/'+name,{...options,headers,credentials:'same-origin'});
+  const res=await fetch('/.netlify/functions/'+name,{...options,headers,credentials:'omit'});
   let data={};try{data=await res.json()}catch(e){}
   if(!res.ok){
     const base=data.error||('Errore cloud '+res.status);
@@ -409,7 +417,7 @@ async function savePersistentProfile(completed=true){
     return false;
   }
 }
-async function loadSchoolCloud({showError=false}={}){
+async function loadSchoolCloud({showError=false,saveProfile=true}={}){
   if(!currentUser)return false;
   const accountId=currentUser.id;
   let lastError=null;
@@ -436,7 +444,7 @@ async function loadSchoolCloud({showError=false}={}){
         }
       }
       schoolInput.value=state.meta.school||'';
-      renderSchool();renderSchoolPersonalImport();renderMyClasses();scheduleCloudSave();
+      renderSchool();renderSchoolPersonalImport();renderMyClasses();if(saveProfile)scheduleCloudSave();
       await loadSchoolManagement();
       return true;
     }catch(e){
@@ -599,8 +607,10 @@ async function handleUser(user){
    : (meta.full_name||meta.name||user.email||'Il mio account');
 
  showApp();
- render();renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
- await loadSchoolCloud();
+ // Rendering data loaded from the server is not a user edit and must not
+ // trigger a competing profile write while the session is still hydrating.
+ render({save:false});renderSchool();renderMyClasses();teacherSelect.value='me';toggleTeacherView();
+ await loadSchoolCloud({saveProfile:false});
  if(String(currentUser?.id||'')!==loginId)return;
  if(!schoolCloudReady){await searchAccreditedSchools();await loadLinkRequestStatus()}
 
@@ -611,7 +621,8 @@ async function handleUser(user){
 
  // One-time migration / first registration profile save.
  if(!persistent && (hasCloudState || profileDone)){
-   await savePersistentProfile(profileDone);
+   const migrated=await savePersistentProfile(profileDone);
+   if(!migrated){setCloudStatus('Errore salvataggio online',false);return}
  }
  setCloudStatus('Salvato online');
 }
@@ -1262,6 +1273,6 @@ window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast('Accesso non disponibile: riprova più tardi')});
 </script>
-<script type="module" src="/identity-client.js?v=16.10.10"></script>
+<script type="module" src="/identity-client.js?v=16.10.13"></script>
 </body>
 </html>
