@@ -41,8 +41,9 @@ async function currentUser(req,context={},options={}){
   // Validate that token with the site's Identity endpoint instead of trusting
   // decoded claims. This also avoids a Deploy Preview runtime crash observed
   // before the Function handler could emit logs.
+  const forwarded=String(req?.headers?.get?.('x-orario-identity')||'');
   const auth=String(req?.headers?.get?.('authorization')||'');
-  const token=auth.match(/^Bearer\s+(.+)$/i)?.[1]||cookieValue(req?.headers?.get?.('cookie'),'nf_jwt');
+  const token=forwarded||auth.match(/^Bearer\s+(.+)$/i)?.[1]||cookieValue(req?.headers?.get?.('cookie'),'nf_jwt');
   if(!token)return null;
   let requestOrigin='';
   try{requestOrigin=new URL(req.url).origin}catch{return null}
