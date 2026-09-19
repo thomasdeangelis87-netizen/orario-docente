@@ -33,7 +33,8 @@ async function sendAndSave(request){
       to,
       schoolName:request.schoolName,
       schoolCode:request.schoolCode,
-      contactName
+      contactName,
+      accountLinked:!!request.accountUserId
     });
     request.approvalEmail={
       status:'sent',
@@ -51,7 +52,8 @@ async function sendAndSave(request){
       error:String(e?.message||e)
     };
     await setJSON(`accreditations/${request.id}`,request);
-    return {sent:false,error:String(e?.message||e)};
+    console.error('school approval email failed',{requestId:request.id||'',schoolCode:request.schoolCode||'',code:e?.code||'email_error',status:e?.status||0,message:String(e?.message||e).slice(0,200)});
+    return {sent:false,error:String(e?.message||e),errorCode:e?.code||'email_error'};
   }
 }
 
@@ -152,7 +154,7 @@ export default async (req,context) => {
         await setJSON(`accreditations/${id}`,request);
 
         const email=await sendAndSave(request);
-        return json(200,{ok:true,school,membership,request,emailSent:email.sent,emailError:email.error||''});
+        return json(200,{ok:true,school,membership,request,emailSent:email.sent,emailError:email.error||'',emailErrorCode:email.errorCode||'',accountLinked:membership.status==='active'});
       }
 
       if(action==='resend-email'){

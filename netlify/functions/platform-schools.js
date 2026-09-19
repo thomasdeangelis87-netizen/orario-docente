@@ -79,7 +79,7 @@ export default async (req,context={})=>{
       const manager=members.find(m=>m.role==='admin'&&m.status==='active');
       if(!manager)return json(409,{error:'Nessun amministratore attivo a cui inviare il codice.'});
       const result=await sendSchoolApprovalEmail({to:manager.email,schoolName:school.name,
-        schoolCode:code,contactName:manager.displayName||''});
+        schoolCode:code,contactName:manager.displayName||'',accountLinked:!!manager.userId});
       return json(200,{ok:true,emailSent:true,messageId:result.messageId||''});
     }
     if(!['assign-manager','revoke-manager'].includes(action))return json(400,{error:'Azione non riconosciuta'});

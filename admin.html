@@ -15,7 +15,7 @@ body{font-family:Inter,system-ui;background:#f4f8fc;color:#10233f;margin:0}
 </style>
 </head>
 <body><div class="wrap">
-<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">v16.10.14</span></p>
+<p><a href="/">← Orario Docente</a> · <span id="adminBuild" class="meta">v16.10.15</span></p>
 
 <div id="loginPanel" class="hero">
   <h1>Amministratore sistema</h1>
@@ -123,10 +123,13 @@ function render(items){
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'approve',id:b.dataset.approve})
       });
-      alert(
-        'Scuola approvata. Codice scuola: '+d.school.code+
-        (d.emailSent?'\nEmail di approvazione inviata automaticamente.':'\nATTENZIONE: scuola approvata, ma email non inviata. Puoi usare “Reinvia email”.')
-      );
+      const association=d.accountLinked
+        ? '\nAccount amministratore già associato: al prossimo accesso troverà direttamente la scuola.'
+        : '\nAccount non ancora associato: deve completare la conferma del proprio account.';
+      const delivery=d.emailSent
+        ? '\nEmail informativa inviata correttamente.'
+        : '\nLa scuola e l’account restano attivi, ma l’email informativa non è stata inviata: '+(d.emailError||'servizio email non disponibile')+'. Puoi riprovare con “Reinvia email”.';
+      alert('Scuola approvata. Codice scuola: '+d.school.code+association+delivery);
       await refresh();await schoolsRefresh();
     }catch(e){alert('Errore: '+(e?.message||e));b.disabled=false;b.textContent='Approva e genera codice scuola';}
   });
@@ -255,7 +258,7 @@ $('createBtn').onclick=async()=>{
       body:JSON.stringify(payload)
     });
     m.className='note ok';
-    m.innerHTML=`✅ ${d.recovered?'Scuola recuperata senza perdere i dati esistenti.':'Scuola attivata.'}<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}<br>${d.preservedSchedule?'✅ Orario ufficiale conservato.<br>':''}${d.emailSent?'✅ Email di approvazione inviata.':'⚠️ Email non inviata: '+esc(d.emailError||'errore sconosciuto')}`;
+    m.innerHTML=`✅ ${d.recovered?'Scuola recuperata senza perdere i dati esistenti.':'Scuola attivata.'}<br><strong>Codice scuola: ${esc(d.school.code)}</strong><br>Amministratore: ${esc(d.membership.email)}<br>${d.accountLinked?'✅ Account già associato: al prossimo accesso troverà direttamente la scuola.<br>':'⏳ L’account deve ancora completare la conferma.<br>'}${d.preservedSchedule?'✅ Orario ufficiale conservato.<br>':''}${d.emailSent?'✅ Email informativa inviata.':'⚠️ Scuola e account attivi, ma email informativa non inviata: '+esc(d.emailError||'servizio email non disponibile')}`;
     await schoolsRefresh();
   }catch(e){m.className='note';m.textContent='⚠️ '+(e?.message||e);}
 };

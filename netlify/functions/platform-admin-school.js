@@ -61,7 +61,8 @@ export default async (req)=>{
         to:adminEmail,
         schoolName:name,
         schoolCode:code,
-        contactName:String(body.adminName||'').trim()
+        contactName:String(body.adminName||'').trim(),
+        accountLinked:membership.status==='active'
       });
       emailSent=true;
     }catch(e){
@@ -69,7 +70,7 @@ export default async (req)=>{
       console.error('manual school approval email error',e);
     }
 
-    return json(200,{ok:true,school,membership,emailSent,emailError,recovered:!!requestedCode,
+    return json(200,{ok:true,school,membership,emailSent,emailError,accountLinked:membership.status==='active',recovered:!!requestedCode,
       preservedSchedule:!!previousSchedule,preservedMembers:Array.isArray(previousMembers)?previousMembers.length:0});
   }catch(e){
     console.error('platform-admin-school error',e);
