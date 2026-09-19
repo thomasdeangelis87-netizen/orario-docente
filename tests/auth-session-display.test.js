@@ -44,3 +44,9 @@ test('il caricamento iniziale non viene scambiato per una modifica da salvare',(
  assert.match(html,/if\(saveProfile\)scheduleCloudSave\(\)/);
  assert.match(html,/if\(!migrated\)\{setCloudStatus\('Errore salvataggio online',false\);return\}/);
 });
+
+test('le Function ricevono il token come Bearer senza il cookie che blocca la Preview',()=>{
+ assert.match(html,/jwtCookie=document\.cookie\.split\(';'\)/);
+ assert.match(html,/headers\.Authorization='Bearer '/);
+ assert.match(html,/credentials:'omit'/);
+});

@@ -369,8 +369,15 @@ function localSave(){try{const key=personalStorageKey();if(key)localStorage.setI
 async function apiCall(name,options={}){
   if(!currentUser)throw new Error('Accesso richiesto');
   const headers=Object.assign({},options.headers||{});
+  // Avoid Deploy Preview gateway failures while preserving server-side token
+  // verification: send the signed session as Bearer and omit auth cookies.
+  const jwtCookie=document.cookie.split(';').map(part=>part.trim()).find(part=>part.startsWith('nf_jwt='));
+  if(jwtCookie&&!headers.Authorization){
+    try{headers.Authorization='Bearer '+decodeURIComponent(jwtCookie.slice('nf_jwt='.length))}
+    catch{headers.Authorization='Bearer '+jwtCookie.slice('nf_jwt='.length)}
+  }
   if(options.body && !headers['Content-Type'])headers['Content-Type']='application/json';
-  const res=await fetch('/.netlify/functions/'+name,{...options,headers,credentials:'same-origin'});
+  const res=await fetch('/.netlify/functions/'+name,{...options,headers,credentials:'omit'});
   let data={};try{data=await res.json()}catch(e){}
   if(!res.ok){
     const base=data.error||('Errore cloud '+res.status);
