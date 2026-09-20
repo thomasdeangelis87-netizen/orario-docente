@@ -94,6 +94,17 @@ test('le sole fasce orarie della scuola si sincronizzano automaticamente nel per
  assert.match(html,/id==='myScheduleView'&&state\.meta\.schoolCode\)loadSchoolCloud/);
 });
 
+test('la guida al collegamento è raggiungibile dalla home e da Orario scuola',()=>{
+ assert.match(html,/id="scheduleConnectionGuideBtn"/);
+ assert.match(html,/id="schoolConnectionGuideBtn"/);
+ assert.match(html,/id="connectionGuideModal"/);
+ assert.match(html,/Scegli l’istituto dall’elenco e invia la richiesta, oppure inserisci il codice scuola ricevuto/);
+ assert.match(html,/Importa il mio orario dalla scuola/);
+ assert.match(html,/Se il nome non viene riconosciuto automaticamente/);
+ assert.match(html,/id="openSchoolFromGuideBtn"/);
+ assert.match(html,/openSchoolFromGuideBtn\.onclick=.*switchView\('schoolView'\)/);
+});
+
 test('scuole directory non mostrano codice rapido; richieste sono approvate lato server',()=>{
  assert.match(html,/id="schoolDirectorySearch"/);
  assert.match(html,/Hai ricevuto un codice dalla scuola\? Inserisci codice/);
