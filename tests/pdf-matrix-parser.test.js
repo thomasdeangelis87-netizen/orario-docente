@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {parseTeacherMatrixSchoolPages} from '../pdf-layout-parser.js';
+
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 const item=(str,x,y,width=18,height=8)=>({str,x,y,width,height});
 
@@ -18,3 +21,17 @@ test('parses a teacher-row PDF matrix without using the Index Education parser',
   assert.equal(result.classCells.length,2);
 });
 
+test('espande un blocco orizzontale su tutte le ore coperte dalle linee della matrice',()=>{
+  assert.match(html,/pdfjsLib\.OPS\.lineTo/);
+  assert.match(html,/lines:pathLines/);
+  const items=[item('Docente',18,45,30),...['Lunedi','Martedi','Mercoledi','Giovedi','Venerdi'].map((d,i)=>item(d,150+i*250,45,40))];
+  const centers=[];for(let day=0;day<5;day++)for(let period=0;period<5;period++){const x=90+day*250+period*40;centers.push(x);items.push(item(`${period+1}ª`,x-4,58,8))}
+  items.push(item('TALERICO L.',18,100,45),item('SALA+CUC.',126,90,45),item('DE ROSA R.',128,98,42),item('2AB',132,106,18),item('Lab. Cucina1',125,114,50));
+  items.push(item('SC. IN.',210,92,30),item('CAPPI.',212,100,28),item('1AB',216,108,18));
+  const lines=[];const top=70,bottom=130;
+  for(let day=0;day<5;day++)for(let edge=0;edge<=5;edge++){if(day===0&&(edge===1||edge===2))continue;const x=70+day*250+edge*40;lines.push({x1:x,y1:top,x2:x,y2:bottom})}
+  const result=parseTeacherMatrixSchoolPages([{number:1,width:1400,height:240,boxes:[],lines,items}],{maxPeriods:10});
+  assert.deepEqual(result.entries.filter(e=>e.teacher==='TALERICO L.').map(e=>[e.day,e.period,e.activity]),[
+    [0,1,'2AB'],[0,2,'2AB'],[0,3,'2AB'],[0,4,'1AB']
+  ]);
+});

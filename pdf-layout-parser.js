@@ -56,6 +56,9 @@ export function parseIndexEducationSchoolPages(pages,options={}){
 // Timetables exported as one wide matrix: teachers on rows and one column for
 // each period (typically 5 days x 5 periods). This is deliberately separate
 // from the Index Education page-per-teacher parser above.
+function matrixCellBounds(centers,index,step){const center=centers[index];return{left:index?((centers[index-1]+center)/2):center-step/2,right:index<centers.length-1?((center+centers[index+1])/2):center+step/2}}
+function hasMatrixVerticalBoundary(page,x,top,bottom,step){const tolerance=Math.max(1.5,step*.08),mid=(top+bottom)/2;return(page.lines||[]).some(line=>{const x1=Number(line.x1),x2=Number(line.x2),y1=Number(line.y1),y2=Number(line.y2);if(![x1,x2,y1,y2].every(Number.isFinite)||Math.abs(x1-x2)>1.5)return false;return Math.abs((x1+x2)/2-x)<=tolerance&&Math.min(y1,y2)<=mid+1&&Math.max(y1,y2)>=mid-1})}
+function matrixMergedColumns(page,column,centers,periodsPerDay,step,top,bottom){if(!page.lines?.length)return[column];const dayStart=Math.floor(column/periodsPerDay)*periodsPerDay,dayEnd=dayStart+periodsPerDay-1;let start=column,end=column;while(start>dayStart){const boundary=(centers[start-1]+centers[start])/2;if(hasMatrixVerticalBoundary(page,boundary,top,bottom,step))break;start--}while(end<dayEnd){const boundary=(centers[end]+centers[end+1])/2;if(hasMatrixVerticalBoundary(page,boundary,top,bottom,step))break;end++}return Array.from({length:end-start+1},(_,i)=>start+i)}
 export function parseTeacherMatrixSchoolPages(pages,options={}){
  if(!Array.isArray(pages)||!pages.length)throw new Error('Il PDF non contiene pagine leggibili.');
  const maxPeriods=Math.max(1,Number(options.maxPeriods)||10),teachersMap=new Map(),entries=[],classCells=[];
@@ -75,18 +78,20 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
   for(let r=0;r<teacherLines.length;r++){
    const row=teacherLines[r],top=r?((teacherLines[r-1].y+row.y)/2):headerBottom,bottom=r<teacherLines.length-1?((row.y+teacherLines[r+1].y)/2):Math.min(page.height,row.y+(row.y-(teacherLines[r-1]?.y||headerBottom))/2);
    const key=norm(row.name);if(!teachersMap.has(key))teachersMap.set(key,{name:row.name,subject:''});
+   const occupied=new Set();
    for(let c=0;c<usedCenters.length;c++){
-    const cx=usedCenters[c],left=c?((usedCenters[c-1]+cx)/2):cx-step/2,right=c<usedCenters.length-1?((cx+usedCenters[c+1])/2):cx+step/2;
-    const cellLines=groupLines(page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=left&&x<right&&y>top&&y<bottom}),2.5).map(l=>l.text.trim()).filter(Boolean);
+    if(occupied.has(c))continue;
+    const initial=matrixCellBounds(usedCenters,c,step),initialItems=page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=initial.left&&x<initial.right&&y>top&&y<bottom});
+    if(!initialItems.length)continue;
+    const covered=matrixMergedColumns(page,c,usedCenters,periodsPerDay,step,top,bottom),firstCovered=matrixCellBounds(usedCenters,covered[0],step),lastCovered=matrixCellBounds(usedCenters,covered[covered.length-1],step);
+    const cellLines=groupLines(page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=firstCovered.left&&x<lastCovered.right&&y>top&&y<bottom}),2.5).map(l=>l.text.trim()).filter(Boolean);
     if(!cellLines.length)continue;
     const classLine=cellLines.find(v=>/^\s*[1-5]\s*[A-Z]{1,4}(?:\s+[A-Z]{1,3})?\s*$/i.test(v));
     const className=classLine?classLine.replace(/\s+/g,'').toUpperCase():'';
     const nonClass=cellLines.filter(v=>v!==classLine),raw=nonClass.join(' · ').trim();
     if(!raw&&!className)continue;
     const availability=/\bDISP(?:ONIBILITA)?\.?\b/i.test(raw),activity=className||(availability?'DISPOSIZIONE':raw),subject=availability?'DISPOSIZIONE':raw;
-    const day=Math.floor(c/periodsPerDay),period=c%periodsPerDay+1;
-    entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:[]});
-    if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:''});
+    for(const column of covered){occupied.add(column);const day=Math.floor(column/periodsPerDay),period=column%periodsPerDay+1;entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:[]});if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:''})}
    }
   }
  }
@@ -95,4 +100,4 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
  return{teachers:[...teachersMap.values()],entries,classCells,maxPeriods:Math.max(...entries.map(e=>e.period)),periodTimes:{},failures:[],pagesAnalyzed:pages.length,matrixFormat:true};
 }
 
-export const _test={norm,minutes,timeStrings,groupLines,detectTeacherHeader,headerScore,selectTeacherPage,findDayColumns,findTimeRows,detectedSchoolPeriods,parseClass,parseRoom};
+export const _test={norm,minutes,timeStrings,groupLines,detectTeacherHeader,headerScore,selectTeacherPage,findDayColumns,findTimeRows,detectedSchoolPeriods,parseClass,parseRoom,matrixMergedColumns};
