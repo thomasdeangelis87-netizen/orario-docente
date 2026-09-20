@@ -77,8 +77,10 @@ test('registrazione e accesso hanno due moduli distinti e non esiste pre-registr
 test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce automaticamente',()=>{
  const old=[{day:0,period:1,activity:'5° BE',subject:'Cucina',teacher:'ROSSI',time:'08:00 – 09:00'}];
  const unchanged=[{...old[0]}],changed=[{...old[0],activity:'DISPOSIZIONE'}];
+ const changedCellText=[{...old[0],sourceLines:['CUCINA','BIANCHI R.','Lab. Cucina1']}];
  assert.equal(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(unchanged));
  assert.notEqual(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(changed));
+ assert.notEqual(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(changedCellText));
  assert.equal(globalThis.OrarioSchoolUpdate.changes(old,changed).added.length,1);
  assert.match(html,/version<=Number\(state\.meta\.schoolScheduleVersion\)/);
  assert.match(html,/fingerprint===state\.meta\.schoolScheduleFingerprint/);
@@ -91,6 +93,13 @@ test('le compresenze strutturate della scuola arrivano nell’orario personale',
  assert.match(html,/Array\.isArray\(e\.coTeachers\)\?e\.coTeachers:\[\]/);
  assert.match(html,/👥 Compresenza:/);
  assert.match(html,/👥 con/);
+});
+
+test('le righe originali della matrice arrivano senza reinterpretazione nell’orario personale',()=>{
+ assert.match(html,/Array\.isArray\(e\.sourceLines\)\?e\.sourceLines:\[\]/);
+ assert.match(html,/sourceLines\.forEach\(line=>/);
+ assert.match(html,/sourceLines\.map\(line=>`<span class="materia">/);
+ assert.match(html,/if\(sourceLines\.length\)sourceLines\.forEach/);
 });
 
 test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{

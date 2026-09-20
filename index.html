@@ -54,7 +54,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #14 · v16.10.21</div>
+<div id="buildVersion" class="build-version">PR #14 · v16.10.22</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -353,13 +353,17 @@ function defaultPersonalMobileDay(){
 }
 function mobileLessonHtml(day,period,value){
  const info=value[2]&&typeof value[2]==='object'?value[2]:{};
+ const sourceLines=Array.isArray(info.sourceLines)?info.sourceLines.filter(Boolean):[];
  const subjects=Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];
  const coTeachers=Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];
  const time=value[1]||(state.meta.periodTimes&&state.meta.periodTimes[period])||(PERIOD_TIMES[day]&&PERIOD_TIMES[day][period])||'';
  const details=[];
- if(subjects.length)details.push(`<span>Materia: ${esc(subjects.join(' · '))}</span>`);
- if(info.room)details.push(`<span>📍 Aula ${esc(info.room)}</span>`);
- if(coTeachers.length)details.push(`<span>👥 Compresenza: ${esc(coTeachers.join(' + '))}</span>`);
+ if(sourceLines.length)sourceLines.forEach(line=>details.push(`<span>${esc(line)}</span>`));
+ else{
+  if(subjects.length)details.push(`<span>Materia: ${esc(subjects.join(' · '))}</span>`);
+  if(info.room)details.push(`<span>📍 Aula ${esc(info.room)}</span>`);
+  if(coTeachers.length)details.push(`<span>👥 Compresenza: ${esc(coTeachers.join(' + '))}</span>`);
+ }
  return `<div class="mobile-lesson ${cls(value[0])}"><div class="mobile-lesson-time"><strong>${period+1}ª ora</strong>${esc(time)}</div><div class="mobile-lesson-content"><div class="mobile-lesson-title ${subjectSizeClass(value[0])}">${esc(value[0])}</div>${details.length?`<div class="mobile-lesson-detail">${details.join('')}</div>`:''}</div></div>`
 }
 function mobileDayCardHtml(day){
@@ -384,7 +388,7 @@ function render({save=true}={}){
  teachingTitle.textContent='Materia: '+(state.meta.teaching||'—');subjectTitle.textContent=state.meta.subject?('Classe di concorso: '+state.meta.subject):'Classe di concorso: non indicata';schoolTitle.textContent=state.meta.school||'—';validFromTitle.textContent=state.meta.validFrom||'—';validFromSourceTitle.classList.toggle('hidden',state.meta.validFromSource!=='school');
  const sel=document.getElementById('teacherSelect'),mine='me';const existing=sel.value;sel.innerHTML='<option value="all">Tutti i docenti</option><option value="me">'+esc(fullName())+'</option>';sel.value=(existing==='all'?'all':'me');
  const g=timetable,detectedTimes=Array.isArray(state.meta.periodTimes)?state.meta.periodTimes.filter(Boolean):[],detectedRange=detectedTimes.length?`${detectedTimes[0].split(/\s*[–—-]\s*/)[0]} – ${detectedTimes[detectedTimes.length-1].split(/\s*[–—-]\s*/).slice(-1)[0]}`:'';let h='<div class="cell head">ORA</div>';DAYS.forEach(d=>h+=`<div class="cell head">${esc(d.name)}<br><small>(${esc(detectedRange||d.range)})</small></div>`);
- for(let p=0;p<personalMaxPeriods();p++){const detectedTime=state.meta.periodTimes&&state.meta.periodTimes[p]||'';h+=`<div class="cell period"><div>${p+1}ª ora${detectedTime?`<div class="time">${esc(detectedTime)}</div>`:''}</div></div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:null;const co=info&&Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];const mats=info&&Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];const room=info&&info.room?String(info.room):'';const detail=(co.length||mats.length||room)?`<div class="compresenza">${co.length?`<strong>👥 con ${esc(co.join(' + '))}</strong>`:''}${mats.length?`<span class="materia">${esc(mats.join(' · '))}</span>`:''}${room?`<span class="materia">📍 Aula ${esc(room)}</span>`:''}</div>`:'';h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject ${subjectSizeClass(v[0])}">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div>${detail}</div></div>`}else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
+ for(let p=0;p<personalMaxPeriods();p++){const detectedTime=state.meta.periodTimes&&state.meta.periodTimes[p]||'';h+=`<div class="cell period"><div>${p+1}ª ora${detectedTime?`<div class="time">${esc(detectedTime)}</div>`:''}</div></div>`;for(let d=0;d<6;d++){const key=`${d}-${p}`,v=state.slots[key];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:null;const sourceLines=info&&Array.isArray(info.sourceLines)?info.sourceLines.filter(Boolean):[];const co=info&&Array.isArray(info.coTeachers)?info.coTeachers.filter(Boolean):[];const mats=info&&Array.isArray(info.subjects)?info.subjects.filter(Boolean):[];const room=info&&info.room?String(info.room):'';const fallback=(co.length||mats.length||room)?`${co.length?`<strong>👥 con ${esc(co.join(' + '))}</strong>`:''}${mats.length?`<span class="materia">${esc(mats.join(' · '))}</span>`:''}${room?`<span class="materia">📍 Aula ${esc(room)}</span>`:''}`:'';const detail=(sourceLines.length||fallback)?`<div class="compresenza">${sourceLines.length?sourceLines.map(line=>`<span class="materia">${esc(line)}</span>`).join(''):fallback}</div>`:'';h+=`<div class="cell slot ${cls(v[0])}" data-key="${key}"><div><div class="subject ${subjectSizeClass(v[0])}">${esc(v[0])}</div><div class="time">${esc(v[1]||'')}</div>${detail}</div></div>`}else h+=`<div class="cell slot" data-key="${key}"><div class="empty">—</div></div>`;}}
  g.innerHTML=h;g.querySelectorAll('.slot').forEach(el=>el.addEventListener('click',()=>openSlot(el.dataset.key)));renderPersonalMobileSchedule();localSave();if(save)scheduleCloudSave();
 ;renderPersonalLegend()}
 function personalStorageKey(user=currentUser){return window.OrarioAccountStorage.personalStorageKey(user)}
@@ -894,14 +898,19 @@ async function importMySchoolSchedule(){
         .map(cleanCell).filter(name=>name&&normText(name)!==normText(teacher))
         .filter((name,index,list)=>list.findIndex(other=>normText(other)===normText(name))===index);
       const subject=cleanCell(e.subject||'');
+      const sourceLines=(Array.isArray(e.sourceLines)?e.sourceLines:[]).map(cleanCell).filter(Boolean);
 
       if(!slots[key]){
-        slots[key]=[activity,schoolTime(d,p),{coTeachers:[],subjects:[],teacherLabels:[]}];
+        slots[key]=[activity,schoolTime(d,p),{coTeachers:[],subjects:[],teacherLabels:[],sourceLines:[]}];
       }else if(slots[key][0]!==activity && !slots[key][0].split(' / ').some(x=>canonicalActivity(x)===canonicalActivity(activity))){
         slots[key][0]=slots[key][0]+' / '+activity;
       }
 
-      const info=slots[key][2]||(slots[key][2]={coTeachers:[],subjects:[],teacherLabels:[]});
+      const info=slots[key][2]||(slots[key][2]={coTeachers:[],subjects:[],teacherLabels:[],sourceLines:[]});
+      if(!Array.isArray(info.sourceLines))info.sourceLines=[];
+      sourceLines.forEach(line=>{
+        if(!info.sourceLines.some(existing=>normText(existing)===normText(line)))info.sourceLines.push(line);
+      });
       companions.forEach(name=>{
         if(!info.coTeachers.some(x=>normText(x)===normText(name)))info.coTeachers.push(name);
       });
@@ -1205,7 +1214,7 @@ function choosePdfTeacher(teachers,note){
  return new Promise(resolve=>{pendingPdfChoice=resolve;button.onclick=()=>{const page=Number(select.value);if(!page){label.textContent='Seleziona un docente dall’elenco.';return}box.classList.add('hidden');pendingPdfChoice=null;resolve(page)}});
 }
 async function importImage(file){if(!window.Tesseract)throw new Error('Modulo foto non disponibile. Riprova con connessione internet.');importStatus.textContent='Sto leggendo la foto… può richiedere qualche secondo.';const result=await Tesseract.recognize(file,'eng',{logger:m=>{if(m.status==='recognizing text')importStatus.textContent=`Lettura foto: ${Math.round((m.progress||0)*100)}%`}});const text=result.data.text||'';const parsed=parseTextSchedule(text);if(!parsed)throw new Error('Ho letto la foto ma non riesco a distinguere bene giorni e classi. Prova uno screenshot più dritto e nitido.');return{state:parsed,detail:'Foto analizzata e orario ricostruito. Controlla le celle prima di confermare.'}}
-function importSummary(st){const lines=[];for(let d=0;d<6;d++){const vals=[];for(let p=0;p<MAX_PERIODS;p++){const v=st.slots[`${d}-${p}`];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:{},details=[];if(info.subjects&&info.subjects.length)details.push(info.subjects.join(' + '));if(info.room)details.push('aula '+info.room);if(info.coTeachers&&info.coTeachers.length)details.push('con '+info.coTeachers.join(' + '));vals.push(`${p+1}ª ${v[1]?v[1]+' · ':''}${v[0]}${details.length?' ('+details.join(', ')+')':''}`)}}lines.push(`${DAYS[d].name}: ${vals.length?vals.join(' · '):'libero'}`)}return lines.join('\n')}
+function importSummary(st){const lines=[];for(let d=0;d<6;d++){const vals=[];for(let p=0;p<MAX_PERIODS;p++){const v=st.slots[`${d}-${p}`];if(v&&v[0]){const info=v[2]&&typeof v[2]==='object'?v[2]:{},details=[];if(info.sourceLines&&info.sourceLines.length)details.push(info.sourceLines.join(' · '));else{if(info.subjects&&info.subjects.length)details.push(info.subjects.join(' + '));if(info.room)details.push('aula '+info.room);if(info.coTeachers&&info.coTeachers.length)details.push('con '+info.coTeachers.join(' + '))}vals.push(`${p+1}ª ${v[1]?v[1]+' · ':''}${v[0]}${details.length?' ('+details.join(', ')+')':''}`)}}lines.push(`${DAYS[d].name}: ${vals.length?vals.join(' · '):'libero'}`)}return lines.join('\n')}
 async function processSmartImport(file){pendingImport=null;document.getElementById('pdfTeacherFallback').classList.add('hidden');applyImportBtn.classList.add('hidden');importPreview.classList.add('hidden');importStatus.classList.add('show');importStatus.textContent='Analisi in corso…';try{const n=file.name.toLowerCase();let res;if(n.endsWith('.xlsx')||n.endsWith('.xls'))res=await importExcel(file);else if(n.endsWith('.pdf'))res=await importPdf(file);else res=await importImage(file);pendingImport=res.state;importStatus.textContent='✅ '+res.detail;importPreview.textContent=importSummary(res.state);importPreview.classList.remove('hidden');applyImportBtn.classList.remove('hidden')}catch(e){console.error(e);importStatus.textContent='⚠️ '+(e.message||'Non sono riuscito a importare questo file.') }finally{smartImportFile.value=''}}
 
 function resetImportUi(){
