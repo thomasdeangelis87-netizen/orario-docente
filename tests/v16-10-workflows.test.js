@@ -92,14 +92,17 @@ test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce autom
 test('le compresenze strutturate della scuola arrivano nell’orario personale',()=>{
  assert.match(html,/Array\.isArray\(e\.coTeachers\)\?e\.coTeachers:\[\]/);
  assert.match(html,/👥 Compresenza:/);
- assert.match(html,/👥 con/);
+ assert.match(html,/const missingTeachers=coTeachers\.filter/);
 });
 
 test('le righe originali della matrice arrivano senza reinterpretazione nell’orario personale',()=>{
  assert.match(html,/Array\.isArray\(e\.sourceLines\)\?e\.sourceLines:\[\]/);
- assert.match(html,/sourceLines\.forEach\(line=>/);
- assert.match(html,/sourceLines\.map\(line=>`<span class="materia">/);
- assert.match(html,/if\(sourceLines\.length\)sourceLines\.forEach/);
+ assert.match(html,/function lessonDetailLines\(info\)/);
+ assert.match(html,/detailLines\.map\(line=>`<span class="materia">/);
+ assert.match(html,/function lessonDetailSizeClass\(lines\)/);
+ assert.match(html,/\.slot \.compresenza\.detail-xlong\{font-size:10px/);
+ assert.match(html,/\.mobile-lesson-detail\.detail-xlong\{font-size:10px/);
+ assert.match(html,/sourceLines:lesson\.sourceLines\|\|\[\]/);
 });
 
 test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{

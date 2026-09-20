@@ -5,7 +5,7 @@ import {listDetectedTeachers,parseIndexEducationPages,parseIndexEducationSchoolP
 function item(str,x,y,width=40,height=10){return{str,x,y,width,height}}
 function page(number,name,lessonText=''){const items=[item(name,220,35,120),...['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'].map((d,i)=>item(d,100+i*80,60,60)),item('08:00 – 09:00',20,145,70),item('09:00 – 10:00',20,205,70),item('10:00 – 11:00',20,265,70)];if(lessonText)items.push(item(lessonText,105,130,55),item('ROSSI M.',105,140,45),item('3° A',105,150,30),item('Aula 12',105,160,45));return{number,width:600,height:400,items}}
 
-test('seleziona soltanto la pagina intestata al docente',()=>{const result=parseIndexEducationPages([page(1,'BIANCHI ANNA','Italiano'),page(2,'THOMAS DE ANGELIS','Pasticceria')],{firstName:'Thomas',lastName:'De Angelis',fullName:'Thomas De Angelis'},{maxPeriods:10});assert.equal(result.pageNumber,2);assert.equal(result.lessons[0].className,'3°A');assert.equal(result.lessons[0].room,'12');assert.match(result.lessons[0].subject,/Pasticceria/);assert.deepEqual(result.lessons[0].coTeachers,['ROSSI M.'])});
+test('seleziona soltanto la pagina intestata al docente',()=>{const result=parseIndexEducationPages([page(1,'BIANCHI ANNA','Italiano'),page(2,'THOMAS DE ANGELIS','Pasticceria')],{firstName:'Thomas',lastName:'De Angelis',fullName:'Thomas De Angelis'},{maxPeriods:10});assert.equal(result.pageNumber,2);assert.equal(result.lessons[0].className,'3°A');assert.equal(result.lessons[0].room,'12');assert.match(result.lessons[0].subject,/Pasticceria/);assert.deepEqual(result.lessons[0].coTeachers,['ROSSI M.']);assert.deepEqual(result.lessons[0].sourceLines,['Pasticceria','ROSSI M.','Aula 12'])});
 
 test('mantiene fasce pomeridiane e periodi oltre la sesta ora',()=>{const p=page(1,'THOMAS DE ANGELIS');p.items=p.items.filter(i=>!/^0[89]:|^10:/.test(i.str));for(let i=0;i<8;i++){const h=8+i;p.items.push(item(`${String(h).padStart(2,'0')}:00 – ${String(h+1).padStart(2,'0')}:00`,20,130+i*30,75))}p.items.push(item('5° B',185,340,30),item('Laboratorio',185,348,65));const result=parseIndexEducationPages([p],{fullName:'Thomas De Angelis',firstName:'Thomas',lastName:'De Angelis'},{maxPeriods:10});const lesson=result.lessons.find(l=>l.day===1);assert.equal(lesson.period,7);assert.equal(lesson.time,'15:00 – 16:00')});
 
@@ -34,6 +34,7 @@ test('modalita scuola completa importa tutte le pagine docente',()=>{
  assert.equal(result.entries.length,2);
  assert.deepEqual(result.entries.map(e=>e.teacher),['ROSSI MARIO','BIANCHI ANNA']);
  assert.deepEqual(result.classCells.map(e=>e.className),['3°A','3°A']);
+ assert.deepEqual(result.entries[0].sourceLines,['Italiano','ROSSI M.','Aula 12']);
  assert.equal(result.pagesAnalyzed,2);
 });
 
