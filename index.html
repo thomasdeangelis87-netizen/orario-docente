@@ -50,10 +50,11 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .school-connect{margin:14px 0;padding:16px;border:1px solid #cfe0f4;border-radius:18px;background:linear-gradient(135deg,#f7fbff,#eef6ff)}.school-connect-grid{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:10px;align-items:end}.school-connect input,.school-connect select{width:100%;padding:10px 11px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-code{font-size:20px;font-weight:900;letter-spacing:.08em;color:#0b2a5b}.role-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#dceeff;font-size:12px;font-weight:800}@media(max-width:720px){.school-connect-grid{grid-template-columns:1fr}}
 .build-version{position:fixed;right:8px;bottom:8px;z-index:100;background:#10233f;color:#fff;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:800;opacity:.82;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .auth-form{display:grid;gap:10px;margin-top:15px}.auth-form input{width:100%;padding:11px 12px;border:1px solid #cbd7e4;border-radius:10px}.auth-error{color:#a61b1b;font-size:13px}.school-management{border:1px solid #cfe0f4;background:#f6fbff;border-radius:16px;padding:15px;margin:14px 0}.school-management h3{margin:0 0 9px}.school-management .school-list{display:grid;gap:8px}.school-management .school-list>div{border:1px solid #dbe5f0;background:#fff;border-radius:10px;padding:10px}.school-find{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.school-find input,.school-find select,.school-date input{width:100%;padding:10px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-date{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:8px 0}.school-change{border:1px solid #eedba6;background:#fff8df;padding:14px;border-radius:15px;margin:14px 0}.school-change-prominent{border-width:2px;box-shadow:0 8px 22px rgba(114,78,0,.12);margin:0 0 14px}.school-change-prominent p{margin:7px 0;color:#5b4a16}.school-change .btn{margin:8px 7px 0 0}@media(max-width:720px){.school-find{grid-template-columns:1fr}.school-change-prominent .btn{width:100%;margin-right:0}}
+.connection-guide{display:grid;gap:12px;margin:16px 0 0;padding:0;list-style:none;counter-reset:guide-step}.connection-guide li{position:relative;padding:13px 14px 13px 52px;border:1px solid #dbe5f0;border-radius:14px;background:#f8fbff;min-height:48px}.connection-guide li::before{counter-increment:guide-step;content:counter(guide-step);position:absolute;left:13px;top:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#0b5cab;color:#fff;font-weight:900}.connection-guide strong{display:block;margin-bottom:3px;color:#17395f}.guide-note{margin-top:14px;padding:12px;border-radius:12px;background:#fff8df;border:1px solid #eedba6;color:#5b4a16}
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #12 · v16.10.19</div>
+<div id="buildVersion" class="build-version">PR #13 · v16.10.20</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -113,6 +114,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <button class="btn" id="printBtn">🖨️ Stampa / PDF</button>
     <button class="btn" id="exportBtn">⬇️ Esporta</button>
     <button class="btn" id="importBtn">✨ Importa orario</button>
+    <button class="btn soft" id="scheduleConnectionGuideBtn">❓ Come collegare il mio orario</button>
     <button class="btn soft hidden" id="schoolPortalBtn">🏫 Portale scuola</button>
     <button class="btn danger" id="resetBtn">↺ Nuovo orario</button>
     <input id="importFile" type="file" accept="application/json,.json" hidden>
@@ -125,6 +127,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <nav class="appnav" aria-label="Sezioni app">
     <button class="navbtn active" data-view="myScheduleView">📅 Il mio orario</button>
+    <button class="navbtn" id="navConnectionGuideBtn" type="button">❓ Come caricare il mio orario</button>
     <button class="navbtn" data-view="myClassesView">🎓 Le mie classi</button>
     <button class="navbtn" data-view="schoolView">🏫 Orario scuola</button>
     <button class="navbtn hidden" id="schoolPortalNavBtn" data-view="schoolPortalView">🏫 Portale scuola</button>
@@ -171,6 +174,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <div class="card" style="padding:18px">
       <div class="school-head">
         <div><h2>Orario scuola</h2><p>Consulta l'orario del tuo istituto e collega il tuo account docente.</p><div id="schoolSourceInfo" class="admin-note"></div></div>
+        <button class="btn soft" id="schoolConnectionGuideBtn">❓ Come collegare il mio orario</button>
       </div>
       <div class="school-connect">
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>🏫 Collegamento scuola</strong><div class="admin-note">Trova una scuola accreditata e chiedi al referente di collegarti, oppure inserisci il codice ricevuto.</div></div><div><span class="role-badge" id="schoolRoleBadge">Docente</span></div></div>
@@ -227,7 +231,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.10.19</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.10.20</strong></div>
 </div>
 
 <div class="modal" id="metaModal"><div class="modalbox">
@@ -289,6 +293,18 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   <h3>Installa Orario Docente</h3>
   <div id="installInstructions" style="color:#607089;line-height:1.6"></div>
   <div class="modal-actions"><button class="btn" data-close="installModal">Chiudi</button><button class="btn primary hidden" id="nativeInstallBtn">Installa ora</button></div>
+</div></div>
+<div class="modal" id="connectionGuideModal" role="dialog" aria-modal="true" aria-labelledby="connectionGuideTitle"><div class="modalbox">
+  <h3 id="connectionGuideTitle">Come collegare il mio orario</h3>
+  <p>Segui questi passaggi per ottenere l’orario personale pubblicato dalla tua scuola.</p>
+  <ol class="connection-guide">
+    <li><strong>Apri “Orario scuola”</strong>Entra nella sezione dedicata al collegamento con il tuo istituto.</li>
+    <li><strong>Collega la scuola</strong>Scegli l’istituto dall’elenco e invia la richiesta, oppure inserisci il codice scuola ricevuto. Con la richiesta dovrai attendere l’approvazione del referente; con un codice valido il collegamento è immediato.</li>
+    <li><strong>Importa il tuo orario</strong>Nella stessa schermata premi “Importa il mio orario dalla scuola”. Se il nome non viene riconosciuto automaticamente, seleziona come compare nell’orario ufficiale.</li>
+    <li><strong>Apri “Il mio orario”</strong>Troverai il tuo orario personale pronto da consultare.</li>
+  </ol>
+  <div class="guide-note"><strong>Quando la scuola pubblica un nuovo orario</strong><br>Riceverai un avviso nell’app e potrai confermare l’aggiornamento. Le sole variazioni delle fasce orarie vengono applicate automaticamente.</div>
+  <div class="modal-actions"><button class="btn" data-close="connectionGuideModal">Chiudi</button><button class="btn primary" id="openSchoolFromGuideBtn">Vai a Orario scuola</button></div>
 </div></div>
 <div class="toast" id="toast"></div>
 
@@ -1249,6 +1265,11 @@ printBtn.onclick=()=>window.print();
 shareBtn.onclick=async()=>{const url=location.origin+location.pathname;try{if(navigator.share){await navigator.share({title:'Orario Docente',text:'Crea e gestisci il tuo orario docente',url});return}await navigator.clipboard.writeText(url);toast('Link dell’app copiato')}catch(e){prompt('Copia questo link:',url)}};
 exportBtn.onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='orario-docente.json';a.click();URL.revokeObjectURL(a.href)};
 importBtn.onclick=()=>{resetImportUi();openModal('importModal')};
+const openConnectionGuide=()=>openModal('connectionGuideModal');
+scheduleConnectionGuideBtn.onclick=openConnectionGuide;
+schoolConnectionGuideBtn.onclick=openConnectionGuide;
+navConnectionGuideBtn.onclick=openConnectionGuide;
+openSchoolFromGuideBtn.onclick=()=>{closeModal('connectionGuideModal');switchView('schoolView')};
 document.querySelectorAll('[data-import-kind]').forEach(el=>el.onclick=()=>{const k=el.dataset.importKind;smartImportFile.accept=k==='excel'?'.xlsx,.xls':k==='pdf'?'.pdf':'.png,.jpg,.jpeg,.webp';smartImportFile.click()});
 smartImportFile.onchange=e=>{const f=e.target.files[0];if(f)processSmartImport(f)};
 applyImportBtn.onclick=()=>{if(!pendingImport)return;state=pendingImport;pendingImport=null;render();closeModal('importModal');toast('Orario importato e salvato nel tuo account')};
