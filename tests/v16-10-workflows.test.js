@@ -87,6 +87,13 @@ test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce autom
  assert.match(html,/confirm\(`Trovati \$\{entries\.length\} impegni/);
 });
 
+test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{
+ assert.match(html,/school-hours-sync\.js\?v=16\.10\.19/);
+ assert.match(html,/OrarioSchoolHoursSync\.apply\(state,schoolData\)/);
+ assert.match(html,/Fasce orarie aggiornate dalla scuola/);
+ assert.match(html,/id==='myScheduleView'&&state\.meta\.schoolCode\)loadSchoolCloud/);
+});
+
 test('scuole directory non mostrano codice rapido; richieste sono approvate lato server',()=>{
  assert.match(html,/id="schoolDirectorySearch"/);
  assert.match(html,/Hai ricevuto un codice dalla scuola\? Inserisci codice/);

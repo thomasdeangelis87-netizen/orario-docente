@@ -15,6 +15,7 @@
 <script src="/schedule-file-type.js?v=16.10.0"></script>
 <script src="/school-upload-dispatcher.js?v=16.10.0"></script>
 <script src="/school-update.js?v=16.10.0"></script>
+<script src="/school-hours-sync.js?v=16.10.19"></script>
 <script src="/school-permissions.js?v=16.10.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -438,9 +439,11 @@ async function loadSchoolCloud({showError=false,saveProfile=true}={}){
       state.meta.school=sc.name||state.meta.school||'';
       state.meta.schoolCode=m.code||sc.code||'';
       state.meta.schoolRole=m.role||'teacher';
+      let hoursSync={changed:false,timeChanged:false};
       if(data.schedule&&Array.isArray(data.schedule.entries)){
         schoolCloudVerified=true;schoolAuditStatus='present';
         schoolData=data.schedule;saveSchoolLocal();
+        hoursSync=window.OrarioSchoolHoursSync.apply(state,schoolData);
       }else{
         schoolCloudVerified=false;schoolAuditStatus='missing';
         // La scuola può essere collegata anche se l'amministratore non ha ancora pubblicato l'orario.
@@ -451,7 +454,8 @@ async function loadSchoolCloud({showError=false,saveProfile=true}={}){
         }
       }
       schoolInput.value=state.meta.school||'';
-      renderSchool();renderSchoolPersonalImport();renderMyClasses();if(saveProfile)scheduleCloudSave();
+      if(hoursSync.changed){render({save:false});await persistProfileNow();if(hoursSync.timeChanged)toast('Fasce orarie aggiornate dalla scuola')}
+      renderSchool();renderSchoolPersonalImport();renderMyClasses();if(saveProfile&&!hoursSync.changed)scheduleCloudSave();
       await loadSchoolManagement();
       return true;
     }catch(e){
@@ -638,7 +642,7 @@ function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView
 
 
 
-function switchView(id){if(id==='schoolPortalView'&&!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole))return;document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView'||id==='schoolPortalView')renderSchool();if(id==='schoolPortalView')loadSchoolManagement();if(id==='myClassesView')renderMyClasses()}
+function switchView(id){if(id==='schoolPortalView'&&!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole))return;document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView'||id==='schoolPortalView')renderSchool();if(id==='schoolPortalView')loadSchoolManagement();if(id==='myClassesView')renderMyClasses();if(id==='myScheduleView'&&state.meta.schoolCode)loadSchoolCloud({showError:false,saveProfile:true})}
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
 function schoolStorageKey(){return currentUser?.id?'orarioDocenteSchoolV2:'+currentUser.id:''}
 function loadSchoolLocal(){try{const key=schoolStorageKey();if(!key)return;const raw=localStorage.getItem(key);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.entries)){schoolData=x;if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);ensureSchoolBreaks();schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,Math.min(MAX_PERIODS,Math.max(6,...(schoolData.entries||[]).map(e=>Number(e.period)||0),...(schoolData.classCells||[]).map(e=>Number(e.period)||0))))}}}catch(e){console.error(e)}}
@@ -895,6 +899,7 @@ async function importMySchoolSchedule(){
   });
   state.slots=slots;
   state.meta.maxPeriods=Math.min(MAX_PERIODS,maxP);
+  window.OrarioSchoolHoursSync.apply(state,schoolData);
   render();
   const ok=await persistProfileNow();
   renderSchool();

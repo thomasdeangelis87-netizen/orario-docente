@@ -41,7 +41,8 @@ test('il caricamento iniziale non viene scambiato per una modifica da salvare',(
  assert.match(html,/function render\(\{save=true\}=\{\}\)/);
  assert.match(html,/render\(\{save:false\}\);renderSchool\(\);renderMyClasses\(\)/);
  assert.match(html,/await loadSchoolCloud\(\{saveProfile:false\}\)/);
- assert.match(html,/if\(saveProfile\)scheduleCloudSave\(\)/);
+ assert.match(html,/if\(saveProfile&&!hoursSync\.changed\)scheduleCloudSave\(\)/);
+ assert.match(html,/if\(hoursSync\.changed\)\{render\(\{save:false\}\);await persistProfileNow\(\)/);
  assert.match(html,/if\(!migrated\)\{setCloudStatus\('Errore salvataggio online',false\);return\}/);
 });
 
