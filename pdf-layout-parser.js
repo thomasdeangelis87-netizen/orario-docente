@@ -18,7 +18,7 @@ function findTimeRows(page,lines,gridLeft,headerY,maxPeriods){const timeLines=[]
 function parseClass(text){const m=String(text).match(/\b([1-5])\s*[°º^]?\s*([A-Z]{1,5})(?:\s+([A-Z]{1,3}))?\b/i);return m?`${m[1]}°${m[2].toUpperCase()}${m[3]?' '+m[3].toUpperCase():''}`:''}
 function parseRoom(lines){for(const line of lines){let m=line.match(/\b(?:AULA|LABORATORIO|PALESTRA|SALA)\s*[:#-]?\s*([A-Z0-9][A-Z0-9 ._-]{0,24})/i);if(m)return m[1].trim();m=line.trim().match(/^([A-Z]\d+(?:\.\d+)+|[A-Z]\d{1,3}[A-Z]?)$/i);if(m)return m[1].toUpperCase()}return''}
 function looksLikePerson(text){const clean=String(text||'').trim();return /^[A-ZÀ-ÖØ-Ý][A-ZÀ-ÖØ-Ý'.-]+(?:\s+[A-ZÀ-ÖØ-Ý][A-ZÀ-ÖØ-Ý'.-]+)*\s+[A-ZÀ-ÖØ-Ý]\.$/i.test(clean)}
-function lessonFromItems(items,day,row,profile){const lines=groupLines(items,Math.max(2,median(items.map(i=>i.height))*.65)).map(l=>l.text.replace(/^[^\p{L}\p{N}]+/u,'').trim()).filter(Boolean);if(!lines.length)return null;const ownerTokens=profileTokens(profile),filtered=lines.filter(line=>{const n=norm(line),compact=n.replace(/ /g,'');return !DAY_NAMES.some(d=>compact.startsWith(d))&&!timeStrings(line).length&&!ownerTokens.every(t=>n.includes(t))});if(!filtered.length)return null;const classIndex=filtered.findIndex(line=>!!parseClass(line)),className=classIndex>=0?parseClass(filtered[classIndex]):'';const coTeachers=(classIndex>=0?filtered.slice(0,classIndex):[]).filter(looksLikePerson);let room='';if(classIndex>=0){const after=filtered.slice(classIndex+1);room=parseRoom(after)||after.filter(line=>!looksLikePerson(line)).join(' · ').trim()}else room=parseRoom(filtered);const subjectLines=(classIndex>=0?filtered.slice(0,classIndex):filtered).filter(line=>!looksLikePerson(line)&&!parseRoom([line]));const subject=subjectLines.join(' · ').replace(/\s+/g,' ').trim();if(!subject&&!className)return null;return{day,period:row.period,time:row.time,className,subject,room,coTeachers}}
+function lessonFromItems(items,day,row,profile){const lines=groupLines(items,Math.max(2,median(items.map(i=>i.height))*.65)).map(l=>l.text.replace(/^[^\p{L}\p{N}]+/u,'').trim()).filter(Boolean);if(!lines.length)return null;const ownerTokens=profileTokens(profile),filtered=lines.filter(line=>{const n=norm(line),compact=n.replace(/ /g,'');return !DAY_NAMES.some(d=>compact.startsWith(d))&&!timeStrings(line).length&&!ownerTokens.every(t=>n.includes(t))});if(!filtered.length)return null;const classIndex=filtered.findIndex(line=>!!parseClass(line)),className=classIndex>=0?parseClass(filtered[classIndex]):'',sourceLines=filtered.filter((_,index)=>index!==classIndex);const coTeachers=(classIndex>=0?filtered.slice(0,classIndex):[]).filter(looksLikePerson);let room='';if(classIndex>=0){const after=filtered.slice(classIndex+1);room=parseRoom(after)||after.filter(line=>!looksLikePerson(line)).join(' · ').trim()}else room=parseRoom(filtered);const subjectLines=(classIndex>=0?filtered.slice(0,classIndex):filtered).filter(line=>!looksLikePerson(line)&&!parseRoom([line]));const subject=subjectLines.join(' · ').replace(/\s+/g,' ').trim();if(!subject&&!className)return null;return{day,period:row.period,time:row.time,className,subject,room,coTeachers,sourceLines}}
 function rowsCoveredByLessonBox(page,col,row,items,rows){if(!page.boxes||!page.boxes.length||!items.length)return[row];const x=median(items.map(i=>i.x+(i.width||0)/2)),y=median(items.map(i=>i.y-(i.height||0)/2)),columnWidth=col.right-col.left,rowHeight=median(rows.map(r=>r.bottom-r.top));const candidates=page.boxes.filter(b=>x>=b.left-2&&x<=b.right+2&&y>=b.top-2&&y<=b.bottom+2&&(b.right-b.left)<=columnWidth*1.15&&(b.right-b.left)>=columnWidth*.25&&(b.bottom-b.top)>=rowHeight*.65).sort((a,b)=>(a.right-a.left)*(a.bottom-a.top)-(b.right-b.left)*(b.bottom-b.top));if(!candidates.length)return[row];const box=candidates[0],covered=rows.filter(r=>{const center=(r.top+r.bottom)/2;return center>=box.top-2&&center<=box.bottom+2});return covered.length?covered:[row]}
 function lessonBoxes(page,col,rows){if(!page.boxes||!page.boxes.length)return[];const rowHeight=median(rows.map(r=>r.bottom-r.top)),columnWidth=col.right-col.left,gridTop=rows[0].top,gridBottom=rows[rows.length-1].bottom;return page.boxes.filter(b=>b.left>=col.left-3&&b.right<=col.right+3&&b.top>=gridTop-3&&b.bottom<=gridBottom+3&&(b.right-b.left)>=columnWidth*.65&&(b.bottom-b.top)>=rowHeight*.55&&(b.bottom-b.top)<=rowHeight*6.1)}
 function detectedSchoolPeriods(pages,maxPeriods){let last=-1;for(const page of pages){try{const lines=groupLines(page.items),columns=findDayColumns(page,lines),gridLeft=Math.min(...columns.map(c=>c.left)),headerY=median(columns.map(c=>c.headerY)),rows=findTimeRows(page,lines,gridLeft,headerY,maxPeriods);for(const col of columns)for(const box of lessonBoxes(page,col,rows))for(const row of rows){const center=(row.top+row.bottom)/2;if(center>=box.top-2&&center<=box.bottom+2)last=Math.max(last,row.period)}}catch(e){/* una pagina non riconoscibile non deve bloccare le altre */}}return last+1}
@@ -43,8 +43,8 @@ export function parseIndexEducationSchoolPages(pages,options={}){
    teachers.push({name:header.name,subject});
    for(const lesson of result.lessons){
     const activity=lesson.className||lesson.subject||'Lezione',period=lesson.period+1;
-    entries.push({teacher:header.name,subject:lesson.subject||'',day:lesson.day,period,time:lesson.time||'',activity,room:lesson.room||'',coTeachers:lesson.coTeachers||[]});
-    if(lesson.className)classCells.push({className:lesson.className,day:lesson.day,period,time:lesson.time||'',teacher:header.name,subject:lesson.subject||'',room:lesson.room||''});
+    entries.push({teacher:header.name,subject:lesson.subject||'',day:lesson.day,period,time:lesson.time||'',activity,room:lesson.room||'',coTeachers:lesson.coTeachers||[],sourceLines:lesson.sourceLines||[]});
+    if(lesson.className)classCells.push({className:lesson.className,day:lesson.day,period,time:lesson.time||'',teacher:header.name,subject:lesson.subject||'',room:lesson.room||'',sourceLines:lesson.sourceLines||[]});
    }
   }catch(e){failures.push({pageNumber:page.number,name:header.name,error:String(e?.message||e)})}
  }
@@ -56,6 +56,9 @@ export function parseIndexEducationSchoolPages(pages,options={}){
 // Timetables exported as one wide matrix: teachers on rows and one column for
 // each period (typically 5 days x 5 periods). This is deliberately separate
 // from the Index Education page-per-teacher parser above.
+function matrixCellBounds(centers,index,step){const center=centers[index];return{left:index?((centers[index-1]+center)/2):center-step/2,right:index<centers.length-1?((center+centers[index+1])/2):center+step/2}}
+function hasMatrixVerticalBoundary(page,x,top,bottom,step){const tolerance=Math.max(1.5,step*.08),mid=(top+bottom)/2;return(page.lines||[]).some(line=>{const x1=Number(line.x1),x2=Number(line.x2),y1=Number(line.y1),y2=Number(line.y2);if(![x1,x2,y1,y2].every(Number.isFinite)||Math.abs(x1-x2)>1.5)return false;return Math.abs((x1+x2)/2-x)<=tolerance&&Math.min(y1,y2)<=mid+1&&Math.max(y1,y2)>=mid-1})}
+function matrixMergedColumns(page,column,centers,periodsPerDay,step,top,bottom){if(!page.lines?.length)return[column];const dayStart=Math.floor(column/periodsPerDay)*periodsPerDay,dayEnd=dayStart+periodsPerDay-1;let start=column,end=column;while(start>dayStart){const boundary=(centers[start-1]+centers[start])/2;if(hasMatrixVerticalBoundary(page,boundary,top,bottom,step))break;start--}while(end<dayEnd){const boundary=(centers[end]+centers[end+1])/2;if(hasMatrixVerticalBoundary(page,boundary,top,bottom,step))break;end++}return Array.from({length:end-start+1},(_,i)=>start+i)}
 export function parseTeacherMatrixSchoolPages(pages,options={}){
  if(!Array.isArray(pages)||!pages.length)throw new Error('Il PDF non contiene pagine leggibili.');
  const maxPeriods=Math.max(1,Number(options.maxPeriods)||10),teachersMap=new Map(),entries=[],classCells=[];
@@ -72,21 +75,26 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
   const usedCenters=centers.slice(0,periodsPerDay*dayHeaders.length),first=usedCenters[0],step=median(usedCenters.slice(1).map((x,i)=>x-usedCenters[i]));
   const gutterRight=first-step*.52;
   const teacherLines=lines.filter(l=>l.y>headerBottom&&l.items.some(i=>i.x<gutterRight)).map(l=>({y:l.y,name:l.items.filter(i=>i.x<gutterRight).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim()})).filter(x=>x.name&&/[A-ZÀ-ÖØ-Ý]/i.test(x.name));
+  const knownTeacherNames=new Map(teacherLines.map(row=>[norm(row.name),row.name]));
   for(let r=0;r<teacherLines.length;r++){
    const row=teacherLines[r],top=r?((teacherLines[r-1].y+row.y)/2):headerBottom,bottom=r<teacherLines.length-1?((row.y+teacherLines[r+1].y)/2):Math.min(page.height,row.y+(row.y-(teacherLines[r-1]?.y||headerBottom))/2);
    const key=norm(row.name);if(!teachersMap.has(key))teachersMap.set(key,{name:row.name,subject:''});
+   const occupied=new Set();
    for(let c=0;c<usedCenters.length;c++){
-    const cx=usedCenters[c],left=c?((usedCenters[c-1]+cx)/2):cx-step/2,right=c<usedCenters.length-1?((cx+usedCenters[c+1])/2):cx+step/2;
-    const cellLines=groupLines(page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=left&&x<right&&y>top&&y<bottom}),2.5).map(l=>l.text.trim()).filter(Boolean);
+    if(occupied.has(c))continue;
+    const initial=matrixCellBounds(usedCenters,c,step),initialItems=page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=initial.left&&x<initial.right&&y>top&&y<bottom});
+    if(!initialItems.length)continue;
+    const covered=matrixMergedColumns(page,c,usedCenters,periodsPerDay,step,top,bottom),firstCovered=matrixCellBounds(usedCenters,covered[0],step),lastCovered=matrixCellBounds(usedCenters,covered[covered.length-1],step);
+    const cellLines=groupLines(page.items.filter(i=>{const x=i.x+(i.width||0)/2,y=i.y-(i.height||0)/2;return x>=firstCovered.left&&x<lastCovered.right&&y>top&&y<bottom}),2.5).map(l=>l.text.trim()).filter(Boolean);
     if(!cellLines.length)continue;
     const classLine=cellLines.find(v=>/^\s*[1-5]\s*[A-Z]{1,4}(?:\s+[A-Z]{1,3})?\s*$/i.test(v));
     const className=classLine?classLine.replace(/\s+/g,'').toUpperCase():'';
-    const nonClass=cellLines.filter(v=>v!==classLine),raw=nonClass.join(' · ').trim();
+    const nonClass=cellLines.filter(v=>v!==classLine),sourceLines=nonClass.slice(),coTeachers=[],contentLines=[];
+    for(const line of nonClass){const known=knownTeacherNames.get(norm(line)),roomLike=/^\s*(?:LAB(?:ORATORIO)?|AULA|SALA|PALESTRA)\b/i.test(line);if(known||(!roomLike&&looksLikePerson(line))){const name=known||line;if(norm(name)!==norm(row.name)&&!coTeachers.some(x=>norm(x)===norm(name)))coTeachers.push(name)}else contentLines.push(line)}
+    const raw=contentLines.join(' · ').trim();
     if(!raw&&!className)continue;
     const availability=/\bDISP(?:ONIBILITA)?\.?\b/i.test(raw),activity=className||(availability?'DISPOSIZIONE':raw),subject=availability?'DISPOSIZIONE':raw;
-    const day=Math.floor(c/periodsPerDay),period=c%periodsPerDay+1;
-    entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:[]});
-    if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:''});
+    for(const column of covered){occupied.add(column);const day=Math.floor(column/periodsPerDay),period=column%periodsPerDay+1;entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:coTeachers.slice(),sourceLines:sourceLines.slice()});if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:'',coTeachers:coTeachers.slice(),sourceLines:sourceLines.slice()})}
    }
   }
  }
@@ -95,4 +103,4 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
  return{teachers:[...teachersMap.values()],entries,classCells,maxPeriods:Math.max(...entries.map(e=>e.period)),periodTimes:{},failures:[],pagesAnalyzed:pages.length,matrixFormat:true};
 }
 
-export const _test={norm,minutes,timeStrings,groupLines,detectTeacherHeader,headerScore,selectTeacherPage,findDayColumns,findTimeRows,detectedSchoolPeriods,parseClass,parseRoom};
+export const _test={norm,minutes,timeStrings,groupLines,detectTeacherHeader,headerScore,selectTeacherPage,findDayColumns,findTimeRows,detectedSchoolPeriods,parseClass,parseRoom,matrixMergedColumns};

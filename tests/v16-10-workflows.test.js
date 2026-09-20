@@ -77,14 +77,32 @@ test('registrazione e accesso hanno due moduli distinti e non esiste pre-registr
 test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce automaticamente',()=>{
  const old=[{day:0,period:1,activity:'5° BE',subject:'Cucina',teacher:'ROSSI',time:'08:00 – 09:00'}];
  const unchanged=[{...old[0]}],changed=[{...old[0],activity:'DISPOSIZIONE'}];
+ const changedCellText=[{...old[0],sourceLines:['CUCINA','BIANCHI R.','Lab. Cucina1']}];
  assert.equal(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(unchanged));
  assert.notEqual(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(changed));
+ assert.notEqual(globalThis.OrarioSchoolUpdate.fingerprint(old),globalThis.OrarioSchoolUpdate.fingerprint(changedCellText));
  assert.equal(globalThis.OrarioSchoolUpdate.changes(old,changed).added.length,1);
  assert.match(html,/version<=Number\(state\.meta\.schoolScheduleVersion\)/);
  assert.match(html,/fingerprint===state\.meta\.schoolScheduleFingerprint/);
  assert.match(html,/updateMySchoolScheduleBtn\.onclick=applyPendingSchoolSchedule/);
  assert.match(html,/homeUpdateMySchoolScheduleBtn\.onclick=applyPendingSchoolSchedule/);
  assert.match(html,/confirm\(`Trovati \$\{entries\.length\} impegni/);
+});
+
+test('le compresenze strutturate della scuola arrivano nell’orario personale',()=>{
+ assert.match(html,/Array\.isArray\(e\.coTeachers\)\?e\.coTeachers:\[\]/);
+ assert.match(html,/👥 Compresenza:/);
+ assert.match(html,/const missingTeachers=coTeachers\.filter/);
+});
+
+test('le righe originali della matrice arrivano senza reinterpretazione nell’orario personale',()=>{
+ assert.match(html,/Array\.isArray\(e\.sourceLines\)\?e\.sourceLines:\[\]/);
+ assert.match(html,/function lessonDetailLines\(info\)/);
+ assert.match(html,/detailLines\.map\(line=>`<span class="materia">/);
+ assert.match(html,/function lessonDetailSizeClass\(lines\)/);
+ assert.match(html,/\.slot \.compresenza\.detail-xlong\{font-size:10px/);
+ assert.match(html,/\.mobile-lesson-detail\.detail-xlong\{font-size:10px/);
+ assert.match(html,/sourceLines:lesson\.sourceLines\|\|\[\]/);
 });
 
 test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{
@@ -115,11 +133,18 @@ test('scuole directory non mostrano codice rapido; richieste sono approvate lato
  assert.match(code('school-link-request.js'),/status:'pending'/);
  assert.match(code('school-members.js'),/body\.action==='approve-request'/);
  assert.match(code('school-members.js'),/body\.action==='reject-request'/);
- assert.match(html,/Richiedi collegamento alla scuola/);
- assert.match(html,/Dopo l’approvazione l’account si collegherà automaticamente/);
+ assert.match(html,/Invia richiesta di collegamento/);
+ assert.match(html,/dopo l’approvazione l’account si collegherà automaticamente/i);
  assert.match(html,/request\.status==='approved'[\s\S]*?loadSchoolCloud\(\{showError:true,saveProfile:true\}\)/);
  assert.match(html,/scheduleSchoolLinkPolling\(\)/);
  assert.match(html,/stopSchoolLinkPolling\(\)/);
+ assert.match(html,/id="cancelSchoolLinkRequestBtn"/);
+ assert.match(html,/id="disconnectSchoolBtn"/);
+ assert.match(html,/apiCall\('leave-school'/);
+ assert.match(html,/state\.slots=\{\}/);
+ assert.match(html,/orario personale eliminato/);
+ assert.match(code('school-link-request.js'),/sendSchoolLinkRequestEmail/);
+ assert.match(code('school-link-request.js'),/body\.action==='cancel-request'/);
   assert.equal(scheduleVersion(null,true),1);
   assert.equal(scheduleVersion({entries:[{}]},true),2);
   assert.equal(scheduleVersion({entries:[{}],version:5},false),5);
