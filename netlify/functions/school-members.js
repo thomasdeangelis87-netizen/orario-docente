@@ -19,21 +19,22 @@ export default async (req,context) => {
     let body={};
     try{body=await req.json();}catch{return json(400,{error:'Dati non validi'});}
     if(body.action==='approve-request'||body.action==='reject-request'){
-      const email=normalizeEmail(body.email);
+      const email=normalizeEmail(body.email),requestUserId=String(body.userId||'');
       const requests=(await getJSON(`school-link-requests/${code}`))||[];
-      const ix=requests.findIndex(x=>normalizeEmail(x.email)===email&&x.status==='pending');
+      const ix=requests.findIndex(x=>(requestUserId?x.userId===requestUserId:normalizeEmail(x.email)===email)&&x.status==='pending');
       if(ix<0)return json(404,{error:'Richiesta in attesa non trovata'});
       const request=requests[ix];
+      const requestEmail=normalizeEmail(request.email);
       if(body.action==='approve-request'&&!request.userId)return json(409,{error:'Richiesta legacy: il docente deve inviarne una nuova dal suo account attuale.'});
-      const applicant=await getMembership(email);
+      const applicant=await getMembership(requestEmail);
       if(applicant?.status==='active'&&applicant.userId!==request.userId)return json(409,{error:'Email già associata a un altro account. Intervento piattaforma necessario.'});
       request.status=body.action==='approve-request'?'approved':'rejected';
       request.decidedAt=new Date().toISOString();request.decidedBy=user.email;
       if(request.status==='approved'){
-        const membership={userId:request.userId,email,code,role:'teacher',status:'active',joinedAt:request.decidedAt,assignedBy:user.id,displayName:request.displayName};
-        await setMembership(email,membership);
+        const membership={userId:request.userId,email:requestEmail,code,role:'teacher',status:'active',joinedAt:request.decidedAt,assignedBy:user.id,displayName:request.displayName};
+        await setMembership(requestEmail,membership);
         const list=(await getJSON(`school-members/${code}`))||[];
-        const memberIx=list.findIndex(x=>normalizeEmail(x.email)===email);
+        const memberIx=list.findIndex(x=>x.userId===request.userId||normalizeEmail(x.email)===requestEmail);
         if(memberIx>=0)list[memberIx]=membership;else list.push(membership);
         await setJSON(`school-members/${code}`,list.slice(0,1500));
       }

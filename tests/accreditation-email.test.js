@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {sendSchoolApprovalEmail,schoolEmailConfiguration,SchoolEmailError} from '../netlify/functions/_brevo.js';
+import {sendSchoolApprovalEmail,sendSchoolLinkRequestEmail,schoolEmailConfiguration,SchoolEmailError} from '../netlify/functions/_brevo.js';
 
 function netlifyEnv(values={}){
   globalThis.Netlify={env:{get:key=>values[key]||''}};
@@ -35,4 +35,16 @@ test('pannello distingue attivazione, associazione ed esito email',()=>{
   assert.match(html,/Account amministratore già associato/);
   assert.match(html,/scuola e l’account restano attivi/i);
   assert.match(html,/Email informativa inviata correttamente/);
+});
+
+test('Brevo avvisa il referente quando un docente chiede il collegamento',async()=>{
+  netlifyEnv({BREVO_API_KEY:'test-secret',BREVO_SENDER_EMAIL:'scuole@example.it'});
+  const oldFetch=globalThis.fetch;let request;
+  globalThis.fetch=async(url,options)=>{request={url,options};return new Response(JSON.stringify({messageId:'link-id'}),{status:201});};
+  try{
+    await sendSchoolLinkRequestEmail({to:'referente@example.it',schoolName:'Istituto Test',teacherName:'Luigi Talerico',teacherEmail:'talerico@example.it'});
+    const payload=JSON.parse(request.options.body);
+    assert.equal(payload.to[0].email,'referente@example.it');assert.match(payload.subject,/Richiesta collegamento docente/);
+    assert.match(payload.htmlContent,/Luigi Talerico/);assert.match(payload.htmlContent,/Approva oppure Rifiuta/);assert.match(payload.htmlContent,/automaticamente/);
+  }finally{globalThis.fetch=oldFetch;delete globalThis.Netlify;}
 });

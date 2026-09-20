@@ -128,3 +128,27 @@ export async function sendSchoolScheduleUpdateEmail({to, schoolName, validFrom='
   }
   return data;
 }
+
+export async function sendSchoolLinkRequestEmail({to,schoolName,teacherName='',teacherEmail=''}){
+  const apiKey=env('BREVO_API_KEY');
+  if(!apiKey)throw new SchoolEmailError('email_provider_not_configured','Servizio email non configurato su Netlify');
+  if(!String(to||'').includes('@'))throw new SchoolEmailError('invalid_recipient','Indirizzo email destinatario non valido');
+  const {senderEmail,senderName}=schoolEmailConfiguration();
+  const safeSchool=escapeHtml(schoolName||'la scuola'),safeTeacher=escapeHtml(teacherName||teacherEmail||'Un docente'),safeEmail=escapeHtml(teacherEmail||'');
+  const htmlContent=`<!doctype html><html lang="it"><body style="margin:0;background:#f4f8fc;font-family:Arial,sans-serif;color:#10233f">
+    <div style="max-width:640px;margin:0 auto;padding:28px 18px">
+      <div style="background:#0b2a5b;color:#fff;border-radius:18px 18px 0 0;padding:24px"><h1 style="margin:0;font-size:24px">Orario Docente</h1><p style="margin:8px 0 0">Nuova richiesta di collegamento</p></div>
+      <div style="background:#fff;border:1px solid #dfe7f0;border-top:0;border-radius:0 0 18px 18px;padding:26px">
+        <p><strong>${safeTeacher}</strong>${safeEmail?` (${safeEmail})`:''} ha chiesto di collegarsi a <strong>${safeSchool}</strong>.</p>
+        <p>Accedi al <strong>Portale scuola</strong>, apri “Richieste di collegamento” e scegli Approva oppure Rifiuta. Dopo l’approvazione il docente verrà collegato automaticamente.</p>
+        <p style="margin:26px 0"><a href="https://orariodocente.it/" style="display:inline-block;background:#0b2a5b;color:#fff;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:10px">Apri il Portale scuola</a></p>
+        <p>Cordiali saluti,<br><strong>Orario Docente</strong></p>
+      </div>
+    </div></body></html>`;
+  let response;
+  try{response=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{accept:'application/json','content-type':'application/json','api-key':apiKey},body:JSON.stringify({sender:{name:senderName,email:senderEmail},to:[{email:to}],replyTo:{email:senderEmail,name:senderName},subject:`Richiesta collegamento docente – ${schoolName||'Orario Docente'}`,htmlContent})})}
+  catch(error){throw new SchoolEmailError('email_provider_unreachable','Servizio email temporaneamente non raggiungibile',{status:0,cause:error})}
+  const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{}
+  if(!response.ok)throw new SchoolEmailError('email_provider_rejected',data.message||`Invio email rifiutato dal provider (HTTP ${response.status})`,{status:response.status});
+  return data;
+}

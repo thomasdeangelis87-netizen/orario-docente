@@ -54,7 +54,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #14 · v16.10.23</div>
+<div id="buildVersion" class="build-version">PR #14 · v16.10.24</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -178,7 +178,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
       </div>
       <div class="school-connect">
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>🏫 Collegamento scuola</strong><div class="admin-note">Trova una scuola accreditata e chiedi al referente di collegarti, oppure inserisci il codice ricevuto.</div></div><div><span class="role-badge" id="schoolRoleBadge">Docente</span></div></div>
-        <div id="schoolDirectoryPanel"><label for="schoolDirectorySearch">Cerca il tuo istituto tra le scuole accreditate</label><div class="school-find"><input id="schoolDirectorySearch" placeholder="Nome istituto, città o codice meccanografico"><button class="btn soft" id="schoolDirectorySearchBtn">Cerca</button></div><select id="schoolDirectorySelect" class="mobile-day-select"><option value="">Seleziona una scuola…</option></select><button id="requestSchoolLinkBtn" class="btn soft">Richiedi collegamento alla scuola</button><div class="admin-note" style="margin-top:8px">Senza codice, la scuola deve approvare la richiesta. Dopo l’approvazione l’account si collegherà automaticamente e qui comparirà l’orario ufficiale dell’istituto.</div><div id="schoolLinkRequestStatus" class="admin-note" role="status" aria-live="polite"></div></div>
+        <div id="schoolDirectoryPanel"><label for="schoolDirectorySearch">Cerca il tuo istituto tra le scuole accreditate</label><div class="school-find"><input id="schoolDirectorySearch" placeholder="Nome istituto, città o codice meccanografico"><button class="btn soft" id="schoolDirectorySearchBtn">Cerca</button></div><select id="schoolDirectorySelect" class="mobile-day-select"><option value="">Seleziona una scuola…</option></select><button id="requestSchoolLinkBtn" class="btn soft">Invia richiesta di collegamento</button><div class="admin-note" style="margin-top:8px">Per proteggere l’orario completo, un amministratore o referente della scuola deve approvare la richiesta. Riceverà un’email; dopo l’approvazione l’account si collegherà automaticamente entro pochi secondi. Se possiedi il codice scuola, il collegamento è immediato.</div><div id="schoolLinkRequestStatus" class="admin-note" role="status" aria-live="polite"></div><button id="cancelSchoolLinkRequestBtn" class="btn danger hidden" type="button">Annulla richiesta</button></div>
         <details id="schoolCodePanel"><summary>Hai ricevuto un codice dalla scuola? Inserisci codice</summary>
         <div class="school-connect-grid" style="margin-top:12px">
           <div><label>Nome scuola</label><input id="linkedSchoolName" placeholder="es. Istituto Omnicomprensivo Ancel Keys"></div>
@@ -187,7 +187,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
           <button class="btn primary" id="connectSchoolBtn">Collega scuola</button>
         </div>
         </details>
-        <div id="schoolConnectionInfo" class="admin-note" style="margin-top:10px"></div>
+        <div id="schoolConnectionInfo" class="admin-note" style="margin-top:10px"></div><button id="disconnectSchoolBtn" class="btn danger hidden" type="button">Scollega scuola</button>
         <div id="schoolPersonalImport" class="hidden" style="margin-top:14px;padding:14px;border:1px solid #b9d2f5;border-radius:14px;background:#f5f9ff">
           <strong>👩‍🏫 Il mio orario dalla scuola</strong>
           <div id="schoolPersonalImportText" class="admin-note" style="margin:6px 0 10px"></div>
@@ -962,6 +962,7 @@ function renderSchoolManagementUI(){
  schoolManagement.classList.toggle('hidden',!authorized);
  schoolDirectoryPanel.classList.toggle('hidden',!!state.meta.schoolCode);
  schoolCodePanel.classList.toggle('hidden',!!state.meta.schoolCode);
+ disconnectSchoolBtn.classList.toggle('hidden',!state.meta.schoolCode||state.meta.schoolRole!=='teacher');
  schoolUploadBtn.classList.toggle('hidden',!authorized);
  schoolHoursBtn.classList.toggle('hidden',!authorized);
  if(authorized){
@@ -992,9 +993,9 @@ async function loadSchoolManagement(){
     try{await apiCall('school-members',{method:'POST',body:JSON.stringify({action:'revoke',email:button.dataset.revokeEmail})});await loadSchoolManagement();toast('Accesso revocato')}
     catch(e){alert(e.message)}
   });
-  schoolRequestsList.innerHTML=(data.requests||[]).map(r=>`<div><strong>${esc(r.displayName||r.email)}</strong><small> ${esc(r.email)}</small> <button class="btn soft" data-request-action="approve-request" data-request-email="${esc(r.email)}">Approva</button> <button class="btn danger" data-request-action="reject-request" data-request-email="${esc(r.email)}">Rifiuta</button></div>`).join('')||'<div>Nessuna richiesta in attesa.</div>';
+  schoolRequestsList.innerHTML=(data.requests||[]).map(r=>`<div><strong>${esc(r.displayName||r.email)}</strong><small> ${esc(r.email)}</small> <button class="btn soft" data-request-action="approve-request" data-request-email="${esc(r.email)}" data-request-user="${esc(r.userId||'')}">Approva</button> <button class="btn danger" data-request-action="reject-request" data-request-email="${esc(r.email)}" data-request-user="${esc(r.userId||'')}">Rifiuta</button></div>`).join('')||'<div>Nessuna richiesta in attesa.</div>';
   schoolRequestsList.querySelectorAll('[data-request-action]').forEach(button=>button.onclick=async()=>{
-   try{await apiCall('school-members',{method:'POST',body:JSON.stringify({action:button.dataset.requestAction,email:button.dataset.requestEmail})});await loadSchoolManagement();toast(button.dataset.requestAction==='approve-request'?'Docente collegato':'Richiesta rifiutata')}
+   try{await apiCall('school-members',{method:'POST',body:JSON.stringify({action:button.dataset.requestAction,email:button.dataset.requestEmail,userId:button.dataset.requestUser})});await loadSchoolManagement();toast(button.dataset.requestAction==='approve-request'?'Docente collegato: il suo account si aggiornerà automaticamente':'Richiesta rifiutata')}
    catch(e){alert(e.message)}
   });
  }catch(e){schoolRequestsList.textContent='Impossibile caricare le richieste: '+e.message}
@@ -1020,18 +1021,18 @@ function stopSchoolLinkPolling(){if(schoolLinkPollTimer){clearTimeout(schoolLink
 function scheduleSchoolLinkPolling(){
  stopSchoolLinkPolling();
  if(!currentUser||state.meta.schoolCode)return;
- schoolLinkPollTimer=setTimeout(()=>loadLinkRequestStatus({poll:true}),10000);
+ schoolLinkPollTimer=setTimeout(()=>loadLinkRequestStatus({poll:true}),3000);
 }
 async function loadLinkRequestStatus({poll=false}={}){
  if(state.meta.schoolCode)return;
  try{
   const data=await apiCall('school-link-request'),request=data.request;
-  if(!request)return;
+  if(!request){cancelSchoolLinkRequestBtn.classList.add('hidden');return}
   if(request.status==='pending'){
    schoolLinkRequestStatus.innerHTML=`⏳ Richiesta inviata a <strong>${esc(request.schoolName)}</strong>. In attesa dell’approvazione della scuola; non devi reinserire il codice.`;
-   requestSchoolLinkBtn.disabled=true;schoolDirectorySelect.disabled=true;scheduleSchoolLinkPolling();return;
+   requestSchoolLinkBtn.disabled=true;schoolDirectorySelect.disabled=true;cancelSchoolLinkRequestBtn.classList.remove('hidden');scheduleSchoolLinkPolling();return;
   }
-  stopSchoolLinkPolling();requestSchoolLinkBtn.disabled=false;schoolDirectorySelect.disabled=false;
+  stopSchoolLinkPolling();requestSchoolLinkBtn.disabled=false;schoolDirectorySelect.disabled=false;cancelSchoolLinkRequestBtn.classList.add('hidden');
   if(request.status==='approved'){
    schoolLinkRequestStatus.textContent='✅ Richiesta approvata. Collegamento e caricamento dell’orario scuola in corso…';
    const linked=await loadSchoolCloud({showError:true,saveProfile:true});
@@ -1064,8 +1065,24 @@ requestSchoolLinkBtn.onclick=async()=>{
  const schoolId=schoolDirectorySelect.value;
  if(!schoolId){alert('Seleziona prima una scuola accreditata.');return}
  requestSchoolLinkBtn.disabled=true;
- try{const data=await apiCall('school-link-request',{method:'POST',body:JSON.stringify({schoolId,displayName:fullName()})});schoolLinkRequestStatus.innerHTML=`⏳ Richiesta inviata a <strong>${esc(data.request.schoolName)}</strong>. Il referente dovrà approvarla; l’orario comparirà automaticamente dopo l’approvazione.`;requestSchoolLinkBtn.disabled=true;schoolDirectorySelect.disabled=true;scheduleSchoolLinkPolling()}
+ try{const data=await apiCall('school-link-request',{method:'POST',body:JSON.stringify({schoolId,displayName:fullName()})});schoolLinkRequestStatus.innerHTML=`⏳ Richiesta inviata a <strong>${esc(data.request.schoolName)}</strong>. Amministratori e referenti sono stati avvisati; dopo l’approvazione il collegamento sarà automatico.`;requestSchoolLinkBtn.disabled=true;schoolDirectorySelect.disabled=true;cancelSchoolLinkRequestBtn.classList.remove('hidden');scheduleSchoolLinkPolling()}
  catch(e){alert(e.message);await loadLinkRequestStatus()}finally{if(!schoolLinkPollTimer)requestSchoolLinkBtn.disabled=false}
+};
+cancelSchoolLinkRequestBtn.onclick=async()=>{
+ cancelSchoolLinkRequestBtn.disabled=true;
+ try{await apiCall('school-link-request',{method:'POST',body:JSON.stringify({action:'cancel-request'})});stopSchoolLinkPolling();schoolLinkRequestStatus.textContent='Richiesta annullata. Puoi selezionare un’altra scuola.';requestSchoolLinkBtn.disabled=false;schoolDirectorySelect.disabled=false;cancelSchoolLinkRequestBtn.classList.add('hidden')}
+ catch(error){alert(error.message)}finally{cancelSchoolLinkRequestBtn.disabled=false}
+};
+disconnectSchoolBtn.onclick=async()=>{
+ if(!confirm('Scollegare il tuo account da questa scuola? Il tuo orario personale resterà salvato, ma non riceverà più aggiornamenti dall’istituto.'))return;
+ disconnectSchoolBtn.disabled=true;
+ try{
+  await apiCall('leave-school',{method:'POST',body:'{}'});stopSchoolLinkPolling();
+  state.meta.school='';state.meta.schoolCode='';state.meta.schoolRole='teacher';state.meta.schoolTeacherName='';
+  delete state.meta.schoolScheduleVersion;delete state.meta.schoolScheduleEntries;delete state.meta.schoolScheduleFingerprint;delete state.meta.schoolScheduleUpdatedAt;
+  schoolData=emptySchoolData();schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';saveSchoolLocal();
+  render({save:false});await persistProfileNow();await searchAccreditedSchools();renderSchool();toast('Scuola scollegata. Il tuo orario personale è rimasto salvato.');
+ }catch(error){alert(error.message)}finally{disconnectSchoolBtn.disabled=false}
 };
 async function auditSchoolStorage(){
   let audited=false;

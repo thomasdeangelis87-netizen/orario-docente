@@ -133,11 +133,16 @@ test('scuole directory non mostrano codice rapido; richieste sono approvate lato
  assert.match(code('school-link-request.js'),/status:'pending'/);
  assert.match(code('school-members.js'),/body\.action==='approve-request'/);
  assert.match(code('school-members.js'),/body\.action==='reject-request'/);
- assert.match(html,/Richiedi collegamento alla scuola/);
- assert.match(html,/Dopo l’approvazione l’account si collegherà automaticamente/);
+ assert.match(html,/Invia richiesta di collegamento/);
+ assert.match(html,/dopo l’approvazione l’account si collegherà automaticamente/i);
  assert.match(html,/request\.status==='approved'[\s\S]*?loadSchoolCloud\(\{showError:true,saveProfile:true\}\)/);
  assert.match(html,/scheduleSchoolLinkPolling\(\)/);
  assert.match(html,/stopSchoolLinkPolling\(\)/);
+ assert.match(html,/id="cancelSchoolLinkRequestBtn"/);
+ assert.match(html,/id="disconnectSchoolBtn"/);
+ assert.match(html,/apiCall\('leave-school'/);
+ assert.match(code('school-link-request.js'),/sendSchoolLinkRequestEmail/);
+ assert.match(code('school-link-request.js'),/body\.action==='cancel-request'/);
   assert.equal(scheduleVersion(null,true),1);
   assert.equal(scheduleVersion({entries:[{}]},true),2);
   assert.equal(scheduleVersion({entries:[{}],version:5},false),5);
