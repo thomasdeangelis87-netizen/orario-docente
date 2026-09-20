@@ -127,6 +127,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <nav class="appnav" aria-label="Sezioni app">
     <button class="navbtn active" data-view="myScheduleView">📅 Il mio orario</button>
+    <button class="navbtn" id="navConnectionGuideBtn" type="button">❓ Come caricare il mio orario</button>
     <button class="navbtn" data-view="myClassesView">🎓 Le mie classi</button>
     <button class="navbtn" data-view="schoolView">🏫 Orario scuola</button>
     <button class="navbtn hidden" id="schoolPortalNavBtn" data-view="schoolPortalView">🏫 Portale scuola</button>
@@ -1267,6 +1268,7 @@ importBtn.onclick=()=>{resetImportUi();openModal('importModal')};
 const openConnectionGuide=()=>openModal('connectionGuideModal');
 scheduleConnectionGuideBtn.onclick=openConnectionGuide;
 schoolConnectionGuideBtn.onclick=openConnectionGuide;
+navConnectionGuideBtn.onclick=openConnectionGuide;
 openSchoolFromGuideBtn.onclick=()=>{closeModal('connectionGuideModal');switchView('schoolView')};
 document.querySelectorAll('[data-import-kind]').forEach(el=>el.onclick=()=>{const k=el.dataset.importKind;smartImportFile.accept=k==='excel'?'.xlsx,.xls':k==='pdf'?'.pdf':'.png,.jpg,.jpeg,.webp';smartImportFile.click()});
 smartImportFile.onchange=e=>{const f=e.target.files[0];if(f)processSmartImport(f)};
