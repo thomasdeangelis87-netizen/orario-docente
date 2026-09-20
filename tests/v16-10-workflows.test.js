@@ -87,6 +87,12 @@ test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce autom
  assert.match(html,/confirm\(`Trovati \$\{entries\.length\} impegni/);
 });
 
+test('le compresenze strutturate della scuola arrivano nell’orario personale',()=>{
+ assert.match(html,/Array\.isArray\(e\.coTeachers\)\?e\.coTeachers:\[\]/);
+ assert.match(html,/👥 Compresenza:/);
+ assert.match(html,/👥 con/);
+});
+
 test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{
  assert.match(html,/school-hours-sync\.js\?v=16\.10\.19/);
  assert.match(html,/OrarioSchoolHoursSync\.apply\(state,schoolData\)/);

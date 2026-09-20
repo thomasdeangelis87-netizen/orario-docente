@@ -75,6 +75,7 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
   const usedCenters=centers.slice(0,periodsPerDay*dayHeaders.length),first=usedCenters[0],step=median(usedCenters.slice(1).map((x,i)=>x-usedCenters[i]));
   const gutterRight=first-step*.52;
   const teacherLines=lines.filter(l=>l.y>headerBottom&&l.items.some(i=>i.x<gutterRight)).map(l=>({y:l.y,name:l.items.filter(i=>i.x<gutterRight).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim()})).filter(x=>x.name&&/[A-ZÀ-ÖØ-Ý]/i.test(x.name));
+  const knownTeacherNames=new Map(teacherLines.map(row=>[norm(row.name),row.name]));
   for(let r=0;r<teacherLines.length;r++){
    const row=teacherLines[r],top=r?((teacherLines[r-1].y+row.y)/2):headerBottom,bottom=r<teacherLines.length-1?((row.y+teacherLines[r+1].y)/2):Math.min(page.height,row.y+(row.y-(teacherLines[r-1]?.y||headerBottom))/2);
    const key=norm(row.name);if(!teachersMap.has(key))teachersMap.set(key,{name:row.name,subject:''});
@@ -88,10 +89,12 @@ export function parseTeacherMatrixSchoolPages(pages,options={}){
     if(!cellLines.length)continue;
     const classLine=cellLines.find(v=>/^\s*[1-5]\s*[A-Z]{1,4}(?:\s+[A-Z]{1,3})?\s*$/i.test(v));
     const className=classLine?classLine.replace(/\s+/g,'').toUpperCase():'';
-    const nonClass=cellLines.filter(v=>v!==classLine),raw=nonClass.join(' · ').trim();
+    const nonClass=cellLines.filter(v=>v!==classLine),coTeachers=[],contentLines=[];
+    for(const line of nonClass){const known=knownTeacherNames.get(norm(line)),roomLike=/^\s*(?:LAB(?:ORATORIO)?|AULA|SALA|PALESTRA)\b/i.test(line);if(known||(!roomLike&&looksLikePerson(line))){const name=known||line;if(norm(name)!==norm(row.name)&&!coTeachers.some(x=>norm(x)===norm(name)))coTeachers.push(name)}else contentLines.push(line)}
+    const raw=contentLines.join(' · ').trim();
     if(!raw&&!className)continue;
     const availability=/\bDISP(?:ONIBILITA)?\.?\b/i.test(raw),activity=className||(availability?'DISPOSIZIONE':raw),subject=availability?'DISPOSIZIONE':raw;
-    for(const column of covered){occupied.add(column);const day=Math.floor(column/periodsPerDay),period=column%periodsPerDay+1;entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:[]});if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:''})}
+    for(const column of covered){occupied.add(column);const day=Math.floor(column/periodsPerDay),period=column%periodsPerDay+1;entries.push({teacher:row.name,subject,day,period,time:'',activity,room:'',coTeachers:coTeachers.slice()});if(className)classCells.push({className,day,period,time:'',teacher:row.name,subject,room:'',coTeachers:coTeachers.slice()})}
    }
   }
  }

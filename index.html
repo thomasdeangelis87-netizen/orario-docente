@@ -890,7 +890,9 @@ async function importMySchoolSchedule(){
     if(d>=0&&d<6&&p>=0&&p<MAX_PERIODS){
       const key=`${d}-${p}`;
       const activity=cleanCell(e.activity||e.subject||'D');
-      const companions=coTeachersFromLabel(e.teacher,teacher);
+      const companions=[...coTeachersFromLabel(e.teacher,teacher),...(Array.isArray(e.coTeachers)?e.coTeachers:[])]
+        .map(cleanCell).filter(name=>name&&normText(name)!==normText(teacher))
+        .filter((name,index,list)=>list.findIndex(other=>normText(other)===normText(name))===index);
       const subject=cleanCell(e.subject||'');
 
       if(!slots[key]){
