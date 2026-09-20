@@ -54,7 +54,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #14 · v16.10.24</div>
+<div id="buildVersion" class="build-version">PR #14 · v16.10.25</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -1074,14 +1074,16 @@ cancelSchoolLinkRequestBtn.onclick=async()=>{
  catch(error){alert(error.message)}finally{cancelSchoolLinkRequestBtn.disabled=false}
 };
 disconnectSchoolBtn.onclick=async()=>{
- if(!confirm('Scollegare il tuo account da questa scuola? Il tuo orario personale resterà salvato, ma non riceverà più aggiornamenti dall’istituto.'))return;
+ if(!confirm('Scollegare il tuo account da questa scuola? Verranno eliminati dal tuo profilo i dati della scuola e il tuo orario personale. L’orario ufficiale dell’istituto resterà invariato.'))return;
  disconnectSchoolBtn.disabled=true;
  try{
   await apiCall('leave-school',{method:'POST',body:'{}'});stopSchoolLinkPolling();
+  state.slots={};state.meta.maxPeriods=6;delete state.meta.periodTimes;
   state.meta.school='';state.meta.schoolCode='';state.meta.schoolRole='teacher';state.meta.schoolTeacherName='';
   delete state.meta.schoolScheduleVersion;delete state.meta.schoolScheduleEntries;delete state.meta.schoolScheduleFingerprint;delete state.meta.schoolScheduleUpdatedAt;
+  if(state.meta.validFromSource==='school'){state.meta.validFrom='';delete state.meta.validFromSource}
   schoolData=emptySchoolData();schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';saveSchoolLocal();
-  render({save:false});await persistProfileNow();await searchAccreditedSchools();renderSchool();toast('Scuola scollegata. Il tuo orario personale è rimasto salvato.');
+  render({save:false});await persistProfileNow();await searchAccreditedSchools();renderSchool();toast('Scuola scollegata e orario personale eliminato.');
  }catch(error){alert(error.message)}finally{disconnectSchoolBtn.disabled=false}
 };
 async function auditSchoolStorage(){

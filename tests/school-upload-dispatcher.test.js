@@ -28,7 +28,7 @@ test('Carica orario completo invia xlsx e xls solo al parser Excel',async()=>{
 
 test('la Deploy Preview disattiva service worker e rende visibile la build',()=>{
   const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
- assert.match(html,/id="buildVersion"[^>]*>PR #14 · v16\.10\.24</);
+ assert.match(html,/id="buildVersion"[^>]*>PR #14 · v16\.10\.25</);
   assert.match(html,/IS_DEPLOY_PREVIEW=\/\^deploy-preview-/);
   assert.match(html,/registration=>registration\.unregister\(\)/);
   assert.match(html,/caches\.delete\(key\)/);

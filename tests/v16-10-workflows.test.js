@@ -141,6 +141,8 @@ test('scuole directory non mostrano codice rapido; richieste sono approvate lato
  assert.match(html,/id="cancelSchoolLinkRequestBtn"/);
  assert.match(html,/id="disconnectSchoolBtn"/);
  assert.match(html,/apiCall\('leave-school'/);
+ assert.match(html,/state\.slots=\{\}/);
+ assert.match(html,/orario personale eliminato/);
  assert.match(code('school-link-request.js'),/sendSchoolLinkRequestEmail/);
  assert.match(code('school-link-request.js'),/body\.action==='cancel-request'/);
   assert.equal(scheduleVersion(null,true),1);
