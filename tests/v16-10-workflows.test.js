@@ -87,6 +87,13 @@ test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce autom
  assert.match(html,/confirm\(`Trovati \$\{entries\.length\} impegni/);
 });
 
+test('le sole fasce orarie della scuola si sincronizzano automaticamente nel personale',()=>{
+ assert.match(html,/school-hours-sync\.js\?v=16\.10\.19/);
+ assert.match(html,/OrarioSchoolHoursSync\.apply\(state,schoolData\)/);
+ assert.match(html,/Fasce orarie aggiornate dalla scuola/);
+ assert.match(html,/id==='myScheduleView'&&state\.meta\.schoolCode\)loadSchoolCloud/);
+});
+
 test('scuole directory non mostrano codice rapido; richieste sono approvate lato server',()=>{
  assert.match(html,/id="schoolDirectorySearch"/);
  assert.match(html,/Hai ricevuto un codice dalla scuola\? Inserisci codice/);
@@ -94,6 +101,11 @@ test('scuole directory non mostrano codice rapido; richieste sono approvate lato
  assert.match(code('school-link-request.js'),/status:'pending'/);
  assert.match(code('school-members.js'),/body\.action==='approve-request'/);
  assert.match(code('school-members.js'),/body\.action==='reject-request'/);
+ assert.match(html,/Richiedi collegamento alla scuola/);
+ assert.match(html,/Dopo l’approvazione l’account si collegherà automaticamente/);
+ assert.match(html,/request\.status==='approved'[\s\S]*?loadSchoolCloud\(\{showError:true,saveProfile:true\}\)/);
+ assert.match(html,/scheduleSchoolLinkPolling\(\)/);
+ assert.match(html,/stopSchoolLinkPolling\(\)/);
   assert.equal(scheduleVersion(null,true),1);
   assert.equal(scheduleVersion({entries:[{}]},true),2);
   assert.equal(scheduleVersion({entries:[{}],version:5},false),5);
