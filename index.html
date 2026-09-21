@@ -65,7 +65,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #15 · v16.10.26</div>
+<div id="buildVersion" class="build-version">PR #16 · v16.10.27</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -1394,6 +1394,6 @@ window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast(event.detail||'Accesso non disponibile: riprova più tardi')});
 </script>
-<script type="module" src="/identity-client.js?v=16.10.26"></script>
+<script type="module" src="/identity-client.js?v=16.10.27"></script>
 </body>
 </html>

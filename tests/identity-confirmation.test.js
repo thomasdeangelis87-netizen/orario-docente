@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {confirmationTokenFromLocation,confirmationCallbackUrl,confirmationErrorMessage} from '../src/identity-confirmation.js';
+import {confirmationTokenFromLocation,confirmationCallbackUrl,confirmationErrorMessage,invitePasswordRequired} from '../src/identity-confirmation.js';
 
 const index=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const callback=fs.readFileSync(new URL('../auth-callback.html',import.meta.url),'utf8');
@@ -17,7 +17,7 @@ test('la home instrada la conferma nella pagina dedicata prima di caricare l app
   const redirect=index.indexOf("location.replace(`/auth-callback.html#confirmation_token=");
   const application=index.indexOf('xlsx.full.min.js');
   assert.ok(redirect>0 && redirect<application);
-  assert.match(callback,/identity-confirmation-client\.js\?v=16\.10\.26/);
+  assert.match(callback,/identity-confirmation-client\.js\?v=16\.10\.27/);
 });
 
 test('la conferma riuscita non viene trasformata in errore da un logout immediato',()=>{
@@ -27,4 +27,13 @@ test('la conferma riuscita non viene trasformata in errore da un logout immediat
 test('gli errori Identity distinguono link scaduto e non valido',()=>{
   assert.match(confirmationErrorMessage(new Error('Token has expired')),/scaduto/i);
   assert.match(confirmationErrorMessage(new Error('Invalid confirmation token')),/non è valido/i);
+});
+
+test('un account invitato può scegliere la password senza creare una nuova Identity',()=>{
+  const client=fs.readFileSync(new URL('../src/identity-confirmation-client.js',import.meta.url),'utf8');
+  assert.equal(invitePasswordRequired(new Error('Invited users must specify a password')),true);
+  assert.match(callback,/id="invitePasswordForm"/);
+  assert.match(callback,/Conferma email e attiva account/);
+  assert.match(client,/await acceptInvite\(confirmationToken,password\)/);
+  assert.doesNotMatch(client,/signup\(/);
 });

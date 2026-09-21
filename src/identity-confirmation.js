@@ -17,3 +17,7 @@ export function confirmationErrorMessage(error){
   if(normalized.includes('invalid')||normalized.includes('token'))return 'Il link di conferma non è valido o è già stato utilizzato. Apri l’ultimo messaggio ricevuto e riprova.';
   return detail||'Identity non ha completato la conferma. Riprova dal link ricevuto via email.';
 }
+
+export function invitePasswordRequired(error){
+  return /invited users must specify a password/i.test(String(error?.message||error||''));
+}
