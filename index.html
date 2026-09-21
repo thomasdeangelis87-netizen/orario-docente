@@ -65,7 +65,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #16 · v16.10.27</div>
+<div id="buildVersion" class="build-version">PR #17 · v16.10.28</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -188,8 +188,8 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
         <button class="btn soft" id="schoolConnectionGuideBtn">❓ Come collegare il mio orario</button>
       </div>
       <div class="school-connect">
-        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>🏫 Collegamento scuola</strong><div class="admin-note">Trova una scuola accreditata e chiedi al referente di collegarti, oppure inserisci il codice ricevuto.</div></div><div><span class="role-badge" id="schoolRoleBadge">Docente</span></div></div>
-        <div id="schoolDirectoryPanel"><label for="schoolDirectorySearch">Cerca il tuo istituto tra le scuole accreditate</label><div class="school-find"><input id="schoolDirectorySearch" placeholder="Nome istituto, città o codice meccanografico"><button class="btn soft" id="schoolDirectorySearchBtn">Cerca</button></div><select id="schoolDirectorySelect" class="mobile-day-select"><option value="">Seleziona una scuola…</option></select><button id="requestSchoolLinkBtn" class="btn soft">Invia richiesta di collegamento</button><div class="admin-note" style="margin-top:8px">Per proteggere l’orario completo, un amministratore o referente della scuola deve approvare la richiesta. Riceverà un’email; dopo l’approvazione l’account si collegherà automaticamente entro pochi secondi. Se possiedi il codice scuola, il collegamento è immediato.</div><div id="schoolLinkRequestStatus" class="admin-note" role="status" aria-live="polite"></div><button id="cancelSchoolLinkRequestBtn" class="btn danger hidden" type="button">Annulla richiesta</button></div>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><strong>🏫 Collegamento scuola</strong><div class="admin-note">Trova una scuola accreditata e collegala subito al tuo account, oppure inserisci il codice ricevuto.</div></div><div><span class="role-badge" id="schoolRoleBadge">Docente</span></div></div>
+        <div id="schoolDirectoryPanel"><label for="schoolDirectorySearch">Cerca il tuo istituto tra le scuole accreditate</label><div class="school-find"><input id="schoolDirectorySearch" placeholder="Nome istituto, città o codice meccanografico"><button class="btn soft" id="schoolDirectorySearchBtn">Cerca</button></div><select id="schoolDirectorySelect" class="mobile-day-select"><option value="">Seleziona una scuola…</option></select><button id="requestSchoolLinkBtn" class="btn soft">Collega scuola</button><div class="admin-note" style="margin-top:8px">Seleziona la scuola e premi “Collega scuola”: il collegamento è immediato. Se possiedi il codice scuola, puoi usarlo come percorso alternativo.</div><div id="schoolLinkRequestStatus" class="admin-note" role="status" aria-live="polite"></div><button id="cancelSchoolLinkRequestBtn" class="btn danger hidden" type="button">Annulla richiesta</button></div>
         <details id="schoolCodePanel"><summary>Hai ricevuto un codice dalla scuola? Inserisci codice</summary>
         <div class="school-connect-grid" style="margin-top:12px">
           <div><label>Nome scuola</label><input id="linkedSchoolName" placeholder="es. Istituto Omnicomprensivo Ancel Keys"></div>
@@ -310,7 +310,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   <p>Segui questi passaggi per ottenere l’orario personale pubblicato dalla tua scuola.</p>
   <ol class="connection-guide">
     <li><strong>Apri “Orario scuola”</strong>Entra nella sezione dedicata al collegamento con il tuo istituto.</li>
-    <li><strong>Collega la scuola</strong>Scegli l’istituto dall’elenco e invia la richiesta, oppure inserisci il codice scuola ricevuto. Con la richiesta dovrai attendere l’approvazione del referente; con un codice valido il collegamento è immediato.</li>
+    <li><strong>Collega la scuola</strong>Scegli l’istituto dall’elenco e premi “Collega scuola”: il collegamento è immediato. In alternativa puoi inserire il codice scuola ricevuto.</li>
     <li><strong>Importa il tuo orario</strong>Nella stessa schermata premi “Importa il mio orario dalla scuola”. Se il nome non viene riconosciuto automaticamente, seleziona come compare nell’orario ufficiale.</li>
     <li><strong>Apri “Il mio orario”</strong>Troverai il tuo orario personale pronto da consultare.</li>
   </ol>
@@ -1076,7 +1076,7 @@ requestSchoolLinkBtn.onclick=async()=>{
  const schoolId=schoolDirectorySelect.value;
  if(!schoolId){alert('Seleziona prima una scuola accreditata.');return}
  requestSchoolLinkBtn.disabled=true;
- try{const data=await apiCall('school-link-request',{method:'POST',body:JSON.stringify({schoolId,displayName:fullName()})});schoolLinkRequestStatus.innerHTML=`⏳ Richiesta inviata a <strong>${esc(data.request.schoolName)}</strong>. Amministratori e referenti sono stati avvisati; dopo l’approvazione il collegamento sarà automatico.`;requestSchoolLinkBtn.disabled=true;schoolDirectorySelect.disabled=true;cancelSchoolLinkRequestBtn.classList.remove('hidden');scheduleSchoolLinkPolling()}
+ try{const data=await apiCall('school-link-request',{method:'POST',body:JSON.stringify({schoolId,displayName:fullName()})});schoolLinkRequestStatus.textContent='✅ Scuola collegata. Caricamento dell’orario ufficiale in corso…';const linked=await loadSchoolCloud({showError:true,saveProfile:true});if(linked){render();toast(schoolData.entries.length?'Scuola collegata: orario ufficiale caricato':'Scuola collegata: nessun orario ancora pubblicato')}}
  catch(e){alert(e.message);await loadLinkRequestStatus()}finally{if(!schoolLinkPollTimer)requestSchoolLinkBtn.disabled=false}
 };
 cancelSchoolLinkRequestBtn.onclick=async()=>{
