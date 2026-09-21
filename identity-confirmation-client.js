@@ -592,8 +592,8 @@ var handleAuthCallback = async () => {
   try {
     const accessToken = params.get("access_token");
     if (accessToken) return await handleOAuthCallback(client, params, accessToken);
-    const confirmationToken = params.get("confirmation_token");
-    if (confirmationToken) return await handleConfirmationCallback(client, confirmationToken);
+    const confirmationToken2 = params.get("confirmation_token");
+    if (confirmationToken2) return await handleConfirmationCallback(client, confirmationToken2);
     const recoveryToken = params.get("recovery_token");
     if (recoveryToken) return await handleRecoveryCallback(client, recoveryToken);
     const inviteToken = params.get("invite_token");
@@ -717,6 +717,18 @@ var toUser = (userData) => {
     appMetadata: appMeta
   };
 };
+var acceptInvite = async (token, password) => {
+  const client = getClient();
+  try {
+    const gotrueUser = await client.acceptInvite(token, password, persistSession);
+    const user = toUser(gotrueUser);
+    startTokenRefresh();
+    emitAuthEvent(AUTH_EVENTS.LOGIN, user);
+    return user;
+  } catch (error) {
+    throw AuthError.from(error);
+  }
+};
 
 // src/identity-confirmation.js
 function confirmationTokenFromLocation(locationLike = {}) {
@@ -731,12 +743,20 @@ function confirmationErrorMessage(error) {
   if (normalized.includes("invalid") || normalized.includes("token")) return "Il link di conferma non \xE8 valido o \xE8 gi\xE0 stato utilizzato. Apri l\u2019ultimo messaggio ricevuto e riprova.";
   return detail2 || "Identity non ha completato la conferma. Riprova dal link ricevuto via email.";
 }
+function invitePasswordRequired(error) {
+  return /invited users must specify a password/i.test(String(error?.message || error || ""));
+}
 
 // src/identity-confirmation-client.js
 var status = document.getElementById("confirmationStatus");
 var detail = document.getElementById("confirmationDetail");
 var actions = document.getElementById("confirmationActions");
 var spinner = document.querySelector(".spinner");
+var passwordForm = document.getElementById("invitePasswordForm");
+var passwordInput = document.getElementById("invitePassword");
+var passwordConfirm = document.getElementById("invitePasswordConfirm");
+var passwordError = document.getElementById("invitePasswordError");
+var confirmationToken = "";
 function show(title, message, { success = false } = {}) {
   status.textContent = title;
   status.classList.toggle("success", success);
@@ -745,14 +765,23 @@ function show(title, message, { success = false } = {}) {
   spinner?.classList.add("hidden");
   actions.hidden = false;
 }
+function requestInvitePassword() {
+  status.textContent = "Completa l\u2019attivazione";
+  status.classList.remove("error", "success");
+  detail.textContent = "Questo account era gi\xE0 stato predisposto come invito. Scegli ora la password per confermare l\u2019email e attivare lo stesso account.";
+  spinner?.classList.add("hidden");
+  actions.hidden = true;
+  passwordForm.hidden = false;
+  passwordInput.focus();
+}
 async function confirmEmail() {
-  const token = confirmationTokenFromLocation(window.location);
-  if (!token) {
+  confirmationToken = confirmationTokenFromLocation(window.location);
+  if (!confirmationToken) {
     show("Link incompleto", "Nel collegamento non \xE8 presente il codice di conferma. Apri direttamente l\u2019ultimo link ricevuto via email.");
     return;
   }
   if (!new URLSearchParams(location.hash.slice(1)).has("confirmation_token")) {
-    history.replaceState(null, "", `${location.pathname}#confirmation_token=${encodeURIComponent(token)}`);
+    history.replaceState(null, "", `${location.pathname}#confirmation_token=${encodeURIComponent(confirmationToken)}`);
   }
   try {
     const result = await handleAuthCallback();
@@ -761,7 +790,37 @@ async function confirmEmail() {
     setTimeout(() => location.replace("/?email_confermata=1"), 900);
   } catch (error) {
     console.error("Identity email confirmation failed", error);
+    if (invitePasswordRequired(error)) {
+      requestInvitePassword();
+      return;
+    }
     show("Conferma non completata", confirmationErrorMessage(error));
   }
 }
+passwordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  passwordError.textContent = "";
+  const password = passwordInput.value;
+  if (password.length < 8) {
+    passwordError.textContent = "La password deve contenere almeno 8 caratteri.";
+    return;
+  }
+  if (password !== passwordConfirm.value) {
+    passwordError.textContent = "Le due password non coincidono.";
+    return;
+  }
+  const button = passwordForm.querySelector("button");
+  button.disabled = true;
+  try {
+    await acceptInvite(confirmationToken, password);
+    passwordForm.hidden = true;
+    show("Email confermata", "Account attivato correttamente. Accesso in corso\u2026", { success: true });
+    setTimeout(() => location.replace("/?email_confermata=1"), 900);
+  } catch (error) {
+    console.error("Identity invited user activation failed", error);
+    passwordError.textContent = confirmationErrorMessage(error);
+  } finally {
+    button.disabled = false;
+  }
+});
 confirmEmail();
