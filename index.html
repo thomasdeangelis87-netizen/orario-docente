@@ -45,6 +45,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#10233f;color:#fff;padding:12px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.modal{position:fixed;inset:0;background:rgba(8,21,38,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modal.show{display:flex}.modalbox{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.25)}.modalbox h3{margin-top:0}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 
 .appnav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.navbtn{appearance:none;border:1px solid #d6e1ed;background:#fff;color:#24415f;border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.navbtn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.news-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px}.news-search{display:flex;gap:8px;margin:14px 0}.news-search input,.assistant-box textarea{width:100%;border:1px solid #cbd7e4;border-radius:12px;padding:12px;color:var(--ink);background:#fff}.news-list{display:grid;gap:12px}.news-item{border:1px solid #dce5ef;border-radius:16px;padding:15px;background:#fff}.news-item h3{font-size:17px;line-height:1.25;margin:0 0 7px}.news-item p{color:var(--muted);line-height:1.45;margin:7px 0}.news-meta{font-size:12px;color:#718096}.news-item a{color:#164f91;font-weight:800;text-decoration:none}.assistant-box{position:sticky;top:12px;align-self:start}.assistant-box textarea{min-height:120px;resize:vertical}.assistant-answer{margin-top:12px;padding:14px;border-radius:14px;background:#f3f8ff;border:1px solid #ccddf2;line-height:1.55;white-space:pre-wrap}.assistant-sources{display:grid;gap:6px;margin-top:10px;font-size:13px}.assistant-sources a{color:#164f91}.news-status{padding:14px;color:var(--muted);text-align:center}
 .viewpage{display:none}.viewpage.active{display:block}.school-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.school-head h2{margin:0}.school-head p{margin:5px 0 0;color:var(--muted)}.school-controls{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px;margin:14px 0}.school-controls input,.school-controls select{width:100%;padding:11px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.stat{background:#f8fbff;border:1px solid #dce6f1;border-radius:14px;padding:12px}.stat strong{display:block;font-size:24px}.school-table{width:100%;border-collapse:collapse;min-width:760px}.school-table th,.school-table td{padding:10px 12px;border-bottom:1px solid #e2e9f1;text-align:left;vertical-align:top}.school-table th{background:#f3f7fb;color:#294565;position:sticky;top:0}.school-table tr:hover td{background:#fbfdff}.school-empty{padding:32px;text-align:center;color:var(--muted)}.chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf4fc;font-size:12px;font-weight:750}.myclasses{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.classchip{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.classchip.active{background:#dceeff;border-color:#9fc2e8}.admin-note{font-size:12px;color:#6f7e91;margin-top:8px}.school-file-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.school-file-row input{display:none}
 
 .class-schedule{display:grid;grid-template-columns:105px repeat(6,minmax(145px,1fr));min-width:980px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.class-schedule .cs{min-height:104px;padding:10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;background:#fff}.class-schedule .csh{min-height:64px;background:var(--navy);color:#fff;font-weight:850}.class-schedule .csp{background:#f5f9fd;font-weight:850}.class-schedule .csc{background:#fbfdff;flex-direction:column}.class-schedule .csc strong{font-size:16px;line-height:1.15}.class-schedule .csc small{display:block;margin-top:7px;color:#64758b;font-size:12px;line-height:1.2}.viewtoggle{display:flex;gap:8px;margin:12px 0}.viewtoggle button{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.viewtoggle button.active{background:#dceeff;border-color:#9fc2e8}
@@ -53,7 +54,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .mobile-schedule-toolbar,.mobile-timetable{display:none}
 .mobile-mode-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.mobile-mode-buttons button{border:1px solid #cfe0f4;background:#fff;color:var(--navy);border-radius:10px;padding:9px 5px;font-size:12px;font-weight:850;cursor:pointer}.mobile-mode-buttons button.active{background:var(--navy);border-color:var(--navy);color:#fff}.mobile-day-select{width:100%;margin-top:8px;padding:10px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff;color:var(--ink)}
 .mobile-day-card{min-width:0;overflow:hidden;background:#fff;border:1px solid #dbe5f0;border-radius:17px;box-shadow:0 5px 18px rgba(31,56,88,.08)}.mobile-day-head{padding:12px 14px;background:var(--navy);color:#fff;font-size:16px;font-weight:900}.mobile-lesson{display:grid;grid-template-columns:minmax(82px,96px) minmax(0,1fr);gap:12px;align-items:start;padding:12px;border-bottom:1px solid var(--line);min-width:0;overflow:hidden}.mobile-lesson:last-child{border-bottom:0}.mobile-lesson-time{font-size:12px;line-height:1.35;color:#52647b}.mobile-lesson-time strong{display:block;color:var(--ink);font-size:14px}.mobile-lesson-content{min-width:0;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title{font-size:15px;line-height:1.18;font-weight:850;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title.subject-long{font-size:14px}.mobile-lesson-title.subject-xlong{font-size:13px}.mobile-lesson-detail{margin-top:5px;color:#52647b;font-size:12px;line-height:1.35;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-detail.detail-long{font-size:11px}.mobile-lesson-detail.detail-xlong{font-size:10px;line-height:1.2}.mobile-lesson-detail span{display:block}.mobile-day-empty{padding:14px;color:var(--muted);font-size:13px}
-@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.mobile-schedule-toolbar{display:block;margin:10px 0}.mobile-timetable{display:grid;gap:12px;min-width:0;width:100%;max-width:100%;overflow-x:hidden}.desktop-week-card{display:none}.schedule-container.mobile-week-active .desktop-week-card{display:block}.schedule-container.mobile-week-active .mobile-timetable{display:none}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
+@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.news-layout{grid-template-columns:1fr}.assistant-box{position:static}.news-search{flex-direction:column}.mobile-schedule-toolbar{display:block;margin:10px 0}.mobile-timetable{display:grid;gap:12px;min-width:0;width:100%;max-width:100%;overflow-x:hidden}.desktop-week-card{display:none}.schedule-container.mobile-week-active .desktop-week-card{display:block}.schedule-container.mobile-week-active .mobile-timetable{display:none}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
 @media print{body{background:#fff}.app{max-width:none;padding:0}.toolbar,.footer,.schedule-label,.accountbar,.teacherbox,.migration{display:none!important}.schedule-container{display:block!important}.hero,.card{box-shadow:none}.grid{min-width:0;grid-template-columns:75px repeat(6,1fr)}.cell{min-height:92px;padding:6px}.head{font-size:12px}.period{font-size:14px}.slot .subject{font-size:16px}.slot .time{font-size:11px}.slot .compresenza{font-size:9px}.legend{grid-template-columns:repeat(4,1fr)}}
 
 .school-hours-grid{display:grid;gap:14px;margin-top:12px}.school-day-hours{border:1px solid #dbe5f0;border-radius:14px;padding:12px;background:#f9fbfe}.school-day-hours h4{margin:0 0 10px}.hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:7px 0}.hour-row input{width:100%;padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.hours-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.hours-actions select{padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-block{margin-top:12px;padding-top:10px;border-top:1px dashed #cbd7e4}.pause-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pause-list{display:grid;gap:8px}.pause-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}.pause-row input[type="time"]{width:100%;padding:8px 9px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-row .remove-pause{padding:8px 10px}.pause-note{font-size:12px;color:#6f7e91;margin-top:8px}.pause-cell{background:#fff7df!important;color:#705c13;font-weight:800;min-height:54px!important}.pause-cell small{margin:0!important;color:#705c13!important}.pause-label{background:#fff4c9!important;color:#705c13!important;font-size:13px!important;min-height:54px!important}
@@ -65,7 +66,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #17 · v16.10.28</div>
+<div id="buildVersion" class="build-version">PR #18 · v16.11.0</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -140,6 +141,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <button class="navbtn active" data-view="myScheduleView">📅 Il mio orario</button>
     <button class="navbtn" id="navConnectionGuideBtn" type="button">❓ Come caricare il mio orario</button>
     <button class="navbtn" data-view="myClassesView">🎓 Le mie classi</button>
+    <button class="navbtn" data-view="schoolNewsView">📰 Notizie scuola</button>
     <button class="navbtn" data-view="schoolView">🏫 Orario scuola</button>
     <button class="navbtn hidden" id="schoolPortalNavBtn" data-view="schoolPortalView">🏫 Portale scuola</button>
     <button class="navbtn" data-view="profileView">👤 Profilo</button>
@@ -234,6 +236,27 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
   </section>
   <div id="schoolUpdateNotice" class="school-change hidden">🔔 <strong>Nuovo orario disponibile – La tua scuola ha pubblicato un nuovo orario.</strong><div id="schoolChangesPreview" class="admin-note hidden"></div><button class="btn" id="seeSchoolChangesBtn">Vedi modifiche</button><button class="btn primary" id="updateMySchoolScheduleBtn">Aggiorna il mio orario</button></div>
 
+  <section id="schoolNewsView" class="viewpage">
+    <div class="news-layout">
+      <div class="card" style="padding:18px">
+        <div class="school-head"><div><h2>📰 Notizie scuola</h2><p>Ultime notizie dal mondo scolastico. Le sintesi rimandano sempre all’articolo originale.</p></div><a class="btn soft" href="https://www.orizzontescuola.it/" target="_blank" rel="noopener noreferrer">Fonte: Orizzonte Scuola ↗</a></div>
+        <div class="news-search"><input id="schoolNewsSearch" type="search" maxlength="120" placeholder="Cerca concorsi, graduatorie, supplenze, normativa…"><button class="btn primary" id="schoolNewsSearchBtn">Cerca</button><button class="btn" id="schoolNewsResetBtn">Ultime notizie</button></div>
+        <div id="schoolNewsStatus" class="news-status">Apri questa sezione per caricare le notizie.</div>
+        <div id="schoolNewsList" class="news-list"></div>
+      </div>
+      <aside class="card assistant-box" style="padding:18px">
+        <h2 style="margin-top:0">✨ Chiedi all’Assistente scuola</h2>
+        <p class="admin-note">Cerca e riassume le notizie disponibili citando le fonti. Per normative e scadenze verifica sempre l’articolo originale.</p>
+        <label for="schoolAssistantQuestion"><strong>Cosa vuoi sapere?</strong></label>
+        <textarea id="schoolAssistantQuestion" maxlength="600" placeholder="Es. Quali sono le ultime novità sulle graduatorie GPS?"></textarea>
+        <button class="btn primary" id="schoolAssistantAskBtn" style="width:100%;margin-top:8px">Chiedi all’assistente</button>
+        <div id="schoolAssistantAnswer" class="assistant-answer hidden" role="status" aria-live="polite"></div>
+        <div id="schoolAssistantSources" class="assistant-sources"></div>
+        <div id="schoolAssistantRemaining" class="admin-note" style="margin-top:10px"></div>
+      </aside>
+    </div>
+  </section>
+
   <section id="profileView" class="viewpage">
     <div class="card" style="padding:20px">
       <h2 style="margin-top:0">Il mio profilo</h2>
@@ -242,7 +265,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.10.21</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.11.0</strong></div>
 </div>
 
 <div class="modal" id="metaModal"><div class="modalbox">
@@ -675,8 +698,38 @@ function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView
 
 
 
-function switchView(id){if(id==='schoolPortalView'&&!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole))return;document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView'||id==='schoolPortalView')renderSchool();if(id==='schoolPortalView')loadSchoolManagement();if(id==='myClassesView')renderMyClasses();if(id==='myScheduleView'&&state.meta.schoolCode)loadSchoolCloud({showError:false,saveProfile:true})}
+let schoolNewsLoaded=false;
+function newsDate(value){if(!value)return'';try{return new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))}catch{return''}}
+function renderSchoolNews(articles){
+ const list=document.getElementById('schoolNewsList'),status=document.getElementById('schoolNewsStatus');
+ status.classList.toggle('hidden',articles.length>0);
+ status.textContent=articles.length?'':`Nessuna notizia trovata. Prova con parole diverse.`;
+ list.innerHTML=articles.map(article=>`<article class="news-item"><div class="news-meta">${esc(newsDate(article.publishedAt))}</div><h3>${esc(article.title)}</h3><p>${esc(article.summary||'Apri l’articolo per leggere tutti i dettagli.')}</p><a href="${esc(article.url)}" target="_blank" rel="noopener noreferrer">Leggi l’articolo originale ↗</a></article>`).join('');
+}
+async function loadSchoolNews(query=''){
+ const status=document.getElementById('schoolNewsStatus'),list=document.getElementById('schoolNewsList');
+ status.classList.remove('hidden');status.textContent=query?'Ricerca delle notizie in corso…':'Caricamento delle ultime notizie…';list.innerHTML='';
+ try{const data=await apiCall('school-news'+(query?'?q='+encodeURIComponent(query):''));renderSchoolNews(data.articles||[]);schoolNewsLoaded=true}
+ catch(error){status.textContent=error.message||'Notizie temporaneamente non disponibili.'}
+}
+async function askSchoolAssistant(){
+ const question=document.getElementById('schoolAssistantQuestion').value.trim(),button=document.getElementById('schoolAssistantAskBtn'),answer=document.getElementById('schoolAssistantAnswer'),sources=document.getElementById('schoolAssistantSources'),remaining=document.getElementById('schoolAssistantRemaining');
+ if(question.length<3){toast('Scrivi prima una domanda');return}
+ button.disabled=true;button.textContent='Ricerca e analisi…';answer.classList.remove('hidden');answer.textContent='Sto cercando le fonti più pertinenti…';sources.innerHTML='';remaining.textContent='';
+ try{
+  const data=await apiCall('school-assistant',{method:'POST',body:JSON.stringify({question})});
+  answer.textContent=data.answer||'Nessuna risposta disponibile.';
+  sources.innerHTML=(data.sources||[]).map((source,index)=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">[${index+1}] ${esc(source.title)} ↗</a>`).join('');
+  remaining.textContent=Number.isFinite(data.remaining)?`Domande disponibili oggi: ${data.remaining}`:'';
+ }catch(error){answer.textContent=error.message||'Assistente temporaneamente non disponibile.'}
+ finally{button.disabled=false;button.textContent='Chiedi all’assistente'}
+}
+function switchView(id){if(id==='schoolPortalView'&&!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole))return;document.querySelectorAll('.viewpage').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='schoolView'||id==='schoolPortalView')renderSchool();if(id==='schoolPortalView')loadSchoolManagement();if(id==='myClassesView')renderMyClasses();if(id==='schoolNewsView'&&!schoolNewsLoaded)loadSchoolNews();if(id==='myScheduleView'&&state.meta.schoolCode)loadSchoolCloud({showError:false,saveProfile:true})}
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+document.getElementById('schoolNewsSearchBtn').onclick=()=>loadSchoolNews(document.getElementById('schoolNewsSearch').value.trim());
+document.getElementById('schoolNewsResetBtn').onclick=()=>{document.getElementById('schoolNewsSearch').value='';loadSchoolNews()};
+document.getElementById('schoolNewsSearch').onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();loadSchoolNews(event.currentTarget.value.trim())}};
+document.getElementById('schoolAssistantAskBtn').onclick=askSchoolAssistant;
 function schoolStorageKey(){return currentUser?.id?'orarioDocenteSchoolV2:'+currentUser.id:''}
 function loadSchoolLocal(){try{const key=schoolStorageKey();if(!key)return;const raw=localStorage.getItem(key);if(raw){const x=JSON.parse(raw);if(x&&Array.isArray(x.entries)){schoolData=x;if(!schoolData.periodTimes)schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);ensureSchoolBreaks();schoolData.maxPeriods=clampPeriods(schoolData.maxPeriods,Math.min(MAX_PERIODS,Math.max(6,...(schoolData.entries||[]).map(e=>Number(e.period)||0),...(schoolData.classCells||[]).map(e=>Number(e.period)||0))))}}}catch(e){console.error(e)}}
 function saveSchoolLocal(){try{const key=schoolStorageKey();if(key)localStorage.setItem(key,JSON.stringify(schoolData))}catch(e){console.error(e)}}
@@ -1389,7 +1442,7 @@ function acceptAuthenticatedUser(user){
 }
 window.addEventListener('orario-auth-ready',event=>acceptAuthenticatedUser(event.detail));
 window.addEventListener('orario-login',event=>acceptAuthenticatedUser(event.detail));
-window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;stopSchoolLinkPolling();resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
+window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;stopSchoolLinkPolling();resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolNewsLoaded=false;document.getElementById('schoolAssistantQuestion').value='';document.getElementById('schoolAssistantAnswer').textContent='';document.getElementById('schoolAssistantAnswer').classList.add('hidden');document.getElementById('schoolAssistantSources').innerHTML='';document.getElementById('schoolAssistantRemaining').textContent='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast(event.detail||'Accesso non disponibile: riprova più tardi')});
