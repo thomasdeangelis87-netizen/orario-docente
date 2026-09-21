@@ -118,7 +118,7 @@ test('la guida al collegamento è raggiungibile dalla home e da Orario scuola',(
  assert.match(html,/data-view="myScheduleView"[^]*?id="navConnectionGuideBtn"[^]*?data-view="schoolView"/);
  assert.match(html,/id="navConnectionGuideBtn"[^>]*>❓ Come caricare il mio orario/);
  assert.match(html,/id="connectionGuideModal"/);
- assert.match(html,/Scegli l’istituto dall’elenco e invia la richiesta, oppure inserisci il codice scuola ricevuto/);
+ assert.match(html,/Scegli l’istituto dall’elenco e premi “Collega scuola”: il collegamento è immediato/);
  assert.match(html,/Importa il mio orario dalla scuola/);
  assert.match(html,/Se il nome non viene riconosciuto automaticamente/);
  assert.match(html,/id="openSchoolFromGuideBtn"/);
@@ -126,15 +126,17 @@ test('la guida al collegamento è raggiungibile dalla home e da Orario scuola',(
  assert.match(html,/navConnectionGuideBtn\.onclick=openConnectionGuide/);
 });
 
-test('scuole directory non mostrano codice rapido; richieste sono approvate lato server',()=>{
+test('la scelta dalla directory collega subito l account Identity alla scuola',()=>{
  assert.match(html,/id="schoolDirectorySearch"/);
  assert.match(html,/Hai ricevuto un codice dalla scuola\? Inserisci codice/);
  assert.match(code('school-directory.js'),/Invite codes must not be disclosed/);
- assert.match(code('school-link-request.js'),/status:'pending'/);
+ assert.match(code('school-link-request.js'),/assignedBy:'self-service-school-directory'/);
+ assert.match(code('school-link-request.js'),/connected:true/);
+ assert.match(code('school-link-request.js'),/connectSelectedSchool/);
  assert.match(code('school-members.js'),/body\.action==='approve-request'/);
  assert.match(code('school-members.js'),/body\.action==='reject-request'/);
- assert.match(html,/Invia richiesta di collegamento/);
- assert.match(html,/dopo l’approvazione l’account si collegherà automaticamente/i);
+ assert.match(html,/Collega scuola/);
+ assert.match(html,/il collegamento è immediato/i);
  assert.match(html,/request\.status==='approved'[\s\S]*?loadSchoolCloud\(\{showError:true,saveProfile:true\}\)/);
  assert.match(html,/scheduleSchoolLinkPolling\(\)/);
  assert.match(html,/stopSchoolLinkPolling\(\)/);
@@ -143,7 +145,6 @@ test('scuole directory non mostrano codice rapido; richieste sono approvate lato
  assert.match(html,/apiCall\('leave-school'/);
  assert.match(html,/state\.slots=\{\}/);
  assert.match(html,/orario personale eliminato/);
- assert.match(code('school-link-request.js'),/sendSchoolLinkRequestEmail/);
  assert.match(code('school-link-request.js'),/body\.action==='cancel-request'/);
   assert.equal(scheduleVersion(null,true),1);
   assert.equal(scheduleVersion({entries:[{}]},true),2);

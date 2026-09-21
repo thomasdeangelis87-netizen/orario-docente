@@ -1,10 +1,21 @@
-import {json,currentUser,getMembership,getJSON,setJSON,normalizeCode,normalizeEmail} from './_lib.js';
-import {sendSchoolLinkRequestEmail} from './_brevo.js';
+import {json,currentUser,getMembership,setMembership,getJSON,setJSON,normalizeCode,normalizeEmail} from './_lib.js';
 
-async function notifySchoolManagers({code,school,request}){
+async function connectSelectedSchool({user,school,request}){
+ const code=normalizeCode(request.code),email=normalizeEmail(user.email);
+ const now=new Date().toISOString();
+ const membership={userId:user.id,email,code,role:'teacher',status:'active',joinedAt:now,assignedBy:'self-service-school-directory',displayName:request.displayName};
+ await setMembership(email,membership);
  const members=(await getJSON(`school-members/${code}`))||[];
- const recipients=[...new Set(members.filter(m=>m?.status==='active'&&['admin','coordinator'].includes(m.role)&&String(m.email||'').includes('@')).map(m=>normalizeEmail(m.email)))];
- for(const to of recipients){try{await sendSchoolLinkRequestEmail({to,schoolName:school.name,teacherName:request.displayName,teacherEmail:request.email})}catch(error){console.error('school link request email failed',{code,to,name:error?.name,errorCode:error?.code||'',message:String(error?.message||error).slice(0,180)})}}
+ const memberIx=members.findIndex(item=>item?.userId===user.id||normalizeEmail(item?.email)===email);
+ if(memberIx>=0)members[memberIx]=membership;else members.push(membership);
+ await setJSON(`school-members/${code}`,members.slice(0,1500));
+ const approved={...request,status:'approved',decidedAt:now,decidedBy:'self-service-school-directory'};
+ await setJSON(`link-requests-by-user/${encodeURIComponent(user.id)}`,approved);
+ const requests=(await getJSON(`school-link-requests/${code}`))||[];
+ const ix=requests.findIndex(item=>item?.userId===user.id);
+ if(ix>=0)requests[ix]=approved;else requests.push(approved);
+ await setJSON(`school-link-requests/${code}`,requests.slice(0,1500));
+ return {request:approved,membership,school:{code,name:school.name}};
 }
 
 export default async(req,context)=>{
@@ -14,6 +25,13 @@ export default async(req,context)=>{
   const requestKey=`link-requests-by-user/${encodeURIComponent(user.id)}`;
   if(req.method==='GET'){
    const existing=await getJSON(requestKey);
+   if(existing?.status==='pending'){
+    const code=normalizeCode(existing.code),school=await getJSON(`schools/${code}`);
+    if(school?.status==='active'){
+     const connected=await connectSelectedSchool({user,school,request:existing});
+     if(connected)return json(200,{ok:true,connected:true,...connected});
+    }
+   }
    return json(200,{request:existing||null});
   }
   if(req.method!=='POST')return json(405,{error:'Metodo non consentito'});
@@ -33,7 +51,13 @@ export default async(req,context)=>{
   const membership=await getMembership(user);
   if(membership?.status==='active')return json(409,{error:'Account già collegato a una scuola'});
   const old=await getJSON(requestKey);
-  if(old?.status==='pending')return json(409,{error:'Hai già una richiesta in attesa. Attendi la risposta della scuola.'});
+  if(old?.status==='pending'){
+   const oldCode=normalizeCode(old.code),oldSchool=await getJSON(`schools/${oldCode}`);
+   if(oldSchool?.status==='active'){
+    const connected=await connectSelectedSchool({user,school:oldSchool,request:old});
+    return json(200,{ok:true,connected:true,...connected});
+   }
+  }
   const request={userId:user.id,email:normalizeEmail(user.email),code,schoolName:school.name,status:'pending',displayName:String(body.displayName||'').trim().slice(0,120),requestedAt:new Date().toISOString()};
   await setJSON(requestKey,request);
   const requests=await getJSON(`school-link-requests/${code}`);
@@ -41,8 +65,7 @@ export default async(req,context)=>{
   const ix=list.findIndex(x=>normalizeEmail(x.email)===request.email);
   if(ix>=0)list[ix]=request;else list.push(request);
   await setJSON(`school-link-requests/${code}`,list.slice(0,1500));
-  const notification=notifySchoolManagers({code,school,request});
-  if(typeof context?.waitUntil==='function')context.waitUntil(notification);else await notification;
-  return json(200,{ok:true,request});
+  const connected=await connectSelectedSchool({user,school,request});
+  return json(200,{ok:true,connected:true,...connected});
  }catch(e){console.error('school-link-request error',e);return json(500,{error:'Errore richiesta collegamento'});}
 };
