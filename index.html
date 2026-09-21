@@ -10,6 +10,17 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-title" content="Orario Docente" />
 <title>Orario Docente</title>
+<script>
+(()=>{
+  const hash=new URLSearchParams(location.hash.slice(1));
+  const search=new URLSearchParams(location.search.slice(1));
+  const token=hash.get('confirmation_token')||search.get('confirmation_token');
+  if(token){
+    document.documentElement.style.visibility='hidden';
+    location.replace(`/auth-callback.html#confirmation_token=${encodeURIComponent(token)}`);
+  }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="/account-storage.js?v=16.10.0"></script>
 <script src="/schedule-file-type.js?v=16.10.0"></script>
@@ -54,7 +65,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #14 · v16.10.25</div>
+<div id="buildVersion" class="build-version">PR #15 · v16.10.26</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -1381,8 +1392,8 @@ window.addEventListener('orario-login',event=>acceptAuthenticatedUser(event.deta
 window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;stopSchoolLinkPolling();resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
-window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast('Accesso non disponibile: riprova più tardi')});
+window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast(event.detail||'Accesso non disponibile: riprova più tardi')});
 </script>
-<script type="module" src="/identity-client.js?v=16.10.19"></script>
+<script type="module" src="/identity-client.js?v=16.10.26"></script>
 </body>
 </html>

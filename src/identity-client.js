@@ -10,7 +10,6 @@ try{
  const callback=await handleAuthCallback();
  if(callback?.type==='recovery')window.dispatchEvent(new Event('orario-recovery'));
  if(callback?.type==='confirmation'){
-  await logout();
   window.dispatchEvent(new Event('orario-confirmation'));
  }
  const user=await getUser();

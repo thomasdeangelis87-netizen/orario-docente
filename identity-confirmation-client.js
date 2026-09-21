@@ -1,10 +1,3 @@
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined") return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
-
 // node_modules/gotrue-js/lib/index.js
 var HTTPError = class extends Error {
   constructor(response) {
@@ -451,18 +444,12 @@ if (typeof window !== "undefined") {
 }
 
 // node_modules/@netlify/identity/dist/main.js
-var __require2 = /* @__PURE__ */ ((x) => typeof __require !== "undefined" ? __require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof __require !== "undefined" ? __require : a)[b]
-}) : x)(function(x) {
-  if (typeof __require !== "undefined") return __require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
 var AUTH_PROVIDERS = ["google", "github", "gitlab", "bitbucket", "facebook", "email"];
 var AuthError = class _AuthError extends Error {
-  constructor(message, status, options) {
+  constructor(message, status2, options) {
     super(message);
     this.name = "AuthError";
-    this.status = status;
+    this.status = status2;
     if (options && "cause" in options) {
       this.cause = options.cause;
     }
@@ -539,99 +526,11 @@ var getIdentityContext = () => {
 };
 var NF_JWT_COOKIE = "nf_jwt";
 var NF_REFRESH_COOKIE = "nf_refresh";
-var getCookie = (name) => {
-  if (typeof document === "undefined") return null;
-  const match = new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}=([^;]*)`).exec(document.cookie);
-  if (!match) return null;
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return match[1];
-  }
-};
-var setAuthCookies = (cookies, accessToken, refreshToken) => {
-  cookies.set({
-    name: NF_JWT_COOKIE,
-    value: accessToken,
-    httpOnly: false,
-    secure: true,
-    path: "/",
-    sameSite: "Lax"
-  });
-  if (refreshToken) {
-    cookies.set({
-      name: NF_REFRESH_COOKIE,
-      value: refreshToken,
-      httpOnly: false,
-      secure: true,
-      path: "/",
-      sameSite: "Lax"
-    });
-  }
-};
-var deleteAuthCookies = (cookies) => {
-  cookies.delete(NF_JWT_COOKIE);
-  cookies.delete(NF_REFRESH_COOKIE);
-};
 var setBrowserAuthCookies = (accessToken, refreshToken) => {
   if (typeof document === "undefined") return;
   document.cookie = `${NF_JWT_COOKIE}=${encodeURIComponent(accessToken)}; path=/; secure; samesite=lax`;
   if (refreshToken) {
     document.cookie = `${NF_REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}; path=/; secure; samesite=lax`;
-  }
-};
-var deleteBrowserAuthCookies = () => {
-  if (typeof document === "undefined") return;
-  document.cookie = `${NF_JWT_COOKIE}=; path=/; secure; samesite=lax; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-  document.cookie = `${NF_REFRESH_COOKIE}=; path=/; secure; samesite=lax; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-};
-var getServerCookie = (name) => {
-  const cookies = globalThis.Netlify?.context?.cookies;
-  if (!cookies || typeof cookies.get !== "function") return null;
-  return cookies.get(name) ?? null;
-};
-var nextHeadersFn;
-var triggerNextjsDynamic = () => {
-  if (nextHeadersFn === null) return;
-  if (nextHeadersFn === void 0) {
-    try {
-      if (typeof __require2 === "undefined") {
-        nextHeadersFn = null;
-        return;
-      }
-      const mod = __require2("next/headers");
-      nextHeadersFn = mod.headers;
-    } catch {
-      nextHeadersFn = null;
-      return;
-    }
-  }
-  const fn = nextHeadersFn;
-  if (!fn) return;
-  try {
-    fn();
-  } catch (e) {
-    if (e instanceof Error && ("digest" in e || /bail\s*out.*prerende/i.test(e.message))) {
-      throw e;
-    }
-  }
-};
-var DEFAULT_TIMEOUT_MS = 5e3;
-var fetchWithTimeout = async (url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      const pathname = new URL(url).pathname;
-      throw new AuthError(`Identity request to ${pathname} timed out after ${String(timeoutMs)}ms`);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
   }
 };
 var AUTH_EVENTS = {
@@ -641,7 +540,6 @@ var AUTH_EVENTS = {
   USER_UPDATED: "user_updated",
   RECOVERY: "recovery"
 };
-var GOTRUE_STORAGE_KEY = "gotrue.user";
 var listeners = /* @__PURE__ */ new Set();
 var emitAuthEvent = (event, user) => {
   for (const listener of listeners) {
@@ -650,32 +548,6 @@ var emitAuthEvent = (event, user) => {
     } catch {
     }
   }
-};
-var storageListenerAttached = false;
-var attachStorageListener = () => {
-  if (storageListenerAttached || !isBrowser2()) return;
-  storageListenerAttached = true;
-  window.addEventListener("storage", (event) => {
-    if (event.key !== GOTRUE_STORAGE_KEY) return;
-    if (event.newValue) {
-      const client = getGoTrueClient();
-      const currentUser2 = client?.currentUser();
-      emitAuthEvent(AUTH_EVENTS.LOGIN, currentUser2 ? toUser(currentUser2) : null);
-    } else {
-      emitAuthEvent(AUTH_EVENTS.LOGOUT, null);
-    }
-  });
-};
-var onAuthChange = (callback) => {
-  if (!isBrowser2()) {
-    return () => {
-    };
-  }
-  listeners.add(callback);
-  attachStorageListener();
-  return () => {
-    listeners.delete(callback);
-  };
 };
 var REFRESH_MARGIN_S = 60;
 var refreshTimer = null;
@@ -710,163 +582,7 @@ var stopTokenRefresh = () => {
     refreshTimer = null;
   }
 };
-var getCookies = () => {
-  const cookies = globalThis.Netlify?.context?.cookies;
-  if (!cookies) {
-    throw new AuthError("Server-side auth requires Netlify Functions runtime");
-  }
-  return cookies;
-};
-var getServerIdentityUrl = () => {
-  const ctx = getIdentityContext();
-  if (!ctx?.url) {
-    throw new AuthError("Could not determine the Identity endpoint URL on the server");
-  }
-  return ctx.url;
-};
 var persistSession = true;
-var login = async (email, password) => {
-  if (!isBrowser2()) {
-    const identityUrl = getServerIdentityUrl();
-    const cookies = getCookies();
-    const body = new URLSearchParams({
-      grant_type: "password",
-      username: email,
-      password
-    });
-    let res;
-    try {
-      res = await fetchWithTimeout(`${identityUrl}/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString()
-      });
-    } catch (error) {
-      throw AuthError.from(error);
-    }
-    if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({}));
-      throw new AuthError(
-        errorBody.msg ?? errorBody.error_description ?? `Login failed (${String(res.status)})`,
-        res.status
-      );
-    }
-    const data = await res.json();
-    const accessToken = data.access_token;
-    let userRes;
-    try {
-      userRes = await fetchWithTimeout(`${identityUrl}/user`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-    } catch (error) {
-      throw AuthError.from(error);
-    }
-    if (!userRes.ok) {
-      const errorBody = await userRes.json().catch(() => ({}));
-      throw new AuthError(errorBody.msg ?? `Failed to fetch user data (${String(userRes.status)})`, userRes.status);
-    }
-    const userData = await userRes.json();
-    const user = toUser(userData);
-    setAuthCookies(cookies, accessToken, data.refresh_token);
-    return user;
-  }
-  const client = getClient();
-  try {
-    const gotrueUser = await client.login(email, password, persistSession);
-    const jwt = await gotrueUser.jwt();
-    setBrowserAuthCookies(jwt, gotrueUser.tokenDetails()?.refresh_token);
-    const user = toUser(gotrueUser);
-    startTokenRefresh();
-    emitAuthEvent(AUTH_EVENTS.LOGIN, user);
-    return user;
-  } catch (error) {
-    throw AuthError.from(error);
-  }
-};
-var signup = async (email, password, data) => {
-  if (!isBrowser2()) {
-    const identityUrl = getServerIdentityUrl();
-    const cookies = getCookies();
-    let res;
-    try {
-      res = await fetchWithTimeout(`${identityUrl}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, data })
-      });
-    } catch (error) {
-      throw AuthError.from(error);
-    }
-    if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({}));
-      throw new AuthError(errorBody.msg ?? `Signup failed (${String(res.status)})`, res.status);
-    }
-    const responseData = await res.json();
-    const user = toUser(responseData);
-    if (responseData.confirmed_at) {
-      const accessToken = responseData.access_token;
-      if (accessToken) {
-        setAuthCookies(cookies, accessToken, responseData.refresh_token);
-      }
-    }
-    return user;
-  }
-  const client = getClient();
-  try {
-    const response = await client.signup(email, password, data);
-    const user = toUser(response);
-    if (response.confirmed_at) {
-      const jwt = await response.jwt?.();
-      if (jwt) {
-        const refreshToken = response.tokenDetails?.()?.refresh_token;
-        setBrowserAuthCookies(jwt, refreshToken);
-      }
-      startTokenRefresh();
-      emitAuthEvent(AUTH_EVENTS.LOGIN, user);
-    }
-    return user;
-  } catch (error) {
-    throw AuthError.from(error);
-  }
-};
-var logout = async () => {
-  if (!isBrowser2()) {
-    const identityUrl = getServerIdentityUrl();
-    const cookies = getCookies();
-    const jwt = cookies.get(NF_JWT_COOKIE);
-    if (jwt) {
-      try {
-        await fetchWithTimeout(`${identityUrl}/logout`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${jwt}` }
-        });
-      } catch {
-      }
-    }
-    deleteAuthCookies(cookies);
-    return;
-  }
-  const client = getClient();
-  try {
-    const currentUser2 = client.currentUser();
-    if (currentUser2) {
-      await currentUser2.logout();
-    }
-    deleteBrowserAuthCookies();
-    stopTokenRefresh();
-    emitAuthEvent(AUTH_EVENTS.LOGOUT, null);
-  } catch (error) {
-    throw AuthError.from(error);
-  }
-};
-var oauthLogin = (provider) => {
-  if (!isBrowser2()) {
-    throw new AuthError("oauthLogin() is only available in the browser");
-  }
-  const client = getClient();
-  window.location.href = client.loginExternalUrl(provider);
-  throw new AuthError("Redirecting to OAuth provider");
-};
 var handleAuthCallback = async () => {
   if (!isBrowser2()) return null;
   const hash = window.location.hash.substring(1);
@@ -966,41 +682,6 @@ var handleEmailChangeCallback = async (client, emailChangeToken) => {
 var clearHash = () => {
   history.replaceState(null, "", window.location.pathname + window.location.search);
 };
-var hydrateSession = async () => {
-  if (!isBrowser2()) return null;
-  const client = getClient();
-  const currentUser2 = client.currentUser();
-  if (currentUser2) {
-    startTokenRefresh();
-    return toUser(currentUser2);
-  }
-  const accessToken = getCookie(NF_JWT_COOKIE);
-  if (!accessToken) return null;
-  const refreshToken = getCookie(NF_REFRESH_COOKIE) ?? "";
-  const decoded = decodeJwtPayload(accessToken);
-  const expiresAt = decoded?.exp ?? Math.floor(Date.now() / 1e3) + 3600;
-  const expiresIn = Math.max(0, expiresAt - Math.floor(Date.now() / 1e3));
-  let gotrueUser;
-  try {
-    gotrueUser = await client.createUser(
-      {
-        access_token: accessToken,
-        token_type: "bearer",
-        expires_in: expiresIn,
-        expires_at: expiresAt,
-        refresh_token: refreshToken
-      },
-      persistSession
-    );
-  } catch {
-    deleteBrowserAuthCookies();
-    return null;
-  }
-  const user = toUser(gotrueUser);
-  startTokenRefresh();
-  emitAuthEvent(AUTH_EVENTS.LOGIN, user);
-  return user;
-};
 var toAuthProvider = (value) => typeof value === "string" && AUTH_PROVIDERS.includes(value) ? value : void 0;
 var toOptionalString = (value) => typeof value === "string" && value !== "" ? value : void 0;
 var toRoles = (appMeta) => {
@@ -1036,178 +717,51 @@ var toUser = (userData) => {
     appMetadata: appMeta
   };
 };
-var claimsToUser = (claims) => {
-  const appMeta = claims.app_metadata ?? {};
-  const userMeta = claims.user_metadata ?? {};
-  const name = userMeta.full_name ?? userMeta.name;
-  const pictureUrl = userMeta.avatar_url;
-  return {
-    id: claims.sub ?? "",
-    email: claims.email,
-    provider: toAuthProvider(appMeta.provider),
-    name: typeof name === "string" ? name : void 0,
-    pictureUrl: typeof pictureUrl === "string" ? pictureUrl : void 0,
-    roles: toRoles(appMeta),
-    userMetadata: userMeta,
-    appMetadata: appMeta
-  };
-};
-var decodeJwtPayload = (token) => {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-};
-var fetchFullUser = async (identityUrl, jwt) => {
-  try {
-    const res = await fetchWithTimeout(`${identityUrl}/user`, {
-      headers: { Authorization: `Bearer ${jwt}` }
-    });
-    if (!res.ok) return null;
-    const userData = await res.json();
-    return toUser(userData);
-  } catch {
-    return null;
-  }
-};
-var resolveIdentityUrl = () => {
-  const identityContext = getIdentityContext();
-  if (identityContext?.url) return identityContext.url;
-  if (globalThis.Netlify?.context?.url) {
-    return new URL(IDENTITY_PATH, globalThis.Netlify.context.url).href;
-  }
-  const siteUrl = typeof process !== "undefined" ? process.env?.URL : void 0;
-  if (siteUrl) {
-    return new URL(IDENTITY_PATH, siteUrl).href;
-  }
-  return null;
-};
-var getUser = async () => {
-  if (isBrowser2()) {
-    const client = getGoTrueClient();
-    const currentUser2 = client?.currentUser() ?? null;
-    if (currentUser2) {
-      const jwt2 = getCookie(NF_JWT_COOKIE);
-      if (!jwt2) {
-        try {
-          currentUser2.clearSession();
-        } catch {
-        }
-        return null;
-      }
-      startTokenRefresh();
-      return toUser(currentUser2);
-    }
-    const jwt = getCookie(NF_JWT_COOKIE);
-    if (!jwt) return null;
-    const claims2 = decodeJwtPayload(jwt);
-    if (!claims2) return null;
-    const hydrated = await hydrateSession();
-    return hydrated ?? null;
-  }
-  triggerNextjsDynamic();
-  const identityContext = globalThis.netlifyIdentityContext;
-  const serverJwt = identityContext?.token ?? getServerCookie(NF_JWT_COOKIE);
-  if (serverJwt) {
-    const identityUrl = resolveIdentityUrl();
-    if (identityUrl) {
-      const fullUser = await fetchFullUser(identityUrl, serverJwt);
-      if (fullUser) return fullUser;
-    }
-  }
-  const claims = identityContext?.user ?? null;
-  return claims ? claimsToUser(claims) : null;
-};
-var getSettings = async () => {
-  const client = getClient();
-  try {
-    const raw = await client.settings();
-    const external = raw.external ?? {};
-    return {
-      autoconfirm: raw.autoconfirm,
-      disableSignup: raw.disable_signup,
-      providers: {
-        google: external.google ?? false,
-        github: external.github ?? false,
-        gitlab: external.gitlab ?? false,
-        bitbucket: external.bitbucket ?? false,
-        facebook: external.facebook ?? false,
-        email: external.email ?? false
-      }
-    };
-  } catch (err) {
-    throw new AuthError(err instanceof Error ? err.message : "Failed to fetch identity settings", 502, { cause: err });
-  }
-};
-var resolveCurrentUser = async () => {
-  const client = getClient();
-  let currentUser2 = client.currentUser();
-  if (!currentUser2 && isBrowser2()) {
-    try {
-      await hydrateSession();
-    } catch {
-    }
-    currentUser2 = client.currentUser();
-  }
-  if (!currentUser2) throw new AuthError("No user is currently logged in");
-  return currentUser2;
-};
-var requestPasswordRecovery = async (email) => {
-  const client = getClient();
-  try {
-    await client.requestPasswordRecovery(email);
-  } catch (error) {
-    throw AuthError.from(error);
-  }
-};
-var updateUser = async (updates) => {
-  const currentUser2 = await resolveCurrentUser();
-  try {
-    const updatedUser = await currentUser2.update(updates);
-    const user = toUser(updatedUser);
-    emitAuthEvent(AUTH_EVENTS.USER_UPDATED, user);
-    return user;
-  } catch (error) {
-    throw AuthError.from(error);
-  }
-};
 
-// src/auth-event-bridge.js
-function createAuthEventBridge(getUser2, notify) {
-  let generation = 0;
-  return async (event, user) => {
-    const pending = ++generation;
-    if (event !== "login" && event !== "logout") return;
-    try {
-      const session = await getUser2();
-      if (pending !== generation) return;
-      if (session?.id) notify("login", session);
-      else notify("logout", null);
-    } catch (error) {
-      console.error("Identity session check failed", error);
-    }
-  };
+// src/identity-confirmation.js
+function confirmationTokenFromLocation(locationLike = {}) {
+  const hash = new URLSearchParams(String(locationLike.hash || "").replace(/^#/, ""));
+  const search = new URLSearchParams(String(locationLike.search || "").replace(/^\?/, ""));
+  return hash.get("confirmation_token") || search.get("confirmation_token") || "";
+}
+function confirmationErrorMessage(error) {
+  const detail2 = String(error?.message || error || "").trim();
+  const normalized = detail2.toLowerCase();
+  if (normalized.includes("expired")) return "Il link di conferma \xE8 scaduto. Registrati nuovamente oppure chiedi un nuovo invio della conferma.";
+  if (normalized.includes("invalid") || normalized.includes("token")) return "Il link di conferma non \xE8 valido o \xE8 gi\xE0 stato utilizzato. Apri l\u2019ultimo messaggio ricevuto e riprova.";
+  return detail2 || "Identity non ha completato la conferma. Riprova dal link ricevuto via email.";
 }
 
-// src/identity-client.js
-window.OrarioIdentity = { getUser, getSettings, login, signup, logout, oauthLogin, requestPasswordRecovery, updateUser };
-onAuthChange(createAuthEventBridge(getUser, (event, user) => {
-  if (event === "login") window.dispatchEvent(new CustomEvent("orario-login", { detail: user }));
-  if (event === "logout") window.dispatchEvent(new Event("orario-logout"));
-}));
-try {
-  const callback = await handleAuthCallback();
-  if (callback?.type === "recovery") window.dispatchEvent(new Event("orario-recovery"));
-  if (callback?.type === "confirmation") {
-    window.dispatchEvent(new Event("orario-confirmation"));
-  }
-  const user = await getUser();
-  window.dispatchEvent(new CustomEvent("orario-auth-ready", { detail: user }));
-} catch (e) {
-  console.error("Identity initialization error", e);
-  window.dispatchEvent(new CustomEvent("orario-auth-error", { detail: e.message || "Accesso non disponibile" }));
+// src/identity-confirmation-client.js
+var status = document.getElementById("confirmationStatus");
+var detail = document.getElementById("confirmationDetail");
+var actions = document.getElementById("confirmationActions");
+var spinner = document.querySelector(".spinner");
+function show(title, message, { success = false } = {}) {
+  status.textContent = title;
+  status.classList.toggle("success", success);
+  status.classList.toggle("error", !success);
+  detail.textContent = message;
+  spinner?.classList.add("hidden");
+  actions.hidden = false;
 }
+async function confirmEmail() {
+  const token = confirmationTokenFromLocation(window.location);
+  if (!token) {
+    show("Link incompleto", "Nel collegamento non \xE8 presente il codice di conferma. Apri direttamente l\u2019ultimo link ricevuto via email.");
+    return;
+  }
+  if (!new URLSearchParams(location.hash.slice(1)).has("confirmation_token")) {
+    history.replaceState(null, "", `${location.pathname}#confirmation_token=${encodeURIComponent(token)}`);
+  }
+  try {
+    const result = await handleAuthCallback();
+    if (result?.type !== "confirmation") throw new Error("Il collegamento non contiene una conferma valida.");
+    show("Email confermata", "Conferma completata. Ora puoi entrare nel tuo account.", { success: true });
+    setTimeout(() => location.replace("/?email_confermata=1"), 900);
+  } catch (error) {
+    console.error("Identity email confirmation failed", error);
+    show("Conferma non completata", confirmationErrorMessage(error));
+  }
+}
+confirmEmail();
