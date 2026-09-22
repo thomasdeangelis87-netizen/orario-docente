@@ -33,9 +33,9 @@
 <style>
 :root{--bg:#f5f8fc;--card:#fff;--ink:#10233f;--muted:#607089;--navy:#0b2a5b;--blue:#dceeff;--green:#dcf5df;--yellow:#fff0b8;--pink:#ffd9df;--line:#d7e0eb;--shadow:0 10px 30px rgba(31,56,88,.10);--ok:#137333}
 *{box-sizing:border-box}html,body{min-height:100%}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#eef5ff 0,#f7f9fc 30%,#fff 100%);color:var(--ink)}
-button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1180px;margin:auto;padding:18px}.auth-shell{min-height:100vh;display:grid;place-items:center;padding:22px}.auth-card{width:min(480px,100%);background:#fff;border:1px solid #dae5f0;border-radius:28px;box-shadow:0 25px 70px rgba(31,56,88,.16);padding:28px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.brandmark{width:50px;height:50px;border-radius:16px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:26px}.auth-card h1{margin:0;font-size:36px}.auth-card p{color:var(--muted);line-height:1.55}.auth-actions{display:grid;gap:10px;margin-top:22px}.auth-divider{display:flex;align-items:center;gap:10px;color:#8996a8;font-size:12px;margin:4px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#dce5ef;flex:1}.btn.google{background:#fff;color:#24344c;border:1px solid #cfd9e5}.btn.linkish{box-shadow:none;border:0;background:transparent;color:#315b89;padding:8px}.import-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.import-choice{border:1px solid #d7e2ee;border-radius:16px;padding:16px;text-align:center;background:#f8fbff;cursor:pointer}.import-choice strong{display:block;margin-top:6px}.import-status{margin-top:14px;padding:12px;border-radius:12px;background:#f4f8fd;color:#52647b;display:none}.import-status.show{display:block}.previewbox{margin-top:12px;border:1px solid #dbe5f0;border-radius:12px;padding:12px;max-height:230px;overflow:auto;background:#fff;font-size:13px;white-space:pre-wrap}.auth-note{font-size:13px;background:#f4f8fd;border:1px solid #dce6f1;border-radius:14px;padding:12px;margin-top:16px;color:#52647b}.hero{display:flex;gap:18px;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#dceeff,#eef6ff);border:1px solid #cfe0f4;padding:22px;border-radius:24px;box-shadow:var(--shadow)}
+button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1180px;margin:auto;padding:18px}.auth-shell{min-height:100vh;display:grid;place-items:center;padding:22px}.auth-card{width:min(480px,100%);background:#fff;border:1px solid #dae5f0;border-radius:28px;box-shadow:0 25px 70px rgba(31,56,88,.16);padding:28px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.brandmark{width:50px;height:50px;border-radius:16px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:26px}.auth-card h1{margin:0;font-size:36px}.auth-card p{color:var(--muted);line-height:1.55}.auth-actions{display:grid;gap:10px;margin-top:22px}.btn.linkish{box-shadow:none;border:0;background:transparent;color:#315b89;padding:8px}.import-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.import-choice{border:1px solid #d7e2ee;border-radius:16px;padding:16px;text-align:center;background:#f8fbff;cursor:pointer}.import-choice strong{display:block;margin-top:6px}.import-status{margin-top:14px;padding:12px;border-radius:12px;background:#f4f8fd;color:#52647b;display:none}.import-status.show{display:block}.previewbox{margin-top:12px;border:1px solid #dbe5f0;border-radius:12px;padding:12px;max-height:230px;overflow:auto;background:#fff;font-size:13px;white-space:pre-wrap}.auth-note{font-size:13px;background:#f4f8fd;border:1px solid #dce6f1;border-radius:14px;padding:12px;margin-top:16px;color:#52647b}.hero{display:flex;gap:18px;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#dceeff,#eef6ff);border:1px solid #cfe0f4;padding:22px;border-radius:24px;box-shadow:var(--shadow)}
 .hero h1{margin:0;font-size:clamp(26px,4vw,44px);line-height:1}.hero p{margin:8px 0 0;color:var(--muted)}.badge{background:#fff;border:1px solid #bdd0e7;border-radius:16px;padding:12px 16px;text-align:center;font-weight:700;white-space:nowrap}.accountbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin:14px 0;padding:12px 14px;background:#fff;border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}.accountbar small{display:block;color:var(--muted);margin-top:2px}.cloud{font-size:12px;font-weight:800;color:var(--ok)}
-.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;font-weight:750;cursor:pointer;background:#fff;color:var(--navy);box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #dbe5f0}.btn.primary{background:var(--navy);color:#fff}.btn.soft{background:#eaf3ff}.btn.danger{color:#9a1c1c}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.55;cursor:not-allowed}
+.toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}.toolbar>.btn,.toolbox>summary{min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center}.toolbox{position:relative}.toolbox>summary{list-style:none;cursor:pointer;border:1px solid #dbe5f0;border-radius:12px;padding:11px 14px;font-weight:750;background:#fff;color:var(--navy);box-shadow:0 2px 10px rgba(0,0,0,.06)}.toolbox>summary::-webkit-details-marker{display:none}.toolbox[open]>summary{background:#eaf3ff}.toolbox-menu{position:absolute;right:0;top:calc(100% + 7px);z-index:15;display:grid;gap:7px;width:min(280px,80vw);padding:9px;background:#fff;border:1px solid #dbe5f0;border-radius:14px;box-shadow:var(--shadow)}.toolbox-menu .btn{width:100%;text-align:left}.toolbar-guide{grid-column:1/-1}.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;font-weight:750;cursor:pointer;background:#fff;color:var(--navy);box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #dbe5f0}.btn.primary{background:var(--navy);color:#fff}.btn.soft{background:#eaf3ff}.btn.danger{color:#9a1c1c}.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.55;cursor:not-allowed}
 .card{background:var(--card);border:1px solid #e1e8f0;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}.scroll{overflow:auto}.grid{display:grid;grid-template-columns:110px repeat(6,minmax(145px,1fr));min-width:980px}.cell{min-height:108px;padding:12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;position:relative;min-width:0;overflow:hidden}.head{min-height:70px;background:var(--navy);color:#fff;font-weight:800}.head:first-child{background:#e8f0f9;color:var(--ink)}.period{background:#f8fbff;font-weight:800;font-size:19px}.slot{cursor:pointer}.slot>div{width:100%;max-width:100%;min-width:0;overflow:hidden}.slot .subject{font-size:clamp(15px,1.15vw,16px);line-height:1.15;font-weight:850;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.slot .subject.subject-long{font-size:clamp(13px,1vw,14px)}.slot .subject.subject-xlong{font-size:clamp(12px,.92vw,13px)}.slot .time{font-size:15px;line-height:1.25;margin-top:7px;color:#233b5b;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .period .time{font-size:11px;line-height:1.25;margin-top:5px;color:#607089}.slot .compresenza{margin-top:7px;padding-top:6px;border-top:1px solid rgba(35,59,91,.16);font-size:12px;line-height:1.25;color:#304765;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.slot .compresenza.detail-long{font-size:11px}.slot .compresenza.detail-xlong{font-size:10px;line-height:1.15}
 .slot .compresenza strong{font-weight:800}
@@ -54,7 +54,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .mobile-schedule-toolbar,.mobile-timetable{display:none}
 .mobile-mode-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.mobile-mode-buttons button{border:1px solid #cfe0f4;background:#fff;color:var(--navy);border-radius:10px;padding:9px 5px;font-size:12px;font-weight:850;cursor:pointer}.mobile-mode-buttons button.active{background:var(--navy);border-color:var(--navy);color:#fff}.mobile-day-select{width:100%;margin-top:8px;padding:10px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff;color:var(--ink)}
 .mobile-day-card{min-width:0;overflow:hidden;background:#fff;border:1px solid #dbe5f0;border-radius:17px;box-shadow:0 5px 18px rgba(31,56,88,.08)}.mobile-day-head{padding:12px 14px;background:var(--navy);color:#fff;font-size:16px;font-weight:900}.mobile-lesson{display:grid;grid-template-columns:minmax(82px,96px) minmax(0,1fr);gap:12px;align-items:start;padding:12px;border-bottom:1px solid var(--line);min-width:0;overflow:hidden}.mobile-lesson:last-child{border-bottom:0}.mobile-lesson-time{font-size:12px;line-height:1.35;color:#52647b}.mobile-lesson-time strong{display:block;color:var(--ink);font-size:14px}.mobile-lesson-content{min-width:0;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title{font-size:15px;line-height:1.18;font-weight:850;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-title.subject-long{font-size:14px}.mobile-lesson-title.subject-xlong{font-size:13px}.mobile-lesson-detail{margin-top:5px;color:#52647b;font-size:12px;line-height:1.35;max-width:100%;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.mobile-lesson-detail.detail-long{font-size:11px}.mobile-lesson-detail.detail-xlong{font-size:10px;line-height:1.2}.mobile-lesson-detail span{display:block}.mobile-day-empty{padding:14px;color:var(--muted);font-size:13px}
-@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.toolbar .btn{flex:1 1 auto}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.news-layout{grid-template-columns:1fr}.assistant-box{position:static}.news-search{flex-direction:column}.mobile-schedule-toolbar{display:block;margin:10px 0}.mobile-timetable{display:grid;gap:12px;min-width:0;width:100%;max-width:100%;overflow-x:hidden}.desktop-week-card{display:none}.schedule-container.mobile-week-active .desktop-week-card{display:block}.schedule-container.mobile-week-active .mobile-timetable{display:none}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
+@media(max-width:720px){.school-controls{grid-template-columns:1fr}.school-summary{grid-template-columns:1fr 1fr}.appnav{display:grid;grid-template-columns:1fr 1fr}.navbtn{padding:10px 8px;font-size:13px}.import-grid{grid-template-columns:1fr}.app{padding:10px}.hero{align-items:flex-start;flex-direction:column;padding:18px}.badge{width:100%}.legend{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.news-layout{grid-template-columns:1fr}.assistant-box{position:static}.news-search{flex-direction:column}.mobile-schedule-toolbar{display:block;margin:10px 0}.mobile-timetable{display:grid;gap:12px;min-width:0;width:100%;max-width:100%;overflow-x:hidden}.desktop-week-card{display:none}.schedule-container.mobile-week-active .desktop-week-card{display:block}.schedule-container.mobile-week-active .mobile-timetable{display:none}.grid{grid-template-columns:88px repeat(6,145px)}.cell{min-height:96px;padding:8px}.slot .subject{font-size:14px}.slot .subject.subject-long{font-size:12.5px}.slot .subject.subject-xlong{font-size:11.5px}.slot .time{font-size:13px}.slot .compresenza{font-size:11px}.accountbar{align-items:flex-start;flex-direction:column}.auth-card{padding:22px}.auth-card h1{font-size:31px}}
 @media print{body{background:#fff}.app{max-width:none;padding:0}.toolbar,.footer,.schedule-label,.accountbar,.teacherbox,.migration{display:none!important}.schedule-container{display:block!important}.hero,.card{box-shadow:none}.grid{min-width:0;grid-template-columns:75px repeat(6,1fr)}.cell{min-height:92px;padding:6px}.head{font-size:12px}.period{font-size:14px}.slot .subject{font-size:16px}.slot .time{font-size:11px}.slot .compresenza{font-size:9px}.legend{grid-template-columns:repeat(4,1fr)}}
 
 .school-hours-grid{display:grid;gap:14px;margin-top:12px}.school-day-hours{border:1px solid #dbe5f0;border-radius:14px;padding:12px;background:#f9fbfe}.school-day-hours h4{margin:0 0 10px}.hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:7px 0}.hour-row input{width:100%;padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.hours-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.hours-actions select{padding:9px 10px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-block{margin-top:12px;padding-top:10px;border-top:1px dashed #cbd7e4}.pause-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pause-list{display:grid;gap:8px}.pause-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}.pause-row input[type="time"]{width:100%;padding:8px 9px;border:1px solid #cbd7e4;border-radius:9px;background:#fff}.pause-row .remove-pause{padding:8px 10px}.pause-note{font-size:12px;color:#6f7e91;margin-top:8px}.pause-cell{background:#fff7df!important;color:#705c13;font-weight:800;min-height:54px!important}.pause-cell small{margin:0!important;color:#705c13!important}.pause-label{background:#fff4c9!important;color:#705c13!important;font-size:13px!important;min-height:54px!important}
@@ -66,7 +66,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #18 · v16.11.1</div>
+<div id="buildVersion" class="build-version">PR #19 · v16.12.0</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -78,8 +78,6 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <div class="auth-actions">
       <button class="btn primary" id="signupBtn">Registrazione</button>
       <button class="btn" id="loginBtn">Ho già un account</button>
-      <div class="auth-divider">oppure</div>
-      <button class="btn google" id="googleBtn">G&nbsp; Continua con Google</button>
       <a class="btn soft" href="/scuole.html" style="text-decoration:none;text-align:center">🏫 Sei una scuola? Accreditati</a>
       <button class="btn linkish" id="forgotBtn">Password dimenticata?</button>
     </div>
@@ -121,14 +119,14 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <div class="toolbar">
     <button class="btn primary" id="editMetaBtn">✏️ Profilo docente</button>
-    <button class="btn" id="shareBtn">🔗 Invia app</button>
-    <button class="btn soft" id="installAppBtn">📲 Installa app</button>
-    <button class="btn" id="printBtn">🖨️ Stampa / PDF</button>
-    <button class="btn" id="exportBtn">⬇️ Esporta</button>
     <button class="btn" id="importBtn">✨ Importa orario</button>
-    <button class="btn soft" id="scheduleConnectionGuideBtn">❓ Come collegare il mio orario</button>
-    <button class="btn soft hidden" id="schoolPortalBtn">🏫 Portale scuola</button>
-    <button class="btn danger" id="resetBtn">↺ Nuovo orario</button>
+    <button class="btn" id="printBtn">🖨️ Stampa / PDF</button>
+    <details class="toolbox" id="moreTools"><summary>••• Altri strumenti</summary><div class="toolbox-menu">
+      <button class="btn" id="shareBtn">🔗 Invia app</button>
+      <button class="btn soft" id="installAppBtn">📲 Installa app</button>
+      <button class="btn" id="exportBtn">⬇️ Esporta</button>
+    </div></details>
+    <button class="btn soft toolbar-guide" id="scheduleGuideBtn">❓ Guida al mio orario</button>
     <input id="importFile" type="file" accept="application/json,.json" hidden>
   </div>
 
@@ -139,15 +137,14 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <nav class="appnav" aria-label="Sezioni app">
     <button class="navbtn active" data-view="myScheduleView">📅 Il mio orario</button>
-    <button class="navbtn" id="navConnectionGuideBtn" type="button">❓ Come caricare il mio orario</button>
     <button class="navbtn" data-view="myClassesView">🎓 Le mie classi</button>
-    <button class="navbtn" data-view="schoolNewsView">📰 Notizie scuola</button>
     <button class="navbtn" data-view="schoolView">🏫 Orario scuola</button>
+    <button class="navbtn" data-view="schoolNewsView">📰 Notizie scuola</button>
     <button class="navbtn hidden" id="schoolPortalNavBtn" data-view="schoolPortalView">🏫 Portale scuola</button>
-    <button class="navbtn" data-view="profileView">👤 Profilo</button>
   </nav>
 
   <section id="myScheduleView" class="viewpage active">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn danger" id="resetBtn">↺ Nuovo orario</button></div>
   <div id="homeSchoolUpdateNotice" class="school-change school-change-prominent hidden" role="status" aria-live="polite">
     🔔 <strong>Nuovo orario disponibile – La tua scuola ha pubblicato un nuovo orario.</strong>
     <p>Il tuo orario risulta modificato. Quello personale non verrà sostituito finché non confermi.</p>
@@ -257,15 +254,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <section id="profileView" class="viewpage">
-    <div class="card" style="padding:20px">
-      <h2 style="margin-top:0">Il mio profilo</h2>
-      <p style="color:#607089">Aggiorna nome, cognome, materia di insegnamento, eventuale classe di concorso e istituto. Il saluto iniziale usa automaticamente il tuo nome.</p>
-      <button class="btn primary" id="profilePageEditBtn">✏️ Modifica profilo</button>
-    </div>
-  </section>
-
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.11.1</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.12.0</strong></div>
 </div>
 
 <div class="modal" id="metaModal"><div class="modalbox">
@@ -279,7 +268,19 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     <div class="field"><label>In vigore dal</label><input id="validFromInput" placeholder="gg/mm/aaaa"></div>
     <div class="field"><label>Numero massimo di ore al giorno</label><select id="personalMaxPeriodsInput"><option value="1">1 ore</option><option value="2">2 ore</option><option value="3">3 ore</option><option value="4">4 ore</option><option value="5">5 ore</option><option value="6">6 ore</option><option value="7">7 ore</option><option value="8">8 ore</option><option value="9">9 ore</option><option value="10">10 ore</option></select></div>
   </div>
+  <div class="auth-note"><strong>Account e accesso</strong><br><span id="profileAccountEmail"></span><br><button class="btn" id="openEmailChangeBtn" type="button" style="margin-top:10px">✉️ Cambia e-mail di accesso</button></div>
   <div class="modal-actions"><button class="btn" data-close="metaModal">Annulla</button><button class="btn primary" id="saveMetaBtn">Salva profilo</button></div>
+</div></div>
+
+<div class="modal" id="emailChangeModal"><div class="modalbox">
+  <h3>Cambia e-mail di accesso</h3>
+  <p style="color:#607089">L’orario e il profilo resteranno nello stesso account. Invieremo un link di conferma al nuovo indirizzo.</p>
+  <div class="field"><label>E-mail attuale</label><input id="currentEmailInput" type="email" readonly></div>
+  <div class="field" style="margin-top:12px"><label>Nuova e-mail</label><input id="newEmailInput" type="email" autocomplete="email" required placeholder="nuova@email.it"></div>
+  <div class="field" style="margin-top:12px"><label>Ripeti la nuova e-mail</label><input id="confirmNewEmailInput" type="email" autocomplete="email" required placeholder="nuova@email.it"></div>
+  <div class="auth-note">Fino alla conferma continuerai ad accedere con la vecchia e-mail. Dopo la conferma dovrai usare quella nuova.</div>
+  <div id="emailChangeError" class="auth-error" role="alert"></div>
+  <div class="modal-actions"><button class="btn" data-close="emailChangeModal">Annulla</button><button class="btn primary" id="requestEmailChangeBtn" type="button">Invia conferma</button></div>
 </div></div>
 
 <div class="modal" id="importModal"><div class="modalbox">
@@ -693,7 +694,7 @@ async function handleUser(user){
  }
  setCloudStatus('Salvato online');
 }
-function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());openModal('metaModal')}
+function openProfile(){firstNameInput.value=state.meta.firstName||'';lastNameInput.value=state.meta.lastName||'';teachingInput.value=state.meta.teaching||'';subjectInput.value=state.meta.subject||'';schoolInput.value=state.meta.school||'';validFromInput.value=state.meta.validFrom||'';personalMaxPeriodsInput.value=String(personalMaxPeriods());profileAccountEmail.textContent=currentUser?.email||'';openModal('metaModal')}
 function toggleTeacherView(){const all=teacherSelect.value==='all';directoryView.classList.toggle('hidden',!all);personalView.classList.toggle('hidden',all)}
 
 
@@ -1020,7 +1021,6 @@ function renderMyClasses(){const classes=myClasses();if(!activeMyClass||!classes
 function renderSchool(){refreshSchoolFilters();linkedSchoolName.value=state.meta.school||'';schoolCodeInput.value=state.meta.schoolCode||'';schoolRoleInput.value=state.meta.schoolRole||'teacher';const roleNames={teacher:'Docente',coordinator:'Referente orario',admin:'Amministratore scuola'};schoolRoleBadge.textContent=roleNames[state.meta.schoolRole||'teacher'];schoolConnectionInfo.innerHTML=state.meta.schoolCode?`Collegato a <strong>${esc(state.meta.school||'scuola')}</strong> · codice <span class="school-code">${esc(state.meta.schoolCode)}</span>`:'Nessuna scuola collegata tramite codice.';schoolTeachersCount.textContent=schoolData.teachers.length;schoolClassesCount.textContent=schoolClasses().length;schoolEntriesCount.textContent=schoolData.entries.length;schoolSourceInfo.textContent=schoolCloudError?'Sincronizzazione cloud non riuscita: '+schoolCloudError:!schoolCloudVerified&&schoolData.entries.length?'Copia locale non verificata nello storage della scuola. Non usarla come orario ufficiale.':schoolData.source?`Orario condiviso: ${schoolData.source} · ${schoolData.loadedAt}${schoolData.cloudUpdatedAt?' · cloud '+new Date(schoolData.cloudUpdatedAt).toLocaleString('it-IT'):''}`:(schoolCloudReady?'Scuola collegata, ma nessun orario generale è attualmente pubblicato. L’amministratore della scuola deve caricare e pubblicare l’Excel ufficiale.':'Nessun orario scuola caricato.');schoolRoleInput.disabled=true;const linked=!!(schoolCloudReady&&state.meta.schoolCode);connectSchoolBtn.disabled=linked;connectSchoolBtn.textContent=linked?'✓ Scuola collegata':'Collega scuola';linkedSchoolName.readOnly=linked;schoolCodeInput.readOnly=linked;schoolUploadBtn.disabled=!window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole);schoolHoursBtn.disabled=!(linked&&schoolCloudVerified&&schoolData.entries.length&&['admin','coordinator'].includes(state.meta.schoolRole||''));renderSchoolPersonalImport();renderSchoolUpdateNotice();const q=normText(schoolSearch.value),tf=schoolTeacherFilter.value,cf=schoolClassFilter.value,df=schoolDayFilter.value;schoolModeClass.classList.toggle('active',schoolMode==='class');schoolModeTeacher.classList.toggle('active',schoolMode==='teacher');schoolClassScheduleWrap.classList.toggle('hidden',schoolMode!=='class'||!cf);const table=schoolTableBody.closest('.scroll');table.classList.toggle('hidden',schoolMode==='class'&&!!cf);if(schoolMode==='class'&&cf){renderClassSchedule(schoolClassSchedule,cf)}else{let rows=schoolData.entries.filter(e=>(!tf||e.teacher===tf)&&(!cf||sameClass(e.activity,cf))&&(!df||dayLabel(e.day)===df)&&(!q||normText(e.teacher+' '+e.subject+' '+e.activity).includes(q)));rows.sort((a,b)=>a.day-b.day||a.period-b.period||a.teacher.localeCompare(b.teacher,'it'));schoolTableBody.innerHTML=rows.slice(0,1000).map(e=>`<tr><td>${esc(dayLabel(e.day))}</td><td>${e.period}ª<br><small>${esc(schoolTime(e.day,e.period-1))}</small></td><td><strong>${esc(e.teacher)}</strong></td><td>${esc(e.subject||'—')}</td><td><span class="chip">${esc(e.activity)}</span></td></tr>`).join('');if(schoolData.entries.length&&!rows.length)schoolTableBody.innerHTML='<tr><td colspan="5" class="school-empty">Nessun risultato con questi filtri.</td></tr>'}schoolEmpty.classList.toggle('hidden',schoolData.entries.length>0)}
 function renderSchoolManagementUI(){
  const authorized=window.OrarioSchoolPermissions.canManageSchool(state.meta.schoolRole);
- schoolPortalBtn.classList.toggle('hidden',!authorized);
  schoolPortalNavBtn.classList.toggle('hidden',!authorized);
  schoolPortalView.classList.toggle('hidden',!authorized);
  schoolManagement.classList.toggle('hidden',!authorized);
@@ -1122,7 +1122,6 @@ copyHoursAllBtn.onclick=()=>{readHoursIntoSchoolData();const src=Number(copyHour
 resetSchoolHoursBtn.onclick=()=>{schoolData.periodTimes=clone(SCHOOL_DEFAULT_TIMES);schoolData.breaks={0:[],1:[],2:[],3:[],4:[],5:[]};renderSchoolHoursEditor();toast('Ripristinati gli orari iniziali e rimosse le pause')};
 saveSchoolHoursBtn.onclick=async()=>{schoolData.maxPeriods=clampPeriods(schoolMaxPeriodsInput.value,6);schoolData.periodTimes=readSchoolHoursEditor();schoolData.breaks=readSchoolBreaksEditor();for(let d=0;d<6;d++)schoolData.periodTimes[d]=applyBreaksToTimes(schoolData.periodTimes[d],schoolData.breaks[d]);(schoolData.entries||[]).forEach(e=>e.time=schoolTime(e.day,e.period-1));(schoolData.classCells||[]).forEach(c=>c.time=schoolTime(c.day,c.period-1));saveSchoolLocal();try{await saveSchoolCloud();if(!await loadSchoolCloud())throw new Error('Orario salvato ma non rileggibile dal cloud')}catch(e){alert('Salvato sul dispositivo, ma non nel cloud: '+e.message)}renderSchool();renderMyClasses();closeModal('schoolHoursModal');toast('Orari e pause scuola salvati')};
 connectSchoolBtn.onclick=async()=>{const code=schoolCodeInput.value.trim().toUpperCase();if(!code){alert('Inserisci il codice scuola ricevuto dal tuo istituto.');return}connectSchoolBtn.disabled=true;connectSchoolBtn.textContent='Collegamento…';try{const already=String(state.meta.schoolCode||'').trim().toUpperCase()===code;if(already){const ok=await loadSchoolCloud({showError:true});if(ok){render();toast(schoolData.entries.length?'Dati scuola aggiornati':'Scuola collegata: nessun orario pubblicato')}return}const data=await apiCall('join-school',{method:'POST',body:JSON.stringify({code,displayName:fullName()})});if(data.pending){schoolLinkRequestStatus.textContent=data.message;alert(data.message);return}state.meta.school=data.school.name;state.meta.schoolCode=data.membership.code;state.meta.schoolRole=data.membership.role;schoolInput.value=data.school.name;const ok=await loadSchoolCloud({showError:true});if(!ok)return;render();cloudSave();toast(schoolData.entries.length?'Account collegato alla scuola':'Scuola collegata: nessun orario pubblicato')}catch(e){alert(e.message)}finally{renderSchool()}};
-schoolPortalBtn.onclick=()=>switchView('schoolPortalView');
 schoolDirectorySearchBtn.onclick=searchAccreditedSchools;
 schoolDirectorySearch.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchAccreditedSchools()}};
 requestSchoolLinkBtn.onclick=async()=>{
@@ -1248,7 +1247,6 @@ homeSeeSchoolChangesBtn.onclick=showPendingSchoolChanges;
 homeUpdateMySchoolScheduleBtn.onclick=applyPendingSchoolSchedule;
 schoolModeClass.onclick=()=>{schoolMode='class';renderSchool()};schoolModeTeacher.onclick=()=>{schoolMode='teacher';renderSchool()};
 [schoolSearch,schoolTeacherFilter,schoolClassFilter,schoolDayFilter].forEach(el=>el.addEventListener(el.tagName==='INPUT'?'input':'change',renderSchool));
-profilePageEditBtn.onclick=openProfile;
 function normText(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase()}
 function classToken(s){s=String(s||'').trim();if(!s)return'';if(/^D$/i.test(s))return'D';const m=s.match(/\b([1-5])\s*[°º^]?\s*([A-Z]{1,5})\b/i);return m?`${m[1]}° ${m[2].toUpperCase()}`.replace('° ','°'):''}
 function stateFromDayTokens(dayTokens){const out=clone(EMPTY_STATE);out.meta=clone(state.meta);const detected=Math.min(MAX_PERIODS,Math.max(1,...dayTokens.map(a=>a.length)));out.meta.maxPeriods=Math.max(personalMaxPeriods(),detected);dayTokens.forEach((arr,d)=>arr.slice(0,MAX_PERIODS).forEach((tok,p)=>{if(tok){out.slots[`${d}-${p}`]=[tok,(PERIOD_TIMES[d]&&PERIOD_TIMES[d][p])||'']}}));return out}
@@ -1342,15 +1340,23 @@ resetPasswordForm.onsubmit=async e=>{
  try{await window.OrarioIdentity.updateUser({password:newPassword.value});closeModal('resetPasswordModal');toast('Password aggiornata');newPassword.value=''}
  catch(error){resetPasswordError.textContent=error.message||'Non posso salvare la password'}
 };
-googleBtn.onclick=async()=>{
- try{
-  const settings=await window.OrarioIdentity.getSettings();
-  if(!settings.providers?.google)throw new Error('Google non è attivo per questo sito. Usa email e password.');
-  window.OrarioIdentity.oauthLogin('google');
- }catch(e){alert(e.message||'Accesso Google non disponibile')}
-};
 logoutBtn.onclick=async()=>{resetImportUi();try{await window.OrarioIdentity.logout()}catch(e){alert(e.message)}};
 editMetaBtn.onclick=openProfile;
+openEmailChangeBtn.onclick=()=>{currentEmailInput.value=currentUser?.email||'';newEmailInput.value='';confirmNewEmailInput.value='';emailChangeError.textContent='';openModal('emailChangeModal')};
+requestEmailChangeBtn.onclick=async()=>{
+ const next=newEmailInput.value.trim().toLowerCase(),confirmation=confirmNewEmailInput.value.trim().toLowerCase();
+ emailChangeError.textContent='';
+ if(next!==confirmation){emailChangeError.textContent='Le due e-mail non coincidono.';return}
+ requestEmailChangeBtn.disabled=true;
+ try{
+  const result=await apiCall('account-email-change',{method:'POST',body:JSON.stringify({newEmail:next})});
+  await window.OrarioIdentity.updateUser({email:next});
+  closeModal('emailChangeModal');closeModal('metaModal');
+  if(result.pending)alert('Controlla la nuova casella e-mail e apri il link di conferma. Fino a quel momento accedi con la vecchia e-mail.');
+  else alert('E-mail aggiornata. Accedi nuovamente con il nuovo indirizzo.');
+ }catch(error){emailChangeError.textContent=error.message||'Non è stato possibile richiedere il cambio e-mail.'}
+ finally{requestEmailChangeBtn.disabled=false}
+};
 saveMetaBtn.onclick=async()=>{state.meta.firstName=firstNameInput.value.trim();state.meta.lastName=lastNameInput.value.trim();state.meta.teaching=teachingInput.value.trim();state.meta.subject=subjectInput.value.trim();state.meta.school=schoolInput.value.trim();state.meta.validFrom=validFromInput.value.trim();state.meta.maxPeriods=clampPeriods(personalMaxPeriodsInput.value,6);render();accountName.textContent=fullName();const ok=await persistProfileNow();if(ok){closeModal('metaModal');toast('Profilo salvato online')}else{alert('Non sono riuscito a salvare il profilo online. Riprova senza chiudere la pagina.')}};
 saveSlotBtn.onclick=()=>{const subj=slotSubject.value.trim(),t=slotTime.value.trim();if(subj){const old=state.slots[activeKey]||[];const same=canonicalActivity(old[0]||'')===canonicalActivity(subj);state.slots[activeKey]=same&&old[2]?[subj,t,old[2]]:[subj,t]}else delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora aggiornata')};
 clearSlotBtn.onclick=()=>{delete state.slots[activeKey];render();closeModal('slotModal');toast('Ora svuotata')};
@@ -1360,9 +1366,8 @@ shareBtn.onclick=async()=>{const url=location.origin+location.pathname;try{if(na
 exportBtn.onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='orario-docente.json';a.click();URL.revokeObjectURL(a.href)};
 importBtn.onclick=()=>{resetImportUi();openModal('importModal')};
 const openConnectionGuide=()=>openModal('connectionGuideModal');
-scheduleConnectionGuideBtn.onclick=openConnectionGuide;
+scheduleGuideBtn.onclick=openConnectionGuide;
 schoolConnectionGuideBtn.onclick=openConnectionGuide;
-navConnectionGuideBtn.onclick=openConnectionGuide;
 openSchoolFromGuideBtn.onclick=()=>{closeModal('connectionGuideModal');switchView('schoolView')};
 document.querySelectorAll('[data-import-kind]').forEach(el=>el.onclick=()=>{const k=el.dataset.importKind;smartImportFile.accept=k==='excel'?'.xlsx,.xls':k==='pdf'?'.pdf':'.png,.jpg,.jpeg,.webp';smartImportFile.click()});
 smartImportFile.onchange=e=>{const f=e.target.files[0];if(f)processSmartImport(f)};
@@ -1442,9 +1447,19 @@ function acceptAuthenticatedUser(user){
 }
 window.addEventListener('orario-auth-ready',event=>acceptAuthenticatedUser(event.detail));
 window.addEventListener('orario-login',event=>acceptAuthenticatedUser(event.detail));
-window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;stopSchoolLinkPolling();resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolNewsLoaded=false;document.getElementById('schoolAssistantQuestion').value='';document.getElementById('schoolAssistantAnswer').textContent='';document.getElementById('schoolAssistantAnswer').classList.add('hidden');document.getElementById('schoolAssistantSources').innerHTML='';document.getElementById('schoolAssistantRemaining').textContent='';schoolPortalBtn.classList.add('hidden');schoolPortalNavBtn.classList.add('hidden');showAuth()});
+window.addEventListener('orario-logout',()=>{clearTimeout(saveTimer);saveTimer=null;stopSchoolLinkPolling();resetImportUi();currentUser=null;state=clone(EMPTY_STATE);schoolData=emptySchoolData();pendingSchoolChange=null;schoolDirectory=[];hasCloudState=false;schoolCloudReady=false;schoolCloudVerified=false;schoolAuditStatus='unknown';schoolCloudError='';schoolNewsLoaded=false;document.getElementById('schoolAssistantQuestion').value='';document.getElementById('schoolAssistantAnswer').textContent='';document.getElementById('schoolAssistantAnswer').classList.add('hidden');document.getElementById('schoolAssistantSources').innerHTML='';document.getElementById('schoolAssistantRemaining').textContent='';schoolPortalNavBtn.classList.add('hidden');showAuth()});
 window.addEventListener('orario-recovery',()=>openModal('resetPasswordModal'));
 window.addEventListener('orario-confirmation',()=>{toast('Email confermata: ora accedi.');openModal('loginModal')});
+window.addEventListener('orario-email-change',async event=>{
+ try{
+  await apiCall('account-email-change');
+  const email=event.detail?.email||currentUser?.email||'';
+  await window.OrarioIdentity.logout();
+  loginEmail.value=email;
+  alert('E-mail aggiornata correttamente. Ora accedi con il nuovo indirizzo.');
+  openModal('loginModal');
+ }catch(error){console.error('Email change finalization error',error);toast('E-mail confermata. Esci e accedi con il nuovo indirizzo.')}
+});
 window.addEventListener('orario-auth-error',event=>{console.error(event.detail);showAuth();toast(event.detail||'Accesso non disponibile: riprova più tardi')});
 </script>
 <script type="module" src="/identity-client.js?v=16.10.27"></script>
