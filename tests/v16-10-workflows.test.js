@@ -129,7 +129,8 @@ test('menu iniziale snello: nessun doppione profilo o portale e nuovo orario nel
  assert.equal((html.match(/id="schoolPortalNavBtn"/g)||[]).length,1);
  assert.doesNotMatch(html,/data-view="profileView"|id="profileView"/);
  assert.match(html,/id="moreTools"[\s\S]*id="shareBtn"[\s\S]*id="installAppBtn"[\s\S]*id="exportBtn"/);
- assert.match(html,/id="myScheduleView"[\s\S]{0,220}id="resetBtn"/);
+ assert.match(html,/id="scheduleToggleCheck"[\s\S]*class="schedule-actions"[\s\S]*class="btn primary schedule-label"[\s\S]*id="resetBtn"[\s\S]*id="personalScheduleContainer"/);
+ assert.match(html,/schedule-check:checked \+ \.schedule-actions \+ \.schedule-container\{display:block\}/);
  assert.match(html,/id="openEmailChangeBtn"/);
  assert.match(html,/apiCall\('account-email-change'/);
  assert.match(html,/OrarioIdentity\.updateUser\(\{email:next\}\)/);
