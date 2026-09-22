@@ -23,6 +23,7 @@ function normalizeActivity(input={},previous=null,actor={}){
     type:TYPES.includes(input.type)?input.type:'Altro',
     location:clean(input.location,160),description:clean(input.description,1200),
     audienceType,teacherIds:audienceType==='teachers'?teacherIds:[],classNames:audienceType==='classes'?classNames:[],
+    circularId:clean(input.circularId||previous?.circularId,120),source:clean(input.source||previous?.source,40),
     createdAt:previous?.createdAt||now,createdBy:previous?.createdBy||actor.id||'',
     updatedAt:now,updatedBy:actor.id||''
   };

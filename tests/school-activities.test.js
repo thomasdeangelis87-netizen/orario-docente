@@ -6,9 +6,10 @@ import {normalizeActivity,profileClassNames,visibleTo,sortActivities} from '../n
 const base={title:'Collegio docenti',date:'2026-10-01',startTime:'14:30',endTime:'16:30',audienceType:'all'};
 
 test('normalizza e convalida un impegno',()=>{
-  const item=normalizeActivity(base,null,{id:'admin-1'});
+  const item=normalizeActivity({...base,circularId:'circ-1',source:'circular'},null,{id:'admin-1'});
   assert.equal(item.title,'Collegio docenti');
   assert.equal(item.createdBy,'admin-1');
+  assert.equal(item.circularId,'circ-1');
   assert.throws(()=>normalizeActivity({...base,endTime:'13:00'}),/successivo/);
   assert.throws(()=>normalizeActivity({...base,audienceType:'teachers'}),/docente/);
 });

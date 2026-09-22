@@ -30,6 +30,8 @@ export default async (req,context)=>{
     const all=Array.isArray(stored)?stored:[];
     if(body.action==='delete'){
       const id=String(body.id||'');
+      const existing=all.find(item=>item.id===id);
+      if(existing?.source==='circular')return json(409,{error:'Questo impegno è collegato a una circolare: modificalo dalla Gestione circolari.'});
       const next=all.filter(item=>item.id!==id);
       if(next.length===all.length)return json(404,{error:'Impegno non trovato'});
       await setJSON(key(membership.code),next);
@@ -39,6 +41,7 @@ export default async (req,context)=>{
     const requestedId=String(body.activity?.id||'');
     const index=requestedId?all.findIndex(item=>item.id===requestedId):-1;
     if(requestedId&&index<0)return json(404,{error:'Impegno non trovato'});
+    if(index>=0&&all[index]?.source==='circular')return json(409,{error:'Questo impegno è collegato a una circolare: modificalo dalla Gestione circolari.'});
     let activity;
     try{activity=normalizeActivity(body.activity,index>=0?all[index]:null,user)}
     catch(error){return json(400,{error:error.message});}
