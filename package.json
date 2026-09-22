@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.0",
-    "@netlify/identity": "^2.0.0"
+    "@netlify/identity": "^2.0.0",
+    "openai": "^5.23.2"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
