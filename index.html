@@ -45,7 +45,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#10233f;color:#fff;padding:12px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:90vw;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.modal{position:fixed;inset:0;background:rgba(8,21,38,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modal.show{display:flex}.modalbox{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.25)}.modalbox h3{margin-top:0}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 
 .appnav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.navbtn{appearance:none;border:1px solid #d6e1ed;background:#fff;color:#24415f;border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.navbtn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.news-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px}.news-search{display:flex;gap:8px;margin:14px 0}.news-search input,.assistant-box textarea{width:100%;border:1px solid #cbd7e4;border-radius:12px;padding:12px;color:var(--ink);background:#fff}.news-list{display:grid;gap:12px}.news-item{border:1px solid #dce5ef;border-radius:16px;padding:15px;background:#fff}.news-item h3{font-size:17px;line-height:1.25;margin:0 0 7px}.news-item p{color:var(--muted);line-height:1.45;margin:7px 0}.news-meta{font-size:12px;color:#718096}.news-item a{color:#164f91;font-weight:800;text-decoration:none}.assistant-box{position:sticky;top:12px;align-self:start}.assistant-box textarea{min-height:120px;resize:vertical}.assistant-answer{margin-top:12px;padding:14px;border-radius:14px;background:#f3f8ff;border:1px solid #ccddf2;line-height:1.55;white-space:pre-wrap}.assistant-sources{display:grid;gap:6px;margin-top:10px;font-size:13px}.assistant-sources a{color:#164f91}.news-status{padding:14px;color:var(--muted);text-align:center}
+.news-layout{display:grid;grid-template-columns:1fr;gap:16px}.news-search{display:flex;gap:8px;margin:14px 0}.news-search input,.assistant-box textarea{width:100%;border:1px solid #cbd7e4;border-radius:12px;padding:12px;color:var(--ink);background:#fff}.news-list{display:grid;gap:12px}.news-item{border:1px solid #dce5ef;border-radius:16px;padding:15px;background:#fff}.news-item h3{font-size:17px;line-height:1.25;margin:0 0 7px}.news-item p{color:var(--muted);line-height:1.45;margin:7px 0}.news-meta{font-size:12px;color:#718096}.news-item a{color:#164f91;font-weight:800;text-decoration:none}.assistant-box textarea{min-height:120px;resize:vertical}.assistant-answer{margin-top:12px;padding:14px;border-radius:14px;background:#f3f8ff;border:1px solid #ccddf2;line-height:1.55;white-space:pre-wrap}.assistant-sources{display:grid;gap:6px;margin-top:10px;font-size:13px}.assistant-sources a{color:#164f91}.news-status{padding:14px;color:var(--muted);text-align:center}
 .viewpage{display:none}.viewpage.active{display:block}.school-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.school-head h2{margin:0}.school-head p{margin:5px 0 0;color:var(--muted)}.school-controls{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px;margin:14px 0}.school-controls input,.school-controls select{width:100%;padding:11px 12px;border:1px solid #cbd7e4;border-radius:10px;background:#fff}.school-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.stat{background:#f8fbff;border:1px solid #dce6f1;border-radius:14px;padding:12px}.stat strong{display:block;font-size:24px}.school-table{width:100%;border-collapse:collapse;min-width:760px}.school-table th,.school-table td{padding:10px 12px;border-bottom:1px solid #e2e9f1;text-align:left;vertical-align:top}.school-table th{background:#f3f7fb;color:#294565;position:sticky;top:0}.school-table tr:hover td{background:#fbfdff}.school-empty{padding:32px;text-align:center;color:var(--muted)}.chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf4fc;font-size:12px;font-weight:750}.myclasses{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.classchip{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.classchip.active{background:#dceeff;border-color:#9fc2e8}.admin-note{font-size:12px;color:#6f7e91;margin-top:8px}.school-file-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.school-file-row input{display:none}
 
 .class-schedule{display:grid;grid-template-columns:105px repeat(6,minmax(145px,1fr));min-width:980px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.class-schedule .cs{min-height:104px;padding:10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;background:#fff}.class-schedule .csh{min-height:64px;background:var(--navy);color:#fff;font-weight:850}.class-schedule .csp{background:#f5f9fd;font-weight:850}.class-schedule .csc{background:#fbfdff;flex-direction:column}.class-schedule .csc strong{font-size:16px;line-height:1.15}.class-schedule .csc small{display:block;margin-top:7px;color:#64758b;font-size:12px;line-height:1.2}.viewtoggle{display:flex;gap:8px;margin:12px 0}.viewtoggle button{border:1px solid #cfe0f4;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}.viewtoggle button.active{background:#dceeff;border-color:#9fc2e8}
@@ -66,7 +66,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 </style>
 </head>
 <body>
-<div id="buildVersion" class="build-version">PR #18 · v16.11.0</div>
+<div id="buildVersion" class="build-version">PR #18 · v16.11.1</div>
 <section id="bootView" class="auth-shell" role="status" aria-live="polite">
   <div class="auth-card"><div class="brand"><div class="brandmark">📅</div><strong>ORARIO DOCENTE</strong></div><p>Verifica accesso…</p></div>
 </section>
@@ -238,22 +238,22 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
 
   <section id="schoolNewsView" class="viewpage">
     <div class="news-layout">
+      <aside class="card assistant-box" style="padding:18px">
+        <h2 style="margin-top:0">✨ Chiedi all’Assistente scuola</h2>
+        <p class="admin-note">Risponde alle domande sul mondo della scuola e, quando trova notizie pertinenti, cita le fonti. Per normative e scadenze verifica sempre il testo originale.</p>
+        <label for="schoolAssistantQuestion"><strong>Cosa vuoi sapere?</strong></label>
+        <textarea id="schoolAssistantQuestion" maxlength="600" placeholder="Es. Come funzionano le fasce stipendiali dei docenti?"></textarea>
+        <button class="btn primary" id="schoolAssistantAskBtn" style="width:100%;margin-top:8px">Chiedi all’assistente</button>
+        <div id="schoolAssistantAnswer" class="assistant-answer hidden" role="status" aria-live="polite"></div>
+        <div id="schoolAssistantSources" class="assistant-sources"></div>
+        <div id="schoolAssistantRemaining" class="admin-note" style="margin-top:10px"></div>
+      </aside>
       <div class="card" style="padding:18px">
         <div class="school-head"><div><h2>📰 Notizie scuola</h2><p>Ultime notizie dal mondo scolastico. Le sintesi rimandano sempre all’articolo originale.</p></div><a class="btn soft" href="https://www.orizzontescuola.it/" target="_blank" rel="noopener noreferrer">Fonte: Orizzonte Scuola ↗</a></div>
         <div class="news-search"><input id="schoolNewsSearch" type="search" maxlength="120" placeholder="Cerca concorsi, graduatorie, supplenze, normativa…"><button class="btn primary" id="schoolNewsSearchBtn">Cerca</button><button class="btn" id="schoolNewsResetBtn">Ultime notizie</button></div>
         <div id="schoolNewsStatus" class="news-status">Apri questa sezione per caricare le notizie.</div>
         <div id="schoolNewsList" class="news-list"></div>
       </div>
-      <aside class="card assistant-box" style="padding:18px">
-        <h2 style="margin-top:0">✨ Chiedi all’Assistente scuola</h2>
-        <p class="admin-note">Cerca e riassume le notizie disponibili citando le fonti. Per normative e scadenze verifica sempre l’articolo originale.</p>
-        <label for="schoolAssistantQuestion"><strong>Cosa vuoi sapere?</strong></label>
-        <textarea id="schoolAssistantQuestion" maxlength="600" placeholder="Es. Quali sono le ultime novità sulle graduatorie GPS?"></textarea>
-        <button class="btn primary" id="schoolAssistantAskBtn" style="width:100%;margin-top:8px">Chiedi all’assistente</button>
-        <div id="schoolAssistantAnswer" class="assistant-answer hidden" role="status" aria-live="polite"></div>
-        <div id="schoolAssistantSources" class="assistant-sources"></div>
-        <div id="schoolAssistantRemaining" class="admin-note" style="margin-top:10px"></div>
-      </aside>
     </div>
   </section>
 
@@ -265,7 +265,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.app{max-width:1
     </div>
   </section>
 
-  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.11.0</strong></div>
+  <div class="footer">Orario Docente · account personale · scuola condivisa nel cloud · installabile su smartphone · <strong>V16.11.1</strong></div>
 </div>
 
 <div class="modal" id="metaModal"><div class="modalbox">
@@ -719,7 +719,7 @@ async function askSchoolAssistant(){
  try{
   const data=await apiCall('school-assistant',{method:'POST',body:JSON.stringify({question})});
   answer.textContent=data.answer||'Nessuna risposta disponibile.';
-  sources.innerHTML=(data.sources||[]).map((source,index)=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">[${index+1}] ${esc(source.title)} ↗</a>`).join('');
+  sources.innerHTML=(data.sources||[]).map((source,index)=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">[${Number(source.citation)||index+1}] ${esc(source.title)} ↗</a>`).join('');
   remaining.textContent=Number.isFinite(data.remaining)?`Domande disponibili oggi: ${data.remaining}`:'';
  }catch(error){answer.textContent=error.message||'Assistente temporaneamente non disponibile.'}
  finally{button.disabled=false;button.textContent='Chiedi all’assistente'}

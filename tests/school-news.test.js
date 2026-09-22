@@ -37,5 +37,6 @@ test('UI e Functions espongono notizie, ricerca, assistente e fonti',()=>{
  assert.match(news,/currentUser\(req,context\)/);
  assert.match(assistant,/model:'gpt-4o-mini'/);
  assert.match(assistant,/DAILY_LIMIT=20/);
- assert.match(assistant,/usando esclusivamente le fonti fornite/);
+ assert.match(assistant,/puoi usare le tue conoscenze/);
+ assert.match(assistant,/fonti realmente pertinenti/);
 });

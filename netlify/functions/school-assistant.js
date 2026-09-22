@@ -21,13 +21,15 @@ export default async(req,context)=>{
   const completion=await openai.chat.completions.create({
    model:'gpt-4o-mini',temperature:0.2,max_tokens:700,
    messages:[
-    {role:'system',content:'Sei l’Assistente scuola di Orario Docente. Rispondi in italiano, in modo chiaro e sintetico, usando esclusivamente le fonti fornite. Cita le fonti con [1], [2]. Se le fonti non bastano, dichiaralo. Non presentare interpretazioni normative come consulenza ufficiale e invita a verificare il testo originale.'},
+    {role:'system',content:'Sei l’Assistente scuola di Orario Docente. Rispondi in italiano in modo concreto, chiaro e sintetico. Per concetti generali e consolidati del mondo scolastico puoi usare le tue conoscenze e devi dare una risposta utile anche quando le notizie fornite non sono pertinenti. Usa e cita con [1], [2] soltanto le fonti realmente pertinenti: non citare mai una fonte solo perché è presente. Per novità, importi, date, scadenze, norme vigenti o informazioni che possono cambiare, affidati alle fonti fornite; se non bastano, dichiaralo chiaramente e invita a verificare una fonte ufficiale. Non presentare interpretazioni normative come consulenza ufficiale.'},
     {role:'user',content:`Domanda: ${question}\n\nFonti disponibili:\n${sources}`}
    ]
   });
   const answer=clean(completion.choices?.[0]?.message?.content);
+  const cited=new Set([...answer.matchAll(/\[(\d+)\]/g)].map(match=>Number(match[1])-1).filter(index=>index>=0&&index<articles.length));
+  const answerSources=articles.map((article,index)=>({...article,index})).filter(article=>cited.has(article.index)).map(({title,url,publishedAt,index})=>({title,url,publishedAt,citation:index+1}));
   await setJSON(key,{count:Number(usage.count)+1,updatedAt:new Date().toISOString()});
-  return json(200,{ok:true,answer:answer||'Non sono riuscito a formulare una risposta.',sources:articles.map(({title,url,publishedAt})=>({title,url,publishedAt})),remaining:Math.max(0,DAILY_LIMIT-Number(usage.count)-1)});
+  return json(200,{ok:true,answer:answer||'Non sono riuscito a formulare una risposta.',sources:answerSources,remaining:Math.max(0,DAILY_LIMIT-Number(usage.count)-1)});
  }catch(error){
   console.error('school-assistant error',{name:error?.name,code:error?.code||'',message:String(error?.message||error).slice(0,240)});
   return json(502,{error:'Assistente temporaneamente non disponibile. Riprova tra poco.'});

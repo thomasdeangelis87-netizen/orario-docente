@@ -28,7 +28,7 @@ function searchUrl(query=''){
 async function getSchoolNews(query='',fetchImpl=fetch){
  const key=String(query).trim().toLowerCase().slice(0,120),hit=cache.get(key);
  if(hit&&Date.now()-hit.time<10*60*1000)return hit.items;
- const response=await fetchImpl(searchUrl(query),{headers:{accept:'application/rss+xml, application/xml;q=0.9','user-agent':'OrarioDocente/16.11 (+https://orariodocente.it)'}});
+ const response=await fetchImpl(searchUrl(query),{headers:{accept:'application/rss+xml, application/xml;q=0.9','user-agent':'OrarioDocente/16.11.1 (+https://orariodocente.it)'}});
  if(!response.ok)throw new Error(`Feed notizie non disponibile (${response.status})`);
  const items=parseFeed(await response.text());
  cache.set(key,{time:Date.now(),items});
