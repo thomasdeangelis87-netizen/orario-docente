@@ -16,10 +16,9 @@ test('un docente normale non vede il portale, mentre admin e referente lo gestis
  assert.equal(canManageSchool('admin',true),true);
  assert.equal(canManageSchool('coordinator',true),true);
  assert.equal(canManageSchool('admin',false),true);
- assert.match(html,/schoolPortalBtn\.classList\.toggle\('hidden',!authorized\)/);
  assert.match(html,/id="schoolPortalView"/);
- assert.match(html,/schoolPortalBtn\.onclick=\(\)=>switchView\('schoolPortalView'\)/);
  assert.match(html,/id="schoolPortalNavBtn" data-view="schoolPortalView"/);
+ assert.doesNotMatch(html,/id="schoolPortalBtn"/);
  assert.match(html,/if\(id==='schoolPortalView'&&!window\.OrarioSchoolPermissions\.canManageSchool/);
  assert.doesNotMatch(html,/schoolPortalBtn\.onclick=\(\)=>\{switchView\('schoolView'\)/);
  assert.match(code('_school_schedule_handler.js'),/requireMember\(user,req\.method==='POST'\?\['admin','coordinator'\]:\[\]\)/);
@@ -72,6 +71,7 @@ test('registrazione e accesso hanno due moduli distinti e non esiste pre-registr
  assert.match(html,/OrarioIdentity\.login\(/);
  assert.doesNotMatch(html,/registerProfileModal|onboardingModal|PendingRegistration/);
  assert.doesNotMatch(html,/identity\.netlify\.com\/v1\/netlify-identity-widget/);
+ assert.doesNotMatch(html,/Continua con Google|id="googleBtn"|oauthLogin\(/);
 });
 
 test('aggiornamento scuola notifica solo lezioni diverse e non sostituisce automaticamente',()=>{
@@ -112,18 +112,27 @@ test('le sole fasce orarie della scuola si sincronizzano automaticamente nel per
  assert.match(html,/id==='myScheduleView'&&state\.meta\.schoolCode\)loadSchoolCloud/);
 });
 
-test('la guida al collegamento è raggiungibile dalla home e da Orario scuola',()=>{
- assert.match(html,/id="scheduleConnectionGuideBtn"/);
+test('la guida al collegamento è unica nella home e raggiungibile anche da Orario scuola',()=>{
+ assert.match(html,/id="scheduleGuideBtn"[^>]*>❓ Guida al mio orario/);
  assert.match(html,/id="schoolConnectionGuideBtn"/);
- assert.match(html,/data-view="myScheduleView"[^]*?id="navConnectionGuideBtn"[^]*?data-view="schoolView"/);
- assert.match(html,/id="navConnectionGuideBtn"[^>]*>❓ Come caricare il mio orario/);
+ assert.doesNotMatch(html,/navConnectionGuideBtn|scheduleConnectionGuideBtn/);
  assert.match(html,/id="connectionGuideModal"/);
  assert.match(html,/Scegli l’istituto dall’elenco e premi “Collega scuola”: il collegamento è immediato/);
  assert.match(html,/Importa il mio orario dalla scuola/);
  assert.match(html,/Se il nome non viene riconosciuto automaticamente/);
  assert.match(html,/id="openSchoolFromGuideBtn"/);
  assert.match(html,/openSchoolFromGuideBtn\.onclick=.*switchView\('schoolView'\)/);
- assert.match(html,/navConnectionGuideBtn\.onclick=openConnectionGuide/);
+ assert.match(html,/scheduleGuideBtn\.onclick=openConnectionGuide/);
+});
+
+test('menu iniziale snello: nessun doppione profilo o portale e nuovo orario nella sua sezione',()=>{
+ assert.equal((html.match(/id="schoolPortalNavBtn"/g)||[]).length,1);
+ assert.doesNotMatch(html,/data-view="profileView"|id="profileView"/);
+ assert.match(html,/id="moreTools"[\s\S]*id="shareBtn"[\s\S]*id="installAppBtn"[\s\S]*id="exportBtn"/);
+ assert.match(html,/id="myScheduleView"[\s\S]{0,220}id="resetBtn"/);
+ assert.match(html,/id="openEmailChangeBtn"/);
+ assert.match(html,/apiCall\('account-email-change'/);
+ assert.match(html,/OrarioIdentity\.updateUser\(\{email:next\}\)/);
 });
 
 test('la scelta dalla directory collega subito l account Identity alla scuola',()=>{

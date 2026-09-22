@@ -16,14 +16,18 @@ export async function reconcileEmailChange(change,{read,write,identityAdmin}){
 
 export async function finishEmailChange(change,{getJSON,setJSON}){
   const {userId,code,oldEmail,newEmail}=change;
+  if(!code){
+    await setJSON(changeKey(userId),{...change,status:'complete',completedAt:new Date().toISOString()});
+    return {userId,email:newEmail};
+  }
   const record=await getJSON(memberIdKey(userId));
   if(!record||record.userId!==userId||normalizeCode(record.code)!==code||
       ![oldEmail,newEmail].includes(normalizeEmail(record.email)))
     throw new Error('Membership ownership changed; email sync stopped');
   const list=(await getJSON(`school-members/${code}`))||[];
   const index=list.findIndex(m=>m.userId===userId || !m.userId&&normalizeEmail(m.email)===oldEmail);
-  if(index<0||!['admin','coordinator'].includes(list[index].role))
-    throw new Error('School manager no longer present');
+  if(index<0||list[index].status!=='active'||!['admin','coordinator','teacher'].includes(list[index].role))
+    throw new Error('School member no longer present');
   const existing=await getJSON(`members-by-email/${emailKey(newEmail)}`);
   if(existing && (existing.userId!==userId||normalizeCode(existing.code)!==code))
     throw new Error('New email already owns another school association');

@@ -859,14 +859,6 @@ var logout = async () => {
     throw AuthError.from(error);
   }
 };
-var oauthLogin = (provider) => {
-  if (!isBrowser2()) {
-    throw new AuthError("oauthLogin() is only available in the browser");
-  }
-  const client = getClient();
-  window.location.href = client.loginExternalUrl(provider);
-  throw new AuthError("Redirecting to OAuth provider");
-};
 var handleAuthCallback = async () => {
   if (!isBrowser2()) return null;
   const hash = window.location.hash.substring(1);
@@ -1122,27 +1114,6 @@ var getUser = async () => {
   const claims = identityContext?.user ?? null;
   return claims ? claimsToUser(claims) : null;
 };
-var getSettings = async () => {
-  const client = getClient();
-  try {
-    const raw = await client.settings();
-    const external = raw.external ?? {};
-    return {
-      autoconfirm: raw.autoconfirm,
-      disableSignup: raw.disable_signup,
-      providers: {
-        google: external.google ?? false,
-        github: external.github ?? false,
-        gitlab: external.gitlab ?? false,
-        bitbucket: external.bitbucket ?? false,
-        facebook: external.facebook ?? false,
-        email: external.email ?? false
-      }
-    };
-  } catch (err) {
-    throw new AuthError(err instanceof Error ? err.message : "Failed to fetch identity settings", 502, { cause: err });
-  }
-};
 var resolveCurrentUser = async () => {
   const client = getClient();
   let currentUser2 = client.currentUser();
@@ -1194,7 +1165,7 @@ function createAuthEventBridge(getUser2, notify) {
 }
 
 // src/identity-client.js
-window.OrarioIdentity = { getUser, getSettings, login, signup, logout, oauthLogin, requestPasswordRecovery, updateUser };
+window.OrarioIdentity = { getUser, login, signup, logout, requestPasswordRecovery, updateUser };
 onAuthChange(createAuthEventBridge(getUser, (event, user) => {
   if (event === "login") window.dispatchEvent(new CustomEvent("orario-login", { detail: user }));
   if (event === "logout") window.dispatchEvent(new Event("orario-logout"));
@@ -1207,6 +1178,7 @@ try {
   }
   const user = await getUser();
   window.dispatchEvent(new CustomEvent("orario-auth-ready", { detail: user }));
+  if (callback?.type === "email_change") window.dispatchEvent(new CustomEvent("orario-email-change", { detail: user }));
 } catch (e) {
   console.error("Identity initialization error", e);
   window.dispatchEvent(new CustomEvent("orario-auth-error", { detail: e.message || "Accesso non disponibile" }));
