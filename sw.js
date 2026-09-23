@@ -1,4 +1,4 @@
-const CACHE='orario-docente-v16.12.1';
+const CACHE='orario-docente-v16.14.0';
 const CORE=['/','/index.html','/auth-callback.html','/identity-client.js','/identity-confirmation-client.js','/account-storage.js','/schedule-file-type.js','/school-upload-dispatcher.js','/school-update.js','/school-hours-sync.js','/school-permissions.js','/pdf-layout-parser.js','/scuole.html','/area-scuola.html','/admin.html','/grazie-scuola.html','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/icons/apple-touch-icon.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
